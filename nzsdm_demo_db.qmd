@@ -656,7 +656,6 @@ CREATE TABLE IF NOT EXISTS lform_landuse (
 
 ## Surface
 
-
 ```{sql}
 --| connection: con
 
@@ -669,10 +668,10 @@ CREATE TABLE IF NOT EXISTS slope_methods (
   
 /* Table 11.1 */
 INSERT INTO slope_methods VALUES  
-  (1, 'E', 'Estimate', 'Estimated by eye'),
+  (1, 'E', 'Estimate',   'Estimated by eye'),
   (2, 'C', 'Clinometer', 'Handheld clinometer'),
-  (3, 'T', 'Tripod', 'Survey-grade equipment mounted on a tripod'),
-  (4, 'D', 'DEM', 'Calculated from a DEM with suitable resolution and vertical accuracy')
+  (3, 'T', 'Tripod',     'Survey-grade equipment mounted on a tripod'),
+  (4, 'D', 'DEM',        'Calculated from a DEM with suitable resolution and vertical accuracy');
 
 CREATE TABLE IF NOT EXISTS aspect_methods (
   id_aspect_method INTEGER PRIMARY KEY,
@@ -681,14 +680,340 @@ CREATE TABLE IF NOT EXISTS aspect_methods (
   txt_aspect_method_desc VARCHAR
   );
   
-/* Table 11.1 */
+/* Table 11.2 */
 INSERT INTO aspect_methods VALUES  
   (1, 'E', 'Estimate', 'Estimated by eye'),
   (2, 'C', 'Compass', 'Handheld magnestic compass'),
-  (3, 'D', 'DEM', 'Calculated from a DEM with suitable resolution and vertical accuracy')
+  (3, 'D', 'DEM', 'Calculated from a DEM with suitable resolution and vertical accuracy');
 
+CREATE TABLE IF NOT EXISTS surface_water_types (
+  id_surface_water INTEGER PRIMARY KEY,
+  catu_surface_water VARCHAR UNIQUE,
+  txt_surface_water_name VARCHAR,
+  txt_surface_water_desc VARCHAR
+  );
+  
+/* Table 11.4 */
+INSERT INTO surface_water_types VALUES  
+  (1, 'S', 'Seawater', 'Saline ocean or brackish tidal waters'),
+  (2, 'I', 'Surface water', 'Waters flowing over the surface from further inland'),
+  (3, 'G', 'Groundwater', 'Waters rising from adjacent springs or an elevated natural water table'),
+  (4, 'R', 'Rainfall', 'Rain falling on or near the site and perching on the surface'),
+  (5, 'A', 'Anthropic', 'Water from a manmade discharge location or backing up behind a dam');
 
+CREATE TABLE IF NOT EXISTS surface_water_persts (
+  id_surface_water_perst INTEGER PRIMARY KEY,
+  catu_surface_water_perst VARCHAR UNIQUE,
+  txt_surface_water_perst_name VARCHAR,
+  txt_surface_water_perst_desc VARCHAR
+  );
+  
+/* Table 11.5 */
+INSERT INTO surface_water_persts VALUES  
+  (1, 'P', 'Permanent', 'Surface water persists year-round'),
+  (2, 'S', 'Seasonal', 'Surface water is present during wet seasons'),
+  (3, 'T', 'Temporary', 'Surface water is present due to a specific event');
+  
+CREATE TABLE IF NOT EXISTS surface_crack_types (
+  id_surface_crack INTEGER PRIMARY KEY,
+  catu_surface_crack VARCHAR UNIQUE,
+  txt_surface_crack_name VARCHAR,
+  txt_surface_crack_desc VARCHAR
+  );
+
+/* Table 11.6 */
+INSERT INTO surface_crack_types VALUES  
+  (1, 'NO', 'None',         'No surface cracks'),
+  (2, 'RT', 'Reversible',   'Cracks that open and close with changing soil moisture'),
+  (3, 'IT', 'Irreversible', 'Cracks that persist year-round');
+
+CREATE TABLE IF NOT EXISTS surface_crack_shapes (
+  id_surface_crack_shp INTEGER PRIMARY KEY,
+  catu_surface_crack_shp VARCHAR UNIQUE,
+  txt_surface_crack_shp_name VARCHAR,
+  txt_surface_crack_shp_desc VARCHAR
+  );
+
+/* Table 11.7 */
+INSERT INTO surface_crack_shapes VALUES  
+  (1, 'P', 'Polygonal', 'Surface cracks forming closed shapes on the land surface'),
+  (2, 'L', 'Linear',    'Surface cracks running roughly parallel to each other'),
+  (3, 'I', 'Irregular', 'Surface cracks with no discernible pattern');
+
+CREATE TABLE IF NOT EXISTS site_microrelief_nat (
+  id_microrelief_nat INTEGER PRIMARY KEY,
+  catu_microrelief_nat VARCHAR UNIQUE,
+  txt_microrelief_nat_name VARCHAR,
+  txt_microrelief_nat_desc VARCHAR
+  );
+
+/* Table 11.8 */
+INSERT INTO site_microrelief_nat VALUES  
+  (1, 'N', 'None',   'Site surface is naturally smooth or level'),
+  (2, 'G', 'Gilgai', 'Induced by shrink-swell clay activity'),
+  (3, 'S', 'Swamp',  'Hummocky surfaces common in wetland areas, derived by biotic activity'),
+  (4, 'K', 'Karst',  'Induced by subsurface collapse in limestone-dominated landscapes'),
+  (5, 'A', 'Animal', 'Trampling or pugging induced by larger animals standing on low-slope ground (cows, pigs, ungulates)'),
+  (6, 'T', 'Terracettes', 'Small terraces on moderate to steep slopes, generally induced by larger animals navigating the terrain'),
+  (7, 'F', 'Frost', 'Induced by freeze-thaw activity');
+  
+CREATE TABLE IF NOT EXISTS site_microrelief_ant (
+  id_microrelief_ant INTEGER PRIMARY KEY,
+  catu_microrelief_ant VARCHAR UNIQUE,
+  txt_microrelief_ant_name VARCHAR,
+  txt_microrelief_ant_desc VARCHAR
+  );
+  
+/* Table 11.9 */
+INSERT INTO site_microrelief_ant VALUES  
+  (1, 'N', 'None',   'Site surface is not significantly altered by humans'),
+  (2, 'C', 'Smoothed', 'Site surface has been smoothed, contoured, rock-picked, infilled or levelled, beyond normal tillage effects'),
+  (3, 'B', 'Raised Beds',  'Elevated areas have been created and maintained for specific crops, e.g. raised rows or puke for kūmara'),
+  (4, 'R', 'Terraces and tracks',  'Hillsides have been cut/filled into terraces, or tracks cut in across the slope'),
+  (5, 'D', 'Drained', 'Open drainage ditches have been installed');
+
+CREATE TABLE IF NOT EXISTS water_depths (
+  id_depth_water INTEGER PRIMARY KEY,
+  catu_depth_water VARCHAR UNIQUE,
+  txt_depth_water_name VARCHAR,
+  txt_depth_water_desc VARCHAR
+  );
+
+/* Table 12.4 */
+INSERT INTO water_depths VALUES  
+  (1, 'NA', 'Not applicable',   'Water table not encountered'),
+  (2, 'B', 'Below', 'Water table observed at or below the soil surface'),
+  (3, 'A', 'Above',  'Water table observed above the soil surface');
+
+CREATE TABLE IF NOT EXISTS luc_vegetation_codes (
+  id_vegetation_luc INTEGER PRIMARY KEY,
+  catu_vegetation_luc VARCHAR UNIQUE,
+  txt_vegetation_luc_name VARCHAR,
+  txt_vegetation_luc_desc VARCHAR
+  );
+
+/* Just grabbing a few from the full list for demo purposes */
+INSERT INTO luc_vegetation_codes VALUES  
+  (1, 'gI', 'Improved pasture', 'Sown legume-based pastures maintaining high levels of pasture production'),
+  (2, 'cC', 'Cereal crops', 'Principally wheat, oats and barley, but also including ryecorn and millet'),
+  (3, 'sM', 'Mānuka, Kānuka', 'Scrub and shrubland dominated by manuka (Leptospermum scoparium) or kanuka (Kunzea ericoides)'),
+  (4, 'fC', 'Coastal forest',  'Forest confined to coastal habitats and characterised by broadleaved species'),
+  (5, 'hW', 'Wetland vegetation', 'Herbaceous vegetation occurring in non-saline wetland habitats (swamps and bogs) in which the water table is at or near the surface for most of the year');
+
+```
+ 
+ 
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS site_surface (
+  id_site VARCHAR,
+  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  PRIMARY KEY (id_site),
+  amt_slope_d DECIMAL(6, 2) CHECK (amt_slope_d BETWEEN 0 AND 90),
+  catu_slope_rec VARCHAR REFERENCES measurement_types(catu_mtype) NOT NULL DEFAULT 'NR',
+  catu_slope_method VARCHAR REFERENCES slope_methods(catu_slope_method),
+  amt_aspect_d DECIMAL(6, 2) CHECK (amt_slope_d BETWEEN 0 AND 359),
+  catu_aspect_rec VARCHAR REFERENCES measurement_types(catu_mtype) NOT NULL DEFAULT 'NR',
+  catu_aspect_method VARCHAR REFERENCES aspect_methods(catu_aspect_method),
+  catu_surface_water VARCHAR REFERENCES surface_water_types(catu_surface_water),
+  catu_surface_water_perst VARCHAR REFERENCES surface_water_persts(catu_surface_water_perst),
+  catu_surface_cracks VARCHAR REFERENCES surface_crack_types(catu_surface_crack),
+  catu_surface_crack_shp VARCHAR REFERENCES surface_crack_shapes(catu_surface_crack_shp),
+  catu_microrelief_nat VARCHAR REFERENCES site_microrelief_nat(catu_microrelief_nat),
+  amt_microrelief_nat_width_cm DECIMAL(6, 2) CHECK (amt_microrelief_nat_width_cm >= 0),
+  amt_microrelief_nat_height_cm DECIMAL(6, 2) CHECK (amt_microrelief_nat_height_cm >= 0),
+  catu_microrelief_ant VARCHAR REFERENCES site_microrelief_ant(catu_microrelief_ant),
+  amt_microrelief_ant_width_cm DECIMAL(6, 2) CHECK (amt_microrelief_ant_width_cm >= 0),
+  amt_microrelief_ant_height_cm DECIMAL(6, 2) CHECK (amt_microrelief_ant_height_cm >= 0),
+  amt_depth_water DECIMAL(6, 2) CHECK (amt_depth_water >= 0),
+  catu_depth_water VARCHAR REFERENCES water_depths(catu_depth_water),
+  catu_vegetation_luc VARCHAR REFERENCES luc_vegetation_codes(catu_vegetation_luc)
+  );
+
+``` 
+  
+### Surface cover
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS surface_cover_types (
+  id_surface_cover INTEGER PRIMARY KEY,
+  catu_surface_cover VARCHAR UNIQUE,
+  txt_surface_cover_name VARCHAR,
+  txt_surface_cover_desc VARCHAR
+  );
+  
+/* Table 11.3 */
+INSERT INTO surface_cover_types VALUES  
+  (1, 'BE', 'Earth', 'Bare sediment or soil, < 2 mm'),
+  (2, 'BR', 'Fragments', 'Small rock fragments, shells, or bones, 2 - 60 mm'),
+  (3, 'BO', 'Rock', 'Bare rock outcrop or rock fragments > 60 mm'),
+  (4, 'WT', 'Water', 'Open water, ice or snow'),
+  (5, 'PT', 'Peat', 'Plant material decomposing under persistently saturated conditions'),
+  (6, 'LI', 'Litter', 'Plant material decomposing under intermittently wet to dry conditions'),
+  (7, 'GR', 'Small plants', 'Grasses, ferns, herbs, moss, sedges, annual crops'),
+  (8, 'TR', 'Large plants', 'Shrubs, trees and treeferns, (stems and roots), perennial crops'),
+  (9, 'SL', 'Sealed', 'Building, concrete, asphalt and similar');
 
 ```
   
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS surface_cover (
+  id_site VARCHAR,
+  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  PRIMARY KEY (id_site),
+  catu_surface_cover VARCHAR REFERENCES surface_cover_types(catu_surface_cover),
+  amt_surface_cover DECIMAL(6, 2) CHECK (amt_surface_cover BETWEEN 0 AND 100)
+  );
+
+```
+
+### Erosion
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS erosion_types (
+  id_erosion INTEGER PRIMARY KEY,
+  catu_erosion VARCHAR UNIQUE,
+  txt_erosion_name VARCHAR,
+  txt_erosion_desc VARCHAR
+  );
   
+/* Table 11.10 */
+INSERT INTO erosion_types VALUES  
+  (1, 'SH', 'Sheet', 'Thin layers of surface material are gradually removed more or less evenly from an extensive area of sloping land'),
+  (2, 'RI', 'Rill', 'Formation of predominantly steep-sided erosion channel(s) ≤0.5 m deep.'),
+  (3, 'GU', 'Gully', 'Formation of predominantly steep-sided erosion channel >0.5 m deep, not capable of being safely crossed by a wheeled tractor or obliterated by ploughing or deep cultivation'),
+  (4, 'TN', 'Tunnel', 'Erosion by percolating water in a layer of subsoil, resulting in caving and the formation of narrow tunnels through which soluble or spheroidal soil material is removed.'),
+  (5, 'CH', 'Channel', 'Erosion by water flowing in stream and river channels, including stream bank erosion'),
+  (6, 'FA', 'Fall', 'A very rapid downward movement of a mass of rock or earth that travels mostly through the air by free fall, leaping, bounding or rolling, with little or no interaction between one moving unit and another, e.g., rock-fall, debris fall.'),
+  (7, 'TO', 'Topple', 'Large blocks of earth material falling forward off very steep to precipitous slope'),
+  (8, 'SL', 'Slide', 'Lateral displacement of earth materials moving as a block along a deep-seated slip face'),
+  (9, 'SP', 'Spread', 'rapid displacement of wet, plastic materials that liquefy, often bringing along intact blocks or beds'),
+  (10, 'FW', 'Flow', 'slow to rapid movement of earth materials that behave as a viscous fluid'),
+  (11, 'WI', 'Wind', 'Detachment, transport, and deposition of loose materials by wind action, especially in dust storms and in arid or semi-arid regions or where a protective mat of vegetation has been removed. Erosion forms are characteristically ovate in plan, and concave in contour and profile.'),
+  (12, 'UK', 'Unknown', 'Mode of erosion cannot be clearly determined'),
+  (13, 'NR', 'Not recorded', 'Mode of erosion not recorded'),
+  (14, 'NO', 'No erosion', 'No evidence of erosion');
+  
+CREATE TABLE IF NOT EXISTS erosion_severity (
+  id_erosion_severity INTEGER PRIMARY KEY,
+  catu_erosion_severity VARCHAR UNIQUE,
+  txt_erosion_severity_name VARCHAR,
+  txt_erosion_severity_desc VARCHAR
+  );
+  
+/* Table 11.11 */
+INSERT INTO erosion_severity VALUES  
+  (1, 'S', 'Slight', 'Some evidence of damage to surface layers, original ecological functions largely intact'), 
+  (2, 'M', 'Moderate', 'Clear evidence of removal of surface layers, original ecological functions partly destroyed'),
+  (3, 'V', 'Severe', 'Surface layers completely removed and subsurface layers exposed, original ecological functions largely destroyed'),
+  (4, 'E', 'Extreme', 'Substantial removal of deeper subsurface layers, original ecological functions fully destroyed');
+
+CREATE TABLE IF NOT EXISTS erosion_activity (
+  id_erosion_activity INTEGER PRIMARY KEY,
+  catu_erosion_activity VARCHAR UNIQUE,
+  txt_erosion_activity_name VARCHAR,
+  txt_erosion_activity_desc VARCHAR
+  );
+  
+/* Table 11.12 */
+INSERT INTO erosion_activity VALUES  
+  (1, 'PR', 'Active', 'Active at present'),
+  (2, 'RE', 'Recent', 'Active within the past 100 years'),
+  (3, 'HI', 'Historical', 'Active in historical times (>100 years ago)'),
+  (4, 'UK', 'Unknown', 'Activity history cannot be reliably determined');
+  
+```
+  
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS site_erosion (
+  id_site VARCHAR,
+  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  PRIMARY KEY (id_site),
+  catu_erosion VARCHAR REFERENCES erosion_types(catu_erosion),
+  cato_erosion_severity VARCHAR REFERENCES erosion_severity(catu_erosion_severity),
+  cato_erosion_activity VARCHAR REFERENCES erosion_activity(catu_erosion_activity)
+  );
+
+```
+
+### Deposition
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS deposition_types (
+  id_deposition INTEGER PRIMARY KEY,
+  catu_deposition VARCHAR UNIQUE,
+  txt_deposition_name VARCHAR,
+  txt_deposition_desc VARCHAR
+  );
+  
+/* Table 11.13 */
+INSERT INTO deposition_types VALUES  
+  (1,  'FL', 'Flood', 'Deposition driven by inundation events along streams'),
+  (2,  'SS', 'Surge', 'Deposition driven by storm surge'),
+  (3,  'TI', 'Till',  'Glacial deposition'),
+  (4,  'FA', 'Fall', 'Rapid, freefall collapse of earth material on precipitous slopes'),
+  (5,  'TO', 'Topple', 'Large blocks of earth material falling forward off very steep to precipitous slope'),
+  (6,  'SL', 'Slide', 'Lateral displacement of earth materials moving as a block along a deep-seated slip face'),
+  (7,  'SP', 'Spread', 'rapid displacement of wet, plastic materials that liquefy, often bringing along intact blocks or beds'),
+  (8,  'FW', 'Flow', 'slow to rapid movement of earth materials that behave as a viscous fluid'),
+  (9,  'VR', 'Volcanic eruption', 'Airfall deposition from pyroclastic eruptions'),
+  (10, 'SA', 'Sand movement', 'Wind-driven deposition of sand from beaches, banks, or remobilised dunes'),
+  (11, 'SI', 'Silt movement', 'Wind-driven deposition of silt and finer material from banks or bare earth'),
+  (12, 'UK', 'Unknown', 'Mode of deposition cannot be clearly determined'),
+  (13, 'NR', 'Not recorded', 'Mode of deposition not recorded'),
+  (14, 'NO', 'No deposition', 'No evidence of deposition');
+  
+CREATE TABLE IF NOT EXISTS deposition_severity (
+  id_deposition_severity INTEGER PRIMARY KEY,
+  catu_deposition_severity VARCHAR UNIQUE,
+  txt_deposition_severity_name VARCHAR,
+  txt_deposition_severity_desc VARCHAR
+  );
+  
+/* Table 11.14 */
+INSERT INTO deposition_severity VALUES  
+  (1, 'S', 'Slight', 'Patchy or thin cover over previous surface layers, original ecological functions largely intact'),
+  (2, 'M', 'Moderate', 'Cover mostly complete but < 10cm thick, original ecological functions partly destroyed'),
+  (3, 'V', 'Severe', 'Cover complete and > 10cm thick, original ecological functions largely destroyed'),
+  (4, 'E', 'Extreme', 'Cover complete and permanent, original ecological functions fully destroyed');
+
+CREATE TABLE IF NOT EXISTS deposition_activity (
+  id_deposition_activity INTEGER PRIMARY KEY,
+  catu_deposition_activity VARCHAR UNIQUE,
+  txt_deposition_activity_name VARCHAR,
+  txt_deposition_activity_desc VARCHAR
+  );
+  
+/* Table 11.15 */
+INSERT INTO deposition_activity VALUES  
+  (1, 'FR', 'Fresh', 'Active within the past year'),
+  (2, 'RE', 'Recent', 'Active within the past 10 years'),
+  (3, 'HI', 'Historical', 'Active within the past 100 years'),
+  (4, 'UK', 'Unknown', 'Activity history cannot be reliably determined');
+  
+```
+  
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS site_deposition (
+  id_site VARCHAR,
+  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  PRIMARY KEY (id_site),
+  catu_deposition VARCHAR REFERENCES deposition_types(catu_deposition),
+  cato_deposition_severity VARCHAR REFERENCES deposition_severity(catu_deposition_severity),
+  cato_deposition_activity VARCHAR REFERENCES deposition_activity(catu_deposition_activity)
+  );
+
+```
