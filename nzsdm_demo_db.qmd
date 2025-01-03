@@ -1151,4 +1151,469 @@ CREATE TABLE IF NOT EXISTS horizon (
   );
 
 ```
- 
+
+## Horizon architecture
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS structure_types (
+  id_structure INTEGER PRIMARY KEY,
+  catu_structure VARCHAR UNIQUE,
+  txt_structure_name VARCHAR,
+  txt_structure_desc VARCHAR
+  );
+  
+/* Table 13.1 */
+INSERT INTO structure_types VALUES
+  (1, 'P', 'Pedogenic', 'Structural units meet the definition of natural soil peds and occur largely within the solum'),
+  (2, 'G', 'Geogenic', 'Structural units are inherited from parent materials that have undergone limited weathering e.g. bedding planes, and occur largely below the solum'),
+  (3, 'A', 'Anthrogenic', 'Structural units have been induced by human activity, usually within the solum and most commonly in surface horizons'),
+  (4, 'U', 'Unknown', 'Type of structural development could not be determined with confidence');
+
+CREATE TABLE IF NOT EXISTS structure_grades (
+  id_structure_grade INTEGER PRIMARY KEY,
+  cato_structure_grade VARCHAR UNIQUE,
+  txt_structure_grade_name VARCHAR,
+  txt_structure_grade_desc VARCHAR
+  );
+  
+/* Table 13.2 */
+INSERT INTO structure_grades VALUES
+  (1, 'G', 'Single grain', 'Material is structureless and incoherent, with more than 85% by weight of discrete primary particles ranging in size from sand to very coarse gravel.'),
+  (2, 'V', 'Massive', 'Material is structureless but coherent, with no fissures at spacings of less than 200 mm'),
+  (3, 'W', 'Weak', 'Material where 15-25% of the material comprises coherent structural units'),
+  (4, 'M', 'Moderate', 'Material where 25-75% of the material comprises coherent structural units'),
+  (5, 'S', 'Strong', 'Material where >75% of the material comprises coherent structural units');
+
+CREATE TABLE IF NOT EXISTS structure_sizes_rapid (
+  id_structure_size_rapid INTEGER PRIMARY KEY,
+  cato_structure_size_rapid VARCHAR UNIQUE,
+  txt_structure_size_rapid_name VARCHAR,
+  txt_structure_size_rapid_desc VARCHAR
+  );  
+
+/* Section 13.1.4 and part Table 20.15 */
+INSERT INTO structure_sizes_rapid VALUES
+  (1, 'C', 'Coarse', 'At least 50% peds of size > 20 mm (‘coarse’), or apedal massive structure'),
+  (2, 'F', 'Fine', 'At least 50% peds of size < 20 mm (‘coarse’), including horizons where coarse structure breaks to finer nested peds');
+
+CREATE TABLE IF NOT EXISTS structure_shapes (
+  id_structure_shape INTEGER PRIMARY KEY,
+  catu_structure_shape VARCHAR UNIQUE,
+  txt_structure_shape_name VARCHAR
+  ); 
+
+/* Table 13.3 */
+INSERT INTO structure_shapes VALUES
+(1, 'AB', 'Angular blocky'),
+(2, 'BL', 'Blocky'),
+(3, 'PH', 'Polyhedral'),
+(4, 'SR', 'Spheroidal'),
+(5, 'LT', 'Lenticular'),
+(6, 'PM', 'Prismatic'),
+(7, 'CO', 'Columnar'),
+(8, 'PL', 'Platy'),
+(9, 'LF', 'Lentiform'),
+(10, 'WL', 'Wedge-like');
+
+CREATE TABLE IF NOT EXISTS root_positions (
+  id_root_pos INTEGER PRIMARY KEY,
+  catu_root_pos VARCHAR UNIQUE,
+  txt_root_pos_name VARCHAR,
+  txt_root_pos_desc VARCHAR
+  ); 
+
+/* Table 13.13 */
+INSERT INTO root_positions VALUES
+   (1, 'W',     'Within', 'Roots are primarily located within peds.'),
+   (2, 'B',    'Between', 'Roots are primarily located between peds, within fissures or along bedding planes'),
+   (3, 'T', 'Throughout', 'Roots are spread throughout the soil mass.'),
+   (4, 'U',    'Unknown', 'Sampling method did not allow reliable observation.');
+
+```
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_arch (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  PRIMARY KEY (id_site, id_horizon),
+  catu_structure_type VARCHAR REFERENCES structure_types(catu_structure),
+  cato_structure_grade VARCHAR REFERENCES structure_grades(cato_structure_grade),
+  catu_structure_shape VARCHAR REFERENCES structure_shapes(catu_structure_shape),
+  cato_structure_size VARCHAR REFERENCES structure_sizes_rapid(cato_structure_size_rapid),
+  amt_total_frags_p DECIMAL(6, 2) CHECK (amt_total_frags_p BETWEEN 0 and 100),
+  amt_otherfrags_p DECIMAL(6, 2) CHECK (amt_otherfrags_p BETWEEN 0 and 100),
+  amt_artefacts_p DECIMAL(6, 2) CHECK (amt_artefacts_p BETWEEN 0 and 100),
+  amt_total_roots_p DECIMAL(6, 2) CHECK (amt_total_roots_p BETWEEN 0 and 100),
+  catu_total_roots_pos VARCHAR REFERENCES root_positions(catu_root_pos),
+  amt_total_voids_p DECIMAL(6, 2) CHECK (amt_total_voids_p BETWEEN 0 and 100),
+  amt_total_pores_p DECIMAL(6, 2) CHECK (amt_total_pores_p BETWEEN 0 and 100),
+  amt_macropores_p DECIMAL(6, 2) CHECK (amt_macropores_p BETWEEN 0 and 100),
+  amt_micropores_p DECIMAL(6, 2) CHECK (amt_micropores_p BETWEEN 0 and 100)
+  );
+
+```
+
+### Structure
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_structures (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_structure INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_structure),
+  catu_structure_type VARCHAR REFERENCES structure_types(catu_structure),
+  cato_structure_grade VARCHAR REFERENCES structure_grades(cato_structure_grade),
+  catu_structure_shape VARCHAR REFERENCES structure_shapes(catu_structure_shape),
+  amt_structure_size_med_mm DECIMAL(6, 2) CHECK (amt_structure_size_med_mm > 0),
+  amt_structure_size_min_mm DECIMAL(6, 2) CHECK (amt_structure_size_min_mm > 0),
+  amt_structure_size_max_mm DECIMAL(6, 2) CHECK (amt_structure_size_max_mm > 0)
+  );
+
+```
+
+### Rock fragments
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS fragment_sizes_simple (
+  id_fragment_size INTEGER PRIMARY KEY,
+  cato_fragment_size VARCHAR UNIQUE,
+  txt_fragment_size_name VARCHAR,
+  txt_fragment_size_desc VARCHAR
+  );
+  
+/* Table 13.4 */
+INSERT INTO fragment_sizes_simple VALUES
+  (1, 'S', 'Small',   '2 - 60 mm'),
+  (2, 'M', 'Medium', '60 - 200 mm'),
+  (3, 'L', 'Large', '> 200 mm');
+
+CREATE TABLE IF NOT EXISTS rock_fragment_shapes (
+  id_rockfrag_shape INTEGER PRIMARY KEY,
+  catu_rockfrag_shape VARCHAR UNIQUE,
+  txt_rockfrag_shape_name VARCHAR,
+  txt_rockfrag_shape_desc VARCHAR
+  );
+
+/* Table 13.5 */
+INSERT INTO rock_fragment_shapes VALUES
+  (1, 'R', 'Rounded',   'Rock fragments considerably smoothed by transport processes'),
+  (2, 'A', 'Angular', 'Rock fragments with little smoothing by transport processes'),
+  (3, 'M', 'Mixed', 'Both rounded and angular fragments mixed together');
+  
+CREATE TABLE IF NOT EXISTS nzsc_lithologies (
+  id_nzsc_lithology INTEGER PRIMARY KEY,
+  catu_nzsc_lithology VARCHAR UNIQUE,
+  txt_nzsc_lithology_name VARCHAR
+  );
+
+/* Table 24.2 */
+INSERT INTO nzsc_lithologies VALUES
+    (1, 'Cb', 'Carbonaceous Rock (Coal)'),
+    (2, 'Sq', 'Soft Quartzitic Sediments'),
+    (3, 'Hq', 'Hard Quartzitic Sediments'),
+    (4, 'Sm', 'Soft mudstone'),
+    (5, 'Ss', 'Soft sandstone'),
+    (6, 'Hm', 'Hard mudstone'),
+    (7, 'Hs', 'Hard sandstone'),
+    (8, 'Tm', 'Tuffaceous mudstone'),
+    (9, 'Ts', 'Tuffaceous sandstone'),
+    (10, 'Sc', 'Schist'),
+    (11, 'Ls', 'Soft calcareous'),
+    (12, 'Li', 'Hard calcareous'),
+    (13, 'Ma', 'Marble'),
+    (14, 'Rh', 'Rhyolite'),
+    (15, 'Ig', 'Ignimbrite'),
+    (16, 'An', 'Andesite'),
+    (17, 'Ba', 'Basalt'),
+    (18, 'Gr', 'Granite and Gneiss'),
+    (19, 'Di', 'Diorite'),
+    (20, 'Ga', 'Gabbro'),
+    (21, 'Fe', 'Iron Sands');
+      
+
+```
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_rock_fragments (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_rock_fragment INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_rock_fragment),
+  cato_rock_fragment_size VARCHAR REFERENCES fragment_sizes_simple(cato_fragment_size),
+  catu_rock_fragment_shape VARCHAR REFERENCES rock_fragment_shapes(catu_rockfrag_shape),
+  amt_rock_fragment_p DECIMAL(6, 2) CHECK (amt_rock_fragment_p BETWEEN 0 and 100),
+  catu_rock_fragment_lithology VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
+  );
+
+```
+
+### Other fragments
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS other_fragment_types (
+  id_other_fragment INTEGER PRIMARY KEY,
+  catu_other_fragment VARCHAR UNIQUE,
+  txt_other_fragment_name VARCHAR,
+  txt_other_fragment_desc VARCHAR
+  );
+  
+/* Table 13.6 */
+INSERT INTO other_fragment_types VALUES
+   (1, 'S', 'Shell',    'Seashells or chitinous material'),
+   (2, 'B', 'Bone',     'Skeletal fragments'),
+   (3, 'T', 'Timber',   'Dead wood from trees and shrubs, coarse roots'),
+   (4, 'C', 'Charcoal', 'Burnt organic materials'),
+   (5, 'G', 'Gum',      'Kauri gum');
+
+```
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_other_fragments (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_other_fragment INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_other_fragment),
+  cato_other_fragment_size VARCHAR REFERENCES fragment_sizes_simple(cato_fragment_size),
+  catu_other_fragment VARCHAR REFERENCES other_fragment_types(catu_other_fragment),
+  amt_other_fragment_p DECIMAL(6, 2) CHECK (amt_other_fragment_p BETWEEN 0 and 100)
+  );
+
+```
+
+### Artefacts
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS artefact_types (
+  id_artefact INTEGER PRIMARY KEY,
+  catu_artefact VARCHAR UNIQUE,
+  txt_artefact_name VARCHAR,
+  txt_artefact_desc VARCHAR
+  );
+  
+/* Table 13.7 */
+INSERT INTO artefact_types VALUES
+  (1,  'As', 'Asphalt',  'Asphalt and other bitumen-containing materials'),
+  (2,  'Br', 'Brick',    'Fired clay building materials, usually unglazed'),
+  (3,  'Cr', 'Ceramic',  'Fired clay objects, usually glazed'),
+  (4,  'Ce', 'Concrete', 'Concrete materials, cements'),
+  (5,  'Gl', 'Glass',    'Fragments from windows, containers, etc'),
+  (6,  'Pl', 'Plastics', 'Artificial polymers (non-textile)'),
+  (7,  'Tn', 'Textiles - natural', 'Fabrics and carpets made from e.g. wool'),
+  (8,  'Tx', 'Textiles - artificial', 'Fabrics derived from or dominated by plastics'),
+  (9,  'Mt', 'Metals', 'Refined ore products'),
+  (10, 'Ms', 'Mine Spoil', 'Materials leftover from ore processing activities'),
+  (11, 'Ws', 'Wastes', 'Other domestic or commercial rubbish');
+
+```
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_artefacts (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_artefact INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_artefact),
+  cato_artefact_size VARCHAR REFERENCES fragment_sizes_simple(cato_fragment_size),
+  catu_artefact VARCHAR REFERENCES artefact_types(catu_artefact),
+  amt_artefact_p DECIMAL(6, 2) CHECK (amt_artefact_p BETWEEN 0 and 100)
+  );
+
+```
+
+### Plastics
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS plastic_types (
+  id_plastic INTEGER PRIMARY KEY,
+  catu_plastic VARCHAR UNIQUE,
+  txt_plastic_name VARCHAR,
+  txt_plastic_desc VARCHAR
+  );
+
+/* Table 13.8 */
+INSERT INTO plastic_types VALUES
+  (1, 'N', 'Not verifiable', 'Designation not possible / uncertain'),
+  (2, 'C', 'Consumer', 'Consumer-products (everyday-products) like PET-bottles, SUP bags, packages, signs etc.'),  
+  (3, 'A', 'Agricultural', 'Agricultural products like mulch film, silage film, straw bale nets, tire wear etc.'),
+  (4, 'I', 'Industrial', 'Industrial products like broken pieces of industrial equipment, industrial waste'),
+  (5, 'B', 'Construction', 'All plastic materials which were placed in soil for construction and supply purposes (e.g., power cables, geomembranes)');
+  
+CREATE TABLE IF NOT EXISTS plastic_fixations (
+  id_plastic_fixation INTEGER PRIMARY KEY,
+  cato_plastic_fixation VARCHAR UNIQUE,
+  txt_plastic_fixation_name VARCHAR,
+  txt_plastic_fixation_desc VARCHAR
+  );
+  
+/* Table 13.9 */
+INSERT INTO plastic_fixations VALUES
+  (1, 'NF', 'None',    'Plastic pieces are not included in soil aggregates (no soil aggregates or loose plastic)'),
+  (2, 'SF', 'Solely',   'Single plastic pieces are in cooperated into soil aggregates, but others are loose'),
+  (3, 'MF', 'Moderate', 'The majority of plastic pieces is in cooperated into soil aggregates, but single are loose'),
+  (4, 'CF', 'Complete', 'All plastic pieces are in cooperated into soil aggregates');
+
+CREATE TABLE IF NOT EXISTS plastic_shapes (
+  id_plastic_shape INTEGER PRIMARY KEY,
+  catu_plastic_shape VARCHAR UNIQUE,
+  txt_plastic_shape_name VARCHAR,
+  txt_plastic_shape_desc VARCHAR
+  );
+
+/* Table 13.10 */
+INSERT INTO plastic_shapes VALUES
+ (1, 'P', 'Preserved', 'The original manufactured shape of the object is recognisable'),
+ (2, 'B', 'Broken',  'The fragment is recognisable as having been part of a larger object'),
+ (3, 'F', 'Flat', 'Tabular or sheet-like'),
+ (4, 'A', 'Angular', 'Sharp-edged'),
+ (5, 'R', 'Rounded', 'Has edges that are not sharp'),
+ (6, 'S', 'Spherical', 'Ball shaped or ovoid');
+
+CREATE TABLE IF NOT EXISTS plastic_degradations (
+  id_plastic_degradation INTEGER PRIMARY KEY,
+  catu_plastic_degradation VARCHAR UNIQUE,
+  txt_plastic_degradation_name VARCHAR,
+  txt_plastic_degradation_desc VARCHAR
+  );
+  
+/* Table 13.11 */
+INSERT INTO plastic_degradations VALUES
+  (1, 'N', 'Not verifiable', 'Designation not possible / uncertain'),
+  (2, 'F', 'Fresh', 'Fresh plastic pieces with bright colours, unaffected shape, without signs of deterioration (cracks, broken edges, rough surfaces)'), 
+  (3, 'I', 'Incipient alteration', 'Plastic pieces with incipient deterioration surface such as first cracks, broken edges or roughened/grooved surfaces'),
+  (4, 'D', 'Degraded', 'Plastic pieces with clear indications of ageing such as pale colours or yellowing (UV light), strong fragmentation, frayed edges'),
+  (5, 'S', 'Strongly degraded', 'Plastic pieces with strong degraded surfaces, faded colours, soft surface, frayed areas or edges');
+
+```
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_plastics (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_plastic INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_plastic),
+  catu_plastic VARCHAR REFERENCES plastic_types(catu_plastic),
+  cato_plastic_fixation VARCHAR REFERENCES plastic_fixations(cato_plastic_fixation),
+  catu_plastic_shape VARCHAR REFERENCES plastic_shapes(catu_plastic_shape),
+  catu_plastic_degradation VARCHAR REFERENCES plastic_degradations(catu_plastic_degradation),
+  amt_plastic_p DECIMAL(6, 2) CHECK (amt_plastic_p BETWEEN 0 and 100)
+  );
+
+```
+
+### Roots
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS root_sizes_simple (
+  id_root_size INTEGER PRIMARY KEY,
+  cato_root_size VARCHAR UNIQUE,
+  txt_root_size_name VARCHAR,
+  txt_root_size_desc VARCHAR
+  );
+
+/* Table 13.12 */
+INSERT INTO root_sizes_simple VALUES
+  (1, 'F',   'Fine',         '< 2 mm'),
+  (2, 'M', 'Medium',      '2 - 10 mm'),
+  (3, 'C', 'Coarse',        '> 10 mm');
+  
+```
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_roots (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_root INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_root),
+  catu_plastic VARCHAR REFERENCES plastic_types(catu_plastic),
+  cato_root_size VARCHAR REFERENCES root_sizes_simple(cato_root_size),
+  cato_root_pos VARCHAR REFERENCES root_positions(catu_root_pos),
+  amt_root_p DECIMAL(6, 2) CHECK (amt_root_p BETWEEN 0 and 100),
+  );
+
+```
+
+### Voids
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS void_types (
+  id_void INTEGER PRIMARY KEY,
+  catu_void VARCHAR UNIQUE,
+  txt_void_name VARCHAR,
+  txt_void_desc VARCHAR
+  );
+
+/* Table 13.14 */
+INSERT INTO void_types VALUES
+  (1, 'BP', 'Bedding plane', 'A parting or discontinuity due to stratification during deposition of sedimentary particles.'), 
+  (2, 'CH', 'Channel', 'Tubular void of biological origin that is less than 20 mm in diameter (e.g. insect burrow)'),
+  (3, 'TU', 'Tunnel',  'Tubular void of biological origin that is 20 mm or more in diameter (e.g. rabbit burrow) '),
+  (4, 'FS', 'Fissure', 'Planar void with a width much smaller than length and depth. Fissures represent the release of strain caused by drying and usually bound individual structural units and form repetitively.'),
+  (5, 'IT', 'Interstitial', 'Irregular voids occupying space between aggregates that do not fit together');
+
+
+CREATE TABLE IF NOT EXISTS void_conns (
+  id_void_conn INTEGER PRIMARY KEY,
+  cato_void_conn VARCHAR UNIQUE,
+  txt_void_conn_name VARCHAR,
+  txt_void_conn_desc VARCHAR
+  );
+  
+/* Table 13.15 */
+INSERT INTO void_conns VALUES
+  (1, 'I', 'Isolated', 'Voids are not connected to each other, and may only reach up to the soil surface'),
+  (2, 'P', 'Partly connected', 'Voids are sometimes connected to each other within the horizon, or continue into neighbouring horizons'),
+  (3, 'C', 'Continuous',  'Void spaces are well connected and form a continuous network');
+  
+```
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_voids (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_void INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_void),
+  catu_void VARCHAR REFERENCES void_types(catu_void),
+  cato_void_conn VARCHAR REFERENCES void_conns(cato_void_conn),
+  amt_void_p DECIMAL(6, 2) CHECK (amt_void_p BETWEEN 0 and 100),
+  );
+
+```
