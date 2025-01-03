@@ -1017,3 +1017,138 @@ CREATE TABLE IF NOT EXISTS site_deposition (
   );
 
 ```
+
+## Horizon overview
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS boundary_shapes (
+  id_boundary_shape INTEGER PRIMARY KEY,
+  catu_boundary_shape VARCHAR UNIQUE,
+  txt_boundary_shape_name VARCHAR,
+  txt_boundary_shape_desc VARCHAR
+  );
+  
+/* Table 12.1 */
+INSERT INTO boundary_shapes VALUES  
+  (1, 'S', 'Smooth', 'the boundary surface is a plane with few or no irregularities and usually occurs at the same depth across the profile face'), 
+  (2, 'W', 'Wavy', 'the boundary surface has broad, shallow, relatively regular pockets and none deeper than they are wide'),
+  (3, 'I', 'Irregular', 'the boundary surface has pockets which are deeper than they are wide but not recurved'),
+  (4, 'C', 'Convolute', 'the boundary surface has pockets which are deeper than they are wide and, in parts, recurved'),
+  (5, 'D', 'Discontinuous', 'the boundary is discontinuous, usually due to external disturbance');
+  
+CREATE TABLE IF NOT EXISTS boundary_widths (
+  id_boundary_width INTEGER PRIMARY KEY,
+  cato_boundary_width VARCHAR UNIQUE,
+  txt_boundary_width_name VARCHAR,
+  txt_boundary_width_desc VARCHAR
+  );
+  
+/* Table 12.2 */
+INSERT INTO boundary_widths VALUES
+  (1, 'S', 'Sharp', '< 0.5 cm'),
+  (2, 'A', 'Abrupt', '0.5 - 2.0 cm'),
+  (3, 'C', 'Clear', '2.0 - 5.0 cm'),
+  (4, 'G', 'Gradual', '5.0 - 10.0 cm'),
+  (5, 'D', 'Diffuse', '10 - 30.0 cm'); 
+  
+CREATE TABLE IF NOT EXISTS soil_moistures (
+  id_soil_moisture INTEGER PRIMARY KEY,
+  cato_soil_moisture VARCHAR UNIQUE,
+  txt_soil_moisture_name VARCHAR
+  );  
+  
+/* Table 12.3 */
+INSERT INTO soil_moistures VALUES  
+  (1, 'D', 'Dry'),
+  (2, 'T', 'Moderately moist'),
+  (3, 'M', 'Moist'),
+  (4, 'W', 'Wet'),
+  (5, 'S', 'Saturated');
+  
+CREATE TABLE IF NOT EXISTS nzsc_pmo (
+  id_pmo INTEGER PRIMARY KEY,
+  catu_pmo VARCHAR UNIQUE,
+  txt_pmo_name VARCHAR,
+  txt_pmo_desc VARCHAR
+  ); 
+
+/* Table 24.5 */
+INSERT INTO nzsc_pmo VALUES 
+  (1, 'An', 'Anthropic', 'Deposits made by the direct actions of humans, including truncation, mixing, or deposition.'),
+  (2, 'Cl', 'Colluvium', 'Weathered soil and rock material mantling slopes that has been transported primarily by gravity and sheet wash.'),
+  (3, 'Fl', 'Alluvium', 'Sediments that have been deposited by streams, rivers and other running water.'),
+  (4, 'Gl', 'Glacial till', 'Poorly stratified, poorly sorted rock fragments, sand and mud, surface or near-surface deposits resulting from the transportation by and deposition from ice or meltwater from beneath or in close proximity to glacial ice.'),
+  (5, 'Lc', 'Lacustrine', 'Formed in and around lake beds; comprising extremely fine sediment deposited under very low-flow freshwater conditions.'),
+  (6, 'Mr', 'Marine' , 'Unconsolidated sediments saturated by brackish or saline water.'),
+  (7, 'Lh', 'Lahar', 'A flow of volcanic material, both ash and coarser products, mixed with water; often caused by the spilling over of a crater lake. Also used to describe the mounds formed on volcanic ring-plains where lahars stop.'),
+  (8, 'Tp', 'Tephra', 'A general term for all solid (rather than molten) materials ejected from a volcano during an eruption: includes boulders, lapilli and ash.'),
+  (9, 'Li', 'Litter', 'Partly or fully decomposed forest litter, equal to or greater than 30 cm depth that is **not** almost continually saturated in the natural state (**F** and **H** horizons).'),
+  (10, 'Pt', 'Peat', 'Partly decomposed plant remains in a water-saturated environment, such as a bog'),
+  (11, 'Lo', 'Loess', 'A blanket deposit of silt-sized particles (0.002--0.06 mm diameter); usually carried by wind from dry riverbeds or outwash plains during glacial and post-glacial periods.'),
+  (12, 'Sa', 'Aeolian sand', 'Wind-deposited sand-sized particles (0.05--2.0 mm diameter), i.e. dune sand.'),
+  (13, 'Rw', 'Highly Weathered Rock', 'Highly to completely weathered rock, formed in place by chemical weathering.'),
+  (14, 'Rx', 'Rock', '*In situ* unweathered to moderately weathered lithified geologic material comprising one or more minerals showing rock structure.'),
+  (15, 'Uk', 'Unknown', 'Origin cannot be determined with certainty.');
+
+CREATE TABLE IF NOT EXISTS nzsc_pmo_mod (
+  id_pmo_mod INTEGER PRIMARY KEY,
+  catu_pmo_mod VARCHAR UNIQUE,
+  txt_pmo_mod_name VARCHAR,
+  txt_pmo_mod_desc VARCHAR
+  ); 
+  
+/* Table 12.5 */
+INSERT INTO nzsc_pmo_mod VALUES 
+  (1, 'm', 'Māori', 'Soil modifications dating from Māori arrival in New Zealand, particularly pre-modern soil management practices'),
+  (2, 'p', 'Pakeha', 'Soil modifications dating from Pakeha (non-Māori) arrival in New Zealand up to modern times (e.g. European agricultural practices)'),
+  (3, 'n', 'Modern', 'Anthropic modifications resulting from modern techniques or addition of modern materials to the soil (e.g. plastics)');
+
+CREATE TABLE IF NOT EXISTS weathering (
+  id_weathering INTEGER PRIMARY KEY,
+  cato_weathering VARCHAR UNIQUE,
+  txt_weathering_name VARCHAR,
+  txt_weathering_desc_rock VARCHAR,
+  txt_weathering_desc_seds VARCHAR
+  );
+
+/* Table 12.6 */
+INSERT INTO weathering VALUES 
+  (1, '1', 'Unweathered', 'Material shows no discolouration, loss of strength, or any other effects due to weathering', 'Particles are uncoated and their physical arrangement has not been disturbed (e.g. visible cross-bedding, absence of burrows). Secondary minerals and precipitates are absent'),
+  (2, '2', 'Slightly weathered', 'Material may be slightly discoloured. Discontinuities have discoloured surfaces. The rock material is not significantly weaker than fresh rock material', 'Particle physical arrangement is undisturbed, but some evidence of secondary mineral formation may be evident (e.g. pyrite formation in anoxic marine sediments)'),
+  (3, '3', 'Moderately weathered', 'Rock material is discoloured and discontinuity surfaces will have a greater discolouration which also penetrates slightly into the rock material. The rock material is significantly weaker than the fresh rock and part of the rock mass may have been changed to soil material.', 'Sediments may be largely discoloured by secondary mineral precipitation or illuviation; some clay minerals may have weathered from the material, some physical disturbance by meso- or macrofauna may be apparent'),
+  (4, '4', 'Highly weathered', 'Rock material is discoloured and more than half the rock mass is changed to soil material. Weathering adjacent to discontinuities penetrates deeply into the rock material but lithorelicts or core stones of fresh or slightly weathered rock may still be present.', 'Sediments show substantial alteration by weathering processes as evidenced by e.g. clay mineral production, presence of secondary materials and perhaps some structural development. Evidence of bedding may be absent or difficult to identify'),
+  (5, '5', 'Very highly weathered', 'All the rock mass is decomposed and externally changed to soil material, but the original rock fabric is mainly preserved.', 'Sediments have largely changed to soil material, but the expression of features like structure may be weak relative to adjacent layers'),
+  (6, '6', 'Completely weathered',  'Rock is completely changed to soil material with the original fabric completely destroyed but the resulting soil is not significantly transported.', 'Sediments have completely changed to soil material');
+
+```
+ 
+  
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon (
+  id_site VARCHAR,
+  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  id_horizon INTEGER,
+  PRIMARY KEY (id_site, id_horizon),
+  amt_upper_depth_cm DECIMAL(6, 2) CHECK (amt_upper_depth_cm >= 0),
+  amt_upper_depth_med_cm DECIMAL(6, 2) CHECK (amt_upper_depth_med_cm >= 0),
+  amt_upper_depth_min_cm DECIMAL(6, 2) CHECK (amt_upper_depth_min_cm >= 0),
+  amt_upper_depth_max_cm DECIMAL(6, 2) CHECK (amt_upper_depth_max_cm >= 0),
+  amt_lower_depth_cm DECIMAL(6, 2) CHECK (amt_lower_depth_cm > 0),
+  amt_lower_depth_med_cm DECIMAL(6, 2) CHECK (amt_lower_depth_med_cm > 0),
+  amt_lower_depth_min_cm DECIMAL(6, 2) CHECK (amt_lower_depth_min_cm > 0),
+  amt_lower_depth_max_cm DECIMAL(6, 2) CHECK (amt_lower_depth_max_cm > 0),
+  catu_boundary_shape VARCHAR REFERENCES boundary_shapes(catu_boundary_shape),
+  amt_boundary_cm DECIMAL(6, 2) CHECK (amt_boundary_cm >= 0),
+  cato_boundary_width VARCHAR REFERENCES boundary_widths(cato_boundary_width),
+  cato_soil_moisture VARCHAR REFERENCES soil_moistures(cato_soil_moisture),
+  catu_parent_material_origin VARCHAR REFERENCES nzsc_pmo(catu_pmo),
+  catu_anthropic_origin_modifier VARCHAR REFERENCES nzsc_pmo_mod(catu_pmo_mod),
+  cato_horizon_weathering VARCHAR REFERENCES weathering(cato_weathering),
+  );
+
+```
+ 
