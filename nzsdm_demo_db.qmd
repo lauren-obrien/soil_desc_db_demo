@@ -1,0 +1,694 @@
+---
+title: "New Zealand Soil Description Manual 2024 - Demonstration database"
+author: "Lauren O'Brien"
+date: "2024-12-05"
+date-modified: "today"
+format: html
+editor: visual
+---
+
+## Background
+
+This document takes the information in Appendix D of the NZ Soil Description Manual and implements a relational database using [DuckDB](https://duckdb.org/). The intent is to generate an interactive object to help developers understand how the data points in the manual are expected to be stored and used.
+
+As with Appendix D, this implementation contains no user management, change tracking, or security features and so should not be used as-is. It also has no ability to store photographs, sample information or laboratory results.
+
+## Setup
+
+### Establish connection
+
+We will be working in-memory:
+
+```{r}
+library(duckdb) # DBI is also required
+
+# make an empty db in RAM, establish connection
+con <- dbConnect(duckdb())
+
+```
+
+### Load extensions
+
+We will be using DuckDB's spatial extension to represent point locations.
+
+```{sql}
+--| connection: con
+
+INSTALL spatial;
+LOAD spatial;
+
+```
+
+### Schemas
+
+Keeping the data and metadata tables separate is Nice, but at present DuckDB does not support creating foreign keys across different schemas. This step will be skipped unless that functionality is implemented.
+
+## Sites
+
+After [Appendix D.3](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-siteover)
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS site_purposes (
+  id_site_purpose INTEGER PRIMARY KEY,
+  catu_site_purpose VARCHAR UNIQUE,
+  txt_site_purpose_name VARCHAR
+  );
+  
+/* Table 10.1 */
+INSERT INTO site_purposes VALUES
+  (1, 'E', 'Mapping exploration'),
+  (2, 'V', 'Mapping validation'),
+  (3, 'R', 'Research'),
+  (4, 'M', 'Monitoring'),
+  (5, 'T', 'Reference'),
+  (6, 'D', 'Development');
+
+CREATE TABLE IF NOT EXISTS site_selection_methods (
+  id_site_selection INTEGER PRIMARY KEY,
+  catu_site_selection VARCHAR UNIQUE,
+  txt_site_selection_name VARCHAR
+  );
+
+/* Table 10.2*/
+INSERT INTO site_selection_methods VALUES
+  (1, 'A', 'Arbitrary/opportunistic'),
+  (2, 'D', 'Data-driven'),
+  (3, 'M', 'Model-based'),
+  (4, 'R', 'Random'),
+  (5, 'T', 'Transect'),
+  (6, 'G', 'Grid');
+
+CREATE TABLE IF NOT EXISTS site_exposure_types (
+  id_site_exposure INTEGER PRIMARY KEY,
+  catu_site_exposure VARCHAR UNIQUE, 
+  txt_site_exposure_name VARCHAR,
+  txt_site_exposure_desc VARCHAR
+  );
+  
+/* Table 10.3 */
+INSERT INTO site_exposure_types VALUES
+  (1, 'P1', 'Quick pit', 'Pit up to 0.5 m wide and generally no deeper than 1m'),
+  (2, 'P2', 'Full pit', 'Pit or trench > 1 m wide, exposing the complete profile to regolith or bedrock'),
+  (3, 'E', 'Exposure', 'Road cutting or similar, chipped back and cleaned'),
+  (4, 'C1', 'Small core', 'Relatively undisturbed soil core, < 50 mm diameter'),
+  (5, 'C2', 'Large core', 'Relatively undisturbed soil core, ≥ 50 mm diameter'),
+  (6, 'A', 'Auger', 'Hand or mechanical auger, including e.g. post hole diggers');
+  
+CREATE TABLE IF NOT EXISTS site_early_stop_types (
+  id_site_early_stop INTEGER PRIMARY KEY,
+  catu_site_early_stop VARCHAR UNIQUE,
+  txt_site_early_stop_name VARCHAR,
+  txt_site_early_stop_desc VARCHAR
+  );
+  
+/* Table 10.4 */
+INSERT INTO site_early_stop_types VALUES
+  (1, 'B', 'Bedrock', 'Underlying rock mass encountered, no more material to describe'),
+  (2, 'R', 'Resistance', 'Material too difficult to extract with available equipment'),
+  (3, 'C', 'Collapse', 'Excavation unstable or unsafe due to wetness or loose particle packing'),
+  (4, 'I', 'Identified', 'The depth required to confirm a key parameter was reached'),
+  (5, 'O', 'Other', 'Circumstances unrelated to the soil itself caused early stoppage');
+  
+CREATE TABLE IF NOT EXISTS current_weather (
+  id_weather INTEGER PRIMARY KEY,
+  catu_weather VARCHAR UNIQUE, 
+  txt_weather_name VARCHAR
+  );
+  
+/* Table 6.3.1 */
+INSERT INTO current_weather VALUES
+  (1, 'SU', 'Sunny'),
+  (2, 'PC', 'Partly cloudy'),
+  (3, 'OV', 'Overcast'),
+  (4, 'RA', 'Rain'),
+  (5, 'SL', 'Sleet'),
+  (6, 'SN', 'Snow');
+
+CREATE TABLE IF NOT EXISTS recent_rainfall (
+  id_rainfall INTEGER PRIMARY KEY,
+  cato_rainfall VARCHAR UNIQUE, 
+  txt_rainfall_name VARCHAR 
+  );
+
+/* Table 6.3.2 */
+INSERT INTO recent_rainfall VALUES 
+  (1, 'NM', 'No rain in the last month'),
+  (2, 'NW', 'No rain in the last week'),
+  (3, 'ND', 'No rain in the last 24 hours'),
+  (4, 'RD', 'Rain but no heavy rain in the last 24 hours'),
+  (5, 'RH', 'Heavy rain for some days or excessive rain in the last 24 hours'),
+  (6, 'RE', 'Extremely rainy or snow melting'),
+  (7, 'UK', 'Unknown/uncertain');
+  
+```
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS sites (
+  id_site VARCHAR PRIMARY KEY,
+  usr_author VARCHAR,  /* should be FK in a full implementation */
+  dt_site TIMESTAMP, /* probably needs a 'future dates not allowed' check */ 
+  catu_site_purpose VARCHAR REFERENCES site_purposes(catu_site_purpose),
+  catu_site_selection VARCHAR REFERENCES site_selection_methods(catu_site_selection),
+  catu_site_exposure VARCHAR REFERENCES site_exposure_types(catu_site_exposure),
+  amt_site_depth_max_cm DECIMAL(5, 1) CHECK (amt_site_depth_max_cm BETWEEN 0 AND 1000),
+  catu_early_stop VARCHAR REFERENCES site_early_stop_types(catu_site_early_stop),
+  catu_site_weather VARCHAR REFERENCES current_weather(catu_weather),
+  val_temperature_c DECIMAL(2, 1) CHECK (val_temperature_c BETWEEN -50 AND 50), 
+  cato_site_rainfall VARCHAR REFERENCES recent_rainfall(cato_rainfall)
+  );
+  
+```
+
+### Site disturbances
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS disturbance_types (
+  id_disturbance INTEGER PRIMARY KEY,
+  catu_disturbance VARCHAR UNIQUE,
+  txt_disturbance_name VARCHAR
+  );
+
+/* Table 10.5 */
+INSERT INTO disturbance_types VALUES
+  (1,  'MC', 'Mechanical disturbance (e.g. tillage, deep ripping, subsoiling)'),
+  (2,  'AN', 'Animal disturbance (e.g. pugging, rooting, tunnelling, excretion)'),
+  (3,  'CL', 'Complete vegetation clearance (e.g. clearfelling)'),
+  (4,  'CO', 'Selective vegetation clearance (e.g. tree removal or weed clearance)'),
+  (5,  'WI', 'Wind-induced treefall'),
+  (6,  'SL', 'Erosion event - material lost from site'),
+  (7,  'SD', 'Deposition event - material added to site'),
+  (8,  'FC', 'Fire - controlled burn'),
+  (9,  'FW', 'Fire - uncontrolled burn'),
+  (10, 'FL', 'Flooding - freshwater'),
+  (11, 'FS', 'Flooding - saline water (e.g. storm surge event)'),
+  (12, 'PO', 'Pollution event (e.g. petrol spill)'),
+  (13, 'NO', 'Fire - uncontrolled burn'),
+  (14, 'UK', 'Unknown');  
+  
+
+CREATE TABLE IF NOT EXISTS disturbance_ages (
+  id_disturbance_age INTEGER PRIMARY KEY,
+  catu_disturbance_age VARCHAR UNIQUE, 
+  txt_disturbance_age_name VARCHAR
+  );
+  
+/* Table 10.6 */
+INSERT INTO disturbance_ages VALUES 
+  (1,  'D', 'Within the past day'),
+  (2,  'W', 'Within the past week'),
+  (3,  'M', 'Within the past month'),
+  (4,  'S', 'Within the past 6 months'),
+  (5,  'Y', 'Within the past year');
+```
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS disturbances (
+  id_site VARCHAR REFERENCES sites(id_site),
+  id_disturbance INTEGER,
+  PRIMARY KEY (id_site, id_disturbance),
+  catu_disturbance VARCHAR REFERENCES disturbance_types(catu_disturbance),
+  catu_disturbance_age VARCHAR REFERENCES disturbance_ages(catu_disturbance_age),
+  amt_disturbance_age_days INTEGER CHECK (amt_disturbance_age_days >= 0)
+  );
+
+```
+
+## Setting
+
+From [Appendix D.2](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-setting)
+
+### Locations
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS elevation_measurement_methods (
+  id_elevation_method INTEGER PRIMARY KEY,
+  catu_elevation_method VARCHAR UNIQUE,
+  txt_elevation_method_name VARCHAR
+  );
+  
+/* Table 3.1 */
+INSERT INTO elevation_measurement_methods VALUES  
+  (1, 'E', 'Estimate'),
+  (2, 'A', 'Measured by a calibrated altimeter'),
+  (3, 'M', 'Interpolated from contour map with interval of ≤ 20 m, or extracted from similar-quality Digital Elevation Model (DEM)'),
+  (4, 'G', 'Measured using a GNSS system with an adequate 3D fix'),
+  (5, 'D', 'Extracted from high-accuracy DEM (Lidar or similar)');
+  
+CREATE TABLE IF NOT EXISTS gnss_types (
+  id_gnss INTEGER PRIMARY KEY,
+  catu_gnss VARCHAR UNIQUE,
+  txt_gnss_name VARCHAR,
+  txt_gnss_desc VARCHAR
+  );
+
+/* Table 3.1 */
+INSERT INTO gnss_types VALUES  
+  (1, 'GS', 'Single-band GNSS',  'Satellite based location, single band'),
+  (2, 'GM',	'Multi-band GNSS',   'Satellite based location, multiple band'),
+  (3, 'GR', 'Differential GNSS', 'Satellite based location, on-ground correction'),
+  (4, 'LM', 'Multi-sensor',      'Combined GNSS and other location data'),
+  (5, 'NO', 'None',              'Location determined manually.');
+
+```
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS locations (
+  id_site VARCHAR REFERENCES sites(id_site) PRIMARY KEY,
+  /* NB can't yet enforce projection or geom type */
+  geo_point_site_xy GEOMETRY NOT NULL,  
+  amt_elevation_abs_m DECIMAL(6, 2) CHECK (amt_elevation_abs_m BETWEEN -5 AND 3724),
+  amt_error_location_m DECIMAL(6, 2) CHECK (amt_error_location_m >= 0),
+  catu_elevation_method VARCHAR REFERENCES elevation_measurement_methods(catu_elevation_method),
+  catu_gnss VARCHAR REFERENCES gnss_types(catu_gnss),
+  amt_elevation_rel_m DECIMAL(6, 2) CHECK (amt_elevation_rel_m BETWEEN -5 AND 3724), 
+  txt_notes_triangulation VARCHAR,
+  txt_location_desc VARCHAR,
+  catu_admin_rc VARCHAR, /* REFERENCES regional_councils(catu_rc) */
+  catu_admin_dc VARCHAR /* REFERENCES regional_councils(catu_dc) */
+  );
+
+```
+
+### Landscape
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS provinces (
+  id_province INTEGER PRIMARY KEY,
+  catu_province VARCHAR UNIQUE,
+  txt_province_name VARCHAR
+  /* txt_province_desc VARCHAR */ 
+  );
+  
+/* Table 4.1 */
+INSERT INTO provinces VALUES  
+  (1, 'NN', 'Northland'),
+  (2, 'NL', 'Northern Lowlands'),
+  (3, 'NW', 'North-western sedimentary hills'),
+  (4, 'NV', 'Central Volcanic Zone'),
+  (5, 'NT', 'Stratovolcanoes and ringplains'),
+  (6, 'NI', 'North Island Axial Mountains'),
+  (7, 'NS', 'Southern and Eastern Sedimentary Hills'),
+  (8, 'NM', 'Marine Terraces, Plains and Dunelands'),
+  (9, 'NA', 'Accretionary wedge and old sedimentary hills'),
+  (10, 'NC', 'Chatham Islands'),
+  (11, 'SI', 'South Island axial mountains'),
+  (12, 'SR', 'Front Ranges and inland basins'),
+  (13, 'SO', 'Otago basin and range'),
+  (14, 'SF', 'Fiordland'),
+  (15, 'SW', 'West coast piedmont, hills and mountains'),
+  (16, 'SN', 'Northwest Nelson'),
+  (17, 'SS', 'North Bank and the Marlborough Sounds'),
+  (18, 'SM', 'Marlborough Mountains'),
+  (19, 'SP', 'East Coast Peninsulas'),
+  (20, 'SE', 'East Coast Plains and Downs'),
+  (21, 'SL', 'Southland mountains, hills and plains'),
+  (22, 'ST', 'Stewart Island');
+  
+CREATE TABLE IF NOT EXISTS landscapes (
+  id_landscape INTEGER PRIMARY KEY,
+  catu_landscape VARCHAR UNIQUE,
+  txt_landscape_name VARCHAR,
+  txt_landscape_desc VARCHAR 
+  ); 
+
+/* Table 4.2 */
+INSERT INTO landscapes VALUES  
+  (1, 'Mt', 'Mountains', 'Steep to very steep, high relief (>300 m), fixed and well connected stream channels, often deep'),
+  (2, 'Hi', 'Hills', 'Gentle to very steep, moderately high to high relief (90-300 m), fixed and well connected stream channels, shallow to deep'),
+  (3, 'Up', 'Uplands', 'Gentle to very steep, low relief (30-90 m) but relatively high elevation, fixed and well connected stream channels, shallow valleys and plateaus, located among hills and mountains'),
+  (4, 'Ll', 'Lowlands', 'Gentle to very steep, low relief (30-90 m) and elevation, fixed and well connected stream channels, shallow to deep'),
+  (5, 'Te', 'Terraces', 'Former plains, uplifted and sometimes covered by loess. Flat to gently undulating upper surfaces bounded by distinctive drop-offs on their downhill end, often backing on to lowlands, hills or mountains at their uphill end.'),
+  (6, 'Pl', 'Plains', 'Level to very gentle surfaces created by fluvial and/or airfall tephra deposition.'),
+  (7, 'Sc', 'Sand country', 'Extensive dune and sandplain areas. Low relief and elevation, gentle to steep slopes, and active stream channels, often with interrupted connectivity'),
+  (8, 'Cs', 'Coast', 'On- and near-shore features created by the interaction of the ocean with the land, including beaches, deltas, lagoons and estuaries');
+
+```
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS landscape (
+  id_site VARCHAR,
+  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  id_landscape INTEGER,
+  PRIMARY KEY (id_site, id_landscape),
+  catu_province VARCHAR REFERENCES provinces(catu_province),
+  catu_landscape VARCHAR REFERENCES landscapes(catu_landscape),
+  amt_lscape_relief_med_m DECIMAL(6, 2) CHECK (amt_lscape_relief_med_m >= 0),
+  amt_lscape_slope_med_m DECIMAL(6, 2) CHECK (amt_lscape_slope_med_m >= 0),
+  amt_lscape_slope_min_m DECIMAL(6, 2) CHECK (amt_lscape_slope_min_m >= 0),
+  amt_lscape_slope_max_m DECIMAL(6, 2) CHECK (amt_lscape_slope_max_m >= 0)
+  );
+
+```
+
+### Landscape landuse
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS landuse_primary (
+  id_landuse_primary INTEGER PRIMARY KEY,
+  catu_landuse_primary VARCHAR UNIQUE,
+  txt_landuse_primary_name VARCHAR
+  );
+  
+INSERT INTO landuse_primary VALUES  
+  (1, '1', 'Conservation and minimal use of natural environments'),
+  (2, '2', 'Production agriculture and plantations'),
+  (3, '3', 'Built environment');
+  
+CREATE TABLE IF NOT EXISTS landuse_secondary (
+  id_landuse_primary INTEGER,
+  id_landuse_secondary INTEGER,
+  PRIMARY KEY (id_landuse_primary, id_landuse_secondary),
+  catu_landuse_secondary VARCHAR UNIQUE,
+  txt_landuse_secondary_name VARCHAR
+  );
+
+INSERT INTO landuse_secondary VALUES  
+  (1,  '1', '1.1.0', 'Biodiversity protection'),
+  (2,  '1', '1.2.0', 'Cultural and natural heritage'),
+  (3,  '1', '1.3.0', 'Minimal use from relatively natural environments'),
+  (4,  '1', '1.4.0', 'Unused land and land in transition'),
+  (5,  '2', '2.1.0', 'Plantation forests'),
+  (6,  '2', '2.2.0', 'Grazing modified pasture systems'),
+  (7,  '2', '2.3.0', 'Short-rotation and seasonal cropping'),
+  (8,  '2', '2.4.0', 'Perennial horticulture'),
+  (9,  '2', '2.5.0', 'Intensive horticulture'),
+  (10, '2', '2.6.0', 'Intensive animal production'),
+  (11, '2', '2.7.0', 'Water and wastewater'),
+  (12, '2', '2.8.0', 'Land in transition'),
+  (13, '3', '3.1.0', 'Residential'),
+  (14, '3', '3.2.0', 'Public recreation and services'),
+  (15, '3', '3.3.0', 'Commercial'),
+  (16, '3', '3.4.0', 'Manufacturing and industrial'),
+  (17, '3', '3.5.0', 'Utilities'),
+  (18, '3', '3.6.0', 'Transport and communication'),
+  (19, '3', '3.7.0', 'Mining'),
+  (20, '3', '3.8.0', 'Waste treatment and disposal'),
+  (21, '3', '3.9.0', 'Vacant and transitioning land');
+
+```
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS lscape_landuse (
+  id_site VARCHAR,
+  id_landscape INTEGER,
+  FOREIGN KEY (id_site, id_landscape) REFERENCES landscape(id_site, id_landscape),
+  id_lscape_landuse INTEGER,
+  PRIMARY KEY (id_site, id_landscape, id_lscape_landuse),
+  catu_lscape_landuse_primary VARCHAR REFERENCES landuse_primary(catu_landuse_primary),
+  catu_lscape_landuse_secondary VARCHAR REFERENCES landuse_secondary(catu_landuse_secondary),
+  amt_landuse_area_p DECIMAL(6, 2) CHECK (amt_landuse_area_p BETWEEN 0 AND 100)
+  );
+
+```
+
+### Landform
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS landform_types (
+  id_landform INTEGER PRIMARY KEY,
+  catu_landform VARCHAR UNIQUE,
+  txt_landform_name VARCHAR,
+  txt_landform_desc VARCHAR 
+  );
+  
+/* Table 4.3 */
+INSERT INTO landform_types VALUES  
+  (1, 'Ba', 'Bar', 'A ridge-like accumulation of sand, gravel, or other alluvial material formed in the channels, along the banks, or at the mouth of a stream where a decrease in velocity induces deposition'),
+  (2, 'Bc', 'Beach', 'Low-slope, shorefront accumulation of unconsolidated sediment (usually sand to cobble sized)'),
+  (3, 'Bo', 'Bog', 'Rainfall-fed, peat-accumulating freshwater wetland with low pH and nutrient availability and restricted water flow'),
+  (4, 'Ca', 'Caldera', 'Large hollow in the top of a volcano'),
+  (5, 'Cl', 'Cliff', 'Steep to vertical slope with more than 10 m local relief'), 
+  (6, 'Cn', 'Cone',  'Moderate to steep, usually isolated hill built up by volcanic activity'), 
+  (7, 'Cr', 'Crest', 'A locally high area, from which the surface slopes downwards in opposite directions'),
+  (8, 'Dl', 'Delta', 'A fan-shaped accumulation of alluvial sediment, usually with several water channels, at a river or stream mouth.'),
+  (9, 'Du', 'Dune', 'Accumulation of windblown sand into an elongated ridge or crescent shape'),
+  (10, 'Ew', 'Ephemeral wetland', 'Wetland subject to pronounced seasonal drying. Non-peaty, with neutral pH and moderate nutrient status. Usually in a closed depression'),
+  (11, 'Fl', 'Flat', 'Level area created by deposition'),
+  (12, 'Fn', 'Fan', 'Gently sloping, flat to convex depositional slope, often at the foot of a steeper area and built up by a stream or by colluvial action'),
+  (13, 'Fe', 'Fen', 'Rainfall and groundwater-fed peaty freshwater wetland with low to moderate pH and nutrient availability, and slightly fluctuating water table'),
+  (14, 'Go', 'Gorge', 'A valley 10 m or more deep with over three-quarters of its sides sloping at more than 25°, and half or more of its sides formed by cliffs, and less than 5 times as wide as it is deep over half or more of its length, and everywhere less than 10 times as wide as it is deep'), 
+  (15, 'Lv', 'Levee', 'An embankment of flood alluvium built up alongside a river and typically with lower-lying land behind'),
+  (16, 'Ma', 'Marsh', 'Wetlands with large periodic water table fluctuations, relatively high pH and nutrient content, and mainly mineral substrate'),
+  (17, 'Mh', 'Hummocky moraine', 'Low, roughly undulating deposits of glacial till'),
+  (18, 'Mo', 'Mound', 'A small hill with moderate to steep sides, often somewhat isolated'),
+  (19, 'Mr', 'Moraine ridge', 'Low ridges comprising glacial till'), 
+  (20, 'Pk', 'Pakihi and gumland', 'Wetland in highly leached soils with low pH and nutrient availability. Sometimes periodically dry and usually without peat'),
+  (21, 'Pl', 'Plain', 'Level to gently undulating area built up by alluvial, aeolian, or volcanic deposition'),
+  (22, 'Pt', 'Plateau', 'Any comparatively flat extensive and elevated area, often dissected and with a steep dropoff on at least one side'),
+  (23, 'Ri', 'Riser', 'The vertical or steeply sloping surface of one of a series of natural, step-like landforms, as those of a glacial stairway or of successive stream terraces'),
+  (24, 'Rt', 'Tread', 'The flat or gently sloping broadly planar surface of one of a series of natural step-like landforms, as those of a glacial stairway or of successive stream terraces'),
+  (25, 'Sa', 'Saddle', 'A low point (dip) along a ridge or the lowest point between two adjacent elevated areas. In one axis along the ridge or between the elevated areas the land slopes up in both directions and in the other axis, typically at right angles to the first, the land slopes down in both directions'), 
+  (26, 'Se', 'Seepage', 'Sloped area carrying a slow but steady flow of groundwater'),
+  (27, 'Sm', 'Swamp', 'Rainfall and groundwater-fed, somewhat peaty freshwater wetland with high pH and nutrient availability, and seasonally fluctuating water table'),
+  (28, 'Sw', 'Swale', 'A low-lying depression between adjacent ridges'),
+  (29, 'Sl', 'Slope', 'Very gentle to very steep inclined surfaces'), 
+  (30, 'St', 'Saltmarsh', 'Wetlands with saline water supply, usually in tidally influenced areas'),
+  (31, 'Vl', 'Valley-bottom', 'Open depression between parallel facing slopes'),
+  (32, 'Cs', 'Cut-surface', 'Flat excavated by human activity'),
+  (33, 'Cf', 'Cut-face', 'Slope excavated by human activity'),
+  (34, 'Em', 'Embankment', 'Ridge or slope built up by human activity'),
+  (35, 'Fi', 'Fill-top', 'Flat built up by human activity');
+
+CREATE TABLE IF NOT EXISTS land_cover_types (
+  id_land_cover INTEGER PRIMARY KEY,
+  catu_land_cover VARCHAR UNIQUE,
+  txt_land_cover_name VARCHAR,
+  txt_land_cover_desc VARCHAR 
+  );
+  
+/* Table 4.3 */
+/* just doing the first 6 for demo purposes */
+INSERT INTO land_cover_types VALUES  
+  (1, '40', 'High producing Exotic Grassland', 'Exotic sward grassland of good pastoral quality and vigour reflecting relatively high soil fertility and intensive grazing management.'),
+  (2, '41', 'Low Producing Grassland', 'Exotic sward grassland and indigenous short tussock grassland of poor pastoral quality reflecting lower soil fertility and extensive grazing management or non-agricultural use.'),
+  (3, '43', 'Tall Tussock Grassland', 'Indigenous snow tussocks in mainly alpine mountain-lands and red tussock in the central North Island and locally in poorly-drained valley floors, terraces and basins of both islands.'),
+  (4, '52', 'Mānuka and/or Kānuka', 'Scrub dominated by mānuka and/or kānuka.'),
+  (5, '69', 'Indigenous Forest', 'Tall forest dominated by indigenous conifer, broadleaved or beech species.'),
+  (6, '71', 'Exotic Forest', 'Planted or naturalised forest.'); 
+
+CREATE TABLE IF NOT EXISTS measurement_types (
+  id_mtype INTEGER PRIMARY KEY,
+  catu_mtype VARCHAR UNIQUE,
+  txt_mtype_name VARCHAR
+  );
+
+/* Table D.1.1 */
+INSERT INTO measurement_types VALUES   
+   (1, 'NM', 'Parameter was recorded normally'),
+   (2, 'ND', 'Parameter could not be reliably determined or does not apply'),
+   (3, 'NR', 'Parameter was not recorded');
+
+/* Table 4.4 */
+CREATE TABLE IF NOT EXISTS landform_elements (
+  id_landform_element INTEGER PRIMARY KEY,
+  catu_landform_element VARCHAR UNIQUE,
+  txt_landform_element_name VARCHAR
+  );
+
+INSERT INTO landform_elements VALUES   
+   (1, 'CR', 'Crest'),
+   (2, 'RI', 'Ridge'),
+   (3, 'SL', 'Slope'),
+   (4, 'FL', 'Flat'),
+   (5, 'DO', 'Open depression'),
+   (6, 'DC', 'Closed depression');
+
+/* Table 4.5 */
+CREATE TABLE IF NOT EXISTS landform_element_vmods (
+  id_landform_element_vmod INTEGER PRIMARY KEY,
+  catu_landform_element_vmod VARCHAR UNIQUE,
+  txt_landform_element_vmod_name VARCHAR,
+  txt_landform_element_vmod_desc VARCHAR
+  );
+
+INSERT INTO landform_element_vmods VALUES   
+   (1, 'X', 'Waxing', 'Element upslope is gentler, element downslope is steeper.'),
+   (2, 'N', 'Waning', 'Element upslope is steeper, element downslope is gentler.'),
+   (3, 'A', 'Maximal', 'Element upslope is gentler, element downslope is gentler.'),
+   (4, 'I', 'Minimal', 'Element upslope is steeper, element downslope is steeper.');
+
+/* Table 4.6 */
+CREATE TABLE IF NOT EXISTS landform_element_hmods (
+  id_landform_element_hmod INTEGER PRIMARY KEY,
+  catu_landform_element_hmod VARCHAR UNIQUE,
+  txt_landform_element_hmod_name VARCHAR,
+  txt_landform_element_hmod_desc VARCHAR
+  );
+
+INSERT INTO landform_element_hmods VALUES   
+   (1, 'L', 'Enclosed', 'Adjacent slope elements face towards each other'),
+   (2, 'E', 'Exposed',  'Adjacent slope elements face away from each other'),
+   (3, 'O', 'Open',     'Adjacent slope elements face the same direction');
+
+```
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS landform (
+  id_site VARCHAR,
+  id_landscape INTEGER,
+  FOREIGN KEY (id_site, id_landscape) REFERENCES landscape(id_site, id_landscape),
+  id_landform INTEGER,
+  PRIMARY KEY (id_site, id_landscape, id_landform),
+  /* basics: */
+  catu_landform VARCHAR REFERENCES landform_types(catu_landform),
+  amt_landform_p DECIMAL(6, 2) CHECK (amt_landform_p BETWEEN 0 AND 100),
+  /* can only be true for one landform per site/landscape: */
+  ind_landform_contains_site BOOLEAN,
+  catu_land_cover VARCHAR REFERENCES land_cover_types(catu_land_cover),
+  /* detailed optional stuff: */
+  amt_landform_relief_m DECIMAL(6, 2) CHECK (amt_landform_relief_m >= 0),
+  amt_landform_slope_med_d DECIMAL(6, 2) CHECK (amt_landform_slope_med_d BETWEEN 0 AND 90),
+  amt_landform_slope_min_d DECIMAL(6, 2) CHECK (amt_landform_slope_min_d BETWEEN 0 AND 90),
+  amt_landform_slope_max_d DECIMAL(6, 2) CHECK (amt_landform_slope_max_d BETWEEN 0 AND 90),
+  val_landform_aspect_med_d DECIMAL(6, 2) CHECK (val_landform_aspect_med_d BETWEEN 0 AND 359),
+  val_landform_aspect_min_d DECIMAL(6, 2) CHECK (val_landform_aspect_min_d BETWEEN 0 AND 359),
+  val_landform_aspect_max_d DECIMAL(6, 2) CHECK (val_landform_aspect_max_d BETWEEN 0 AND 359),
+  catu_landform_aspect_rec VARCHAR REFERENCES measurement_types(catu_mtype) NOT NULL DEFAULT 'NR',
+  catu_landform_element VARCHAR REFERENCES landform_elements(catu_landform_element),
+  catu_landform_element_vmod VARCHAR REFERENCES landform_element_vmods(catu_landform_element_vmod),
+  catu_landform_element_hmod VARCHAR REFERENCES landform_element_hmods(catu_landform_element_hmod),
+  /* extremely optional stuff: */
+  amt_slope_length_m DECIMAL(6, 2) CHECK (amt_slope_length_m >= 0),
+  amt_mesoscale_topo_index DECIMAL(6, 2) CHECK (amt_mesoscale_topo_index BETWEEN -90 AND 90),
+  amt_terrain_shape_index DECIMAL(6, 2) CHECK (amt_terrain_shape_index BETWEEN -90 AND 90)
+  );
+
+```
+
+### Landform landuse
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS landuse_tertiary (
+  id_landuse_secondary INTEGER,
+  id_landuse_tertiary INTEGER,
+  PRIMARY KEY (id_landuse_secondary, id_landuse_tertiary),
+  catu_landuse_tertiary VARCHAR UNIQUE,
+  txt_landuse_tertiary_name VARCHAR
+  );
+
+/* Fig 8.1 - just including one of each tertiary code for demo */
+INSERT INTO landuse_tertiary VALUES  
+  (1,  1,  '1.1.1', 'High degree of biodivserity protection'),
+  (2,  2,  '1.2.1', 'Indigenous cultural heritage'),
+  (3,  3,  '1.3.1', 'Surface water supply'),
+  (4,  4,  '1.4.1', 'Unused land'),
+  (5,  5,  '2.1.1', 'Exotic plantation forestry'),
+  (6,  6,  '2.2.1', 'Dairy'),
+  (7,  7,  '2.3.1', 'Arable cropping'),
+  (8,  8,  '2.4.1', 'Tree crops'),
+  (9,  9,  '2.5.1', 'Production nurseries'),
+  (10, 10, '2.6.1', 'Animal containment'),
+  (11, 11, '2.7.1', 'Stock water'),
+  (12, 12, '2.8.1', 'Unused degraded land'),
+  (13, 13, '3.1.1', 'High-density residential'),
+  (14, 14, '3.2.1', 'Outdoor recreation'),
+  (15, 15, '3.3.1', 'Retail'),
+  (16, 16, '3.4.1', 'General purpose factory'),
+  (17, 17, '3.5.1', 'Fuel powered electricity generation'),
+  (18, 18, '3.6.1', 'Airports/aerodromes'),
+  (19, 19, '3.7.1', 'Mines'),
+  (20, 20, '3.8.1', 'Landfills'),
+  (21, 21, '3.9.1', 'Vacant land');
+  
+/* Table 8.2 */
+CREATE TABLE IF NOT EXISTS landuse_impacts (
+  id_landuse_impact INTEGER PRIMARY KEY,
+  catu_landuse_impact VARCHAR UNIQUE,
+  txt_landuse_impact_name VARCHAR,
+  txt_landuse_impact_desc VARCHAR
+  );
+  
+INSERT INTO landuse_impacts VALUES  
+  (1,  'N', 'None', 'The land use has not significantly impacted the soil profile'),
+  (2,  'M', 'Indirect', 'The land use has impacted flows of energy/matter into/out of the profile but not physically disturbed it (e.g. by fertiliser application or drainage alteration)'),
+  (3,  'E', 'Direct', 'The land use has caused physical disturbance to the soil profile (e.g. from tillage or excavation)');
+
+```
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS lform_landuse (
+  id_site VARCHAR,
+  id_landscape INTEGER,
+  id_landform INTEGER,
+  FOREIGN KEY (id_site, id_landscape, id_landform) REFERENCES landform(id_site, id_landscape, id_landform),
+  id_lform_landuse INTEGER,
+  PRIMARY KEY (id_site, id_landscape, id_landform, id_lform_landuse),
+  catu_lform_landuse_primary VARCHAR REFERENCES landuse_primary(catu_landuse_primary),
+  catu_lform_landuse_secondary VARCHAR REFERENCES landuse_secondary(catu_landuse_secondary),
+  catu_lform_landuse_tertiary VARCHAR REFERENCES landuse_tertiary(catu_landuse_tertiary),
+  amt_landuse_area_p DECIMAL(6, 2) CHECK (amt_landuse_area_p BETWEEN 0 AND 100),
+  catu_landuse_impact VARCHAR REFERENCES landuse_impacts(catu_landuse_impact)
+  );
+
+```
+
+## Surface
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS slope_methods (
+  id_slope_method INTEGER PRIMARY KEY,
+  catu_slope_method VARCHAR UNIQUE,
+  txt_slope_method_name VARCHAR,
+  txt_slope_method_desc VARCHAR
+  );
+  
+/* Table 11.1 */
+INSERT INTO slope_methods VALUES  
+  (1, 'E', 'Estimate', 'Estimated by eye'),
+  (2, 'C', 'Clinometer', 'Handheld clinometer'),
+  (3, 'T', 'Tripod', 'Survey-grade equipment mounted on a tripod'),
+  (4, 'D', 'DEM', 'Calculated from a DEM with suitable resolution and vertical accuracy')
+
+CREATE TABLE IF NOT EXISTS aspect_methods (
+  id_aspect_method INTEGER PRIMARY KEY,
+  catu_aspect_method VARCHAR UNIQUE,
+  txt_aspect_method_name VARCHAR,
+  txt_aspect_method_desc VARCHAR
+  );
+  
+/* Table 11.1 */
+INSERT INTO aspect_methods VALUES  
+  (1, 'E', 'Estimate', 'Estimated by eye'),
+  (2, 'C', 'Compass', 'Handheld magnestic compass'),
+  (3, 'D', 'DEM', 'Calculated from a DEM with suitable resolution and vertical accuracy')
+
+
+
+```
+  
+  
