@@ -1901,4 +1901,192 @@ CREATE TABLE IF NOT EXISTS horizon_texture (
   
 ```
 
+## Horizon secondary features
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS concentration_forms (
+  id_conc_form INTEGER PRIMARY KEY,
+  cato_conc_form VARCHAR UNIQUE,
+  txt_conc_form_name VARCHAR,
+  txt_conc_form_desc VARCHAR
+  );
+
+/* Table 16.1 */
+INSERT INTO concentration_forms VALUES
+  (1, 'CC', 'Concretion', 'hard concentrations with a layered internal structure, usually rounded'),
+  (2, 'NO', 'Nodule', 'hard concentrations with no internal structure, usually irregular'),
+  (3, 'CT', 'Crystal', 'A mineral arranged as interlocking or twinned macroscopic crystals or as a single macroscopic crystal, e.g., gypsum.'),
+  (4, 'SS', 'Soft masses', 'A non-cemented concentration that can seldom be removed from the soil as a discrete unit');
+  
+CREATE TABLE IF NOT EXISTS concentration_types (
+  id_conc INTEGER PRIMARY KEY,
+  cato_conc VARCHAR UNIQUE,
+  txt_conc_name VARCHAR,
+  txt_conc_desc VARCHAR
+  );
+
+/* Table 16.2 */
+INSERT INTO concentration_types VALUES
+   (1,  'E',  'Earthy', 'Loamy or silty texture within a sandy or clayey matrix'),
+   (2,  'A',  'Argillaceous', 'Clayey texture within a lower-clay matrix'),
+   (3,  'F',  'Ferruginious', 'Iron-dominated'),
+   (4,  'M',  'Manganiferous', 'Manganese-dominated'),
+   (5,  'N',  'Ferromanganiferous', 'Dominated by a mix of iron and manganese'),
+   (6,  'K',  'Calcareous', 'Dominated by calcium carbonate (CaCO3)'),
+   (7,  'Y',  'Gypseous', 'Dominated by calcium sulfate (gypsum, CaSO4)'),
+   (8,  'Z',  'Salty', 'Dominated by salts more soluble than Calcium carbonate or calcium sulfate'),
+   (9,  'S',  'Sulfurous', 'Dominated by sulfur, e.g. jarosite in acid sulfate soils'),
+   (10, 'O',  'Organic', 'Organic texture in a low-organics matrix'),
+   (11, 'UK', 'Unknown', 'Composition cannot be reliably determined');
+
+CREATE TABLE IF NOT EXISTS coating_types (
+  id_coating INTEGER PRIMARY KEY,
+  catu_coating VARCHAR UNIQUE,
+  txt_coating_name VARCHAR,
+  txt_coating_desc VARCHAR
+  );
+
+/* Table 16.3 */
+INSERT INTO coating_types VALUES 
+   (1, 'CC', 'Clay coats', 'Appear to have more clay than the soil matrix. They are often different in colour from the adjacent matrix and are usually recognisable in sandy or loamy soils, but can be difficult to recognise in clayey soils.'),
+   (2, 'ZC', 'Silt coats', 'Silt grains concentrated at surfaces; they may be residual concentrations resulting from clay removal, or may have moved in from horizons above'),
+   (3, 'SC', 'Sand coats', 'Sand grains concentrated at surfaces; they may be residual concentrations resulting from silt and/or clay removal, or may have moved in from horizons above'),
+   (4, 'OG', 'Organic coats', 'Surface features that have a moist colour value of 4 or less and are rich in organic matter compared to the interior of the solid.'),
+   (5, 'SQ', 'Sesquioxide coats', 'Films of sesquioxides on interfaces or impregnating interfaces. They vary in colour depending on the composition and degree of oxidation and hydration. They are difficult to identify chemically, and the different kinds cannot normally be distinguished in the field. Ferri-manganiferous coats, however, are normally very dark brown or black and effervesce vigorously with hydrogen peroxide'),
+   (6, 'MN', 'Manganese coats', 'Dark coatings of precipitated manganese oxides, reactive to H2O2.'),
+   (7, 'CB', 'Carbonate coats', 'Precipitated calcium carbonate (CaCO3). Usually pale-coloured, and reactive to HCl.'),
+   (8, 'SI', 'Silica coats', 'Precipitated silica (SiO2). Usually pale-coloured, and non-reactive to HCl.');
+
+CREATE TABLE IF NOT EXISTS pan_types (
+  id_pan INTEGER PRIMARY KEY,
+  catu_pan VARCHAR UNIQUE,
+  txt_pan_name VARCHAR,
+  txt_pan_desc VARCHAR
+  );
+  
+/* Table 16.4 */
+INSERT INTO pan_types VALUES   
+   (1, 'C', 'Cultivation pan', 'Pan comprising compressed soil, induced by cultivation (e.g. use of heavy farm machinery)'),
+   (2, 'D', 'Densipan', 'Silty layers with a very high bulk density and extremely slow permeability'),
+   (3, 'H', 'Humus-pan', 'Cemented by aluminium and organic matter. Common in Podzols; sometimes known as coffee rock'),
+   (4, 'F', 'Iron pan', 'Interlocking nodules of Fe(/Mn) precipitates (bog iron), often at a texture contrast boundary'),
+   (5, 'K', 'Calcareous pan', 'Created by the precipitation of calcium carbonate (CaCO~3~)'),
+   (6, 'O', 'Ortstein pan', 'Pan cemented by iron and organic matter. Common in Podzols'),
+   (7, 'P', 'Placic', 'A very thin (< 10 mm), dark, iron-dominated pan with sharp boundaries'),
+   (8, 'Q', 'Silica pan', 'Created by the precipitation of silica (SiO~2~)'),
+   (9, 'X', 'Fragipan', 'An earthy, high density, erosion-resistant layer common to Pallic soils'),
+   (10, 'UK', 'Unknown', 'Pan origin cannot be clearly determined');
+   
+CREATE TABLE IF NOT EXISTS pan_continuities (
+  id_pan_cont INTEGER PRIMARY KEY,
+  catu_pan_cont VARCHAR UNIQUE,
+  txt_pan_cont_name VARCHAR,
+  txt_pan_cont_desc VARCHAR
+  );
+
+/* Table 16.5 */
+INSERT INTO pan_continuities VALUES 
+ (1, 'C', 'Continuous', 'Extends as a layer with little or no break across 1 m or more.'),
+ (2, 'D', 'Discontinuous', 'Broken by cracks but original orientation of fragments is preserved.'),
+ (3, 'B', 'Broken', 'Broken by cracks and fragments are disoriented');
+
+CREATE TABLE IF NOT EXISTS pan_structures (
+  id_pan_structure INTEGER PRIMARY KEY,
+  catu_pan_structure VARCHAR UNIQUE,
+  txt_pan_structure_name VARCHAR,
+  txt_pan_structure_desc VARCHAR
+  );
+
+/* Table 16.6 */
+INSERT INTO pan_structures VALUES 
+  (1, 'V', 'Massive', 'No recognisable structure'),
+  (2, 'S', 'Vesicular', 'Sponge-like structure having large pores, which may or may not be filled with softer material'),
+  (3, 'C', 'Concretionary', 'Spheroidal concretions cemented together'),
+  (4, 'N', 'Nodular', 'Irregular nodules cemented together'),
+  (5, 'P', 'Platy', 'Plate-like units cemented together');
+
+CREATE TABLE IF NOT EXISTS stress_types (
+  id_stress INTEGER PRIMARY KEY,
+  catu_stress VARCHAR UNIQUE,
+  txt_stress_name VARCHAR,
+  txt_stress_desc VARCHAR
+  );
+
+/* Table 16.7 */
+INSERT INTO stress_types VALUES 
+ (1, 'SL', 'Slickensides', 'Smooth faces with linear grooves, from peds sliding past each other.'),
+ (2, 'PF', 'Pressure faces', 'Smooth planar faces from peds pressing against each other without sliding.');
+
+CREATE TABLE IF NOT EXISTS bio_feature_types (
+  id_bio_feature INTEGER PRIMARY KEY,
+  catu_bio_feature VARCHAR UNIQUE,
+  txt_bio_feature_name VARCHAR,
+  txt_bio_feature_desc VARCHAR
+  );
+
+/* Table 16.8 */
+INSERT INTO bio_feature_types VALUES 
+   (1, 'T', 'Tunnel', 'Infilled earthworm or insect burrow, < 20 mm in diameter'),
+   (2, 'B', 'Burrow', 'Infilled former macrofauna burrow, > 20 mm in diameter'),
+   (3, 'C', 'Casts',  'Earthworm wastes forming balls of fine soil material');
+
+```
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_secondary_features (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  PRIMARY KEY (id_site, id_horizon),
+  catu_concentration_form VARCHAR REFERENCES concentration_forms(cato_conc_form),
+  amt_concentration_p DECIMAL (6, 2) CHECK (amt_concentration_p BETWEEN 0 AND 100),
+  catu_pan_type VARCHAR REFERENCES pan_types(catu_pan),
+  cato_pan_continuity VARCHAR REFERENCES pan_continuities(catu_pan_cont),
+  catu_pan_structure VARCHAR REFERENCES pan_structures(catu_pan_structure),
+  catu_stress_type VARCHAR REFERENCES stress_types(catu_stress),
+  amt_stress_p DECIMAL (6, 2) CHECK (amt_stress_p BETWEEN 0 AND 100)
+  );
+  
+CREATE TABLE IF NOT EXISTS horizon_concentrations (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_concentration INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_concentration),
+  catu_concentration_form VARCHAR REFERENCES concentration_forms(cato_conc_form),
+  catu_concentration_type VARCHAR REFERENCES concentration_types(cato_conc),
+  amt_concentration_size_med_mm DECIMAL (6, 2) CHECK (amt_concentration_size_med_mm > 0),
+  amt_concentration_size_min_mm DECIMAL (6, 2) CHECK (amt_concentration_size_min_mm > 0),
+  amt_concentration_size_max_mm DECIMAL (6, 2) CHECK (amt_concentration_size_max_mm > 0),
+  amt_concentration_med_p DECIMAL (6, 2) CHECK (amt_concentration_med_p BETWEEN 0 AND 100),
+  amt_concentration_min_p DECIMAL (6, 2) CHECK (amt_concentration_min_p BETWEEN 0 AND 100),
+  amt_concentration_max_p DECIMAL (6, 2) CHECK (amt_concentration_max_p BETWEEN 0 AND 100)
+  );
+
+CREATE TABLE IF NOT EXISTS horizon_coatings (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_coating INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_coating),
+  catu_coating VARCHAR REFERENCES coating_types(catu_coating),
+  amt_coating_p DECIMAL (6, 2) CHECK (amt_coating_p BETWEEN 0 AND 100)
+  );
+  
+CREATE TABLE IF NOT EXISTS horizon_bio_features (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_bio_features INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_bio_features),
+  catu_bio_feature VARCHAR REFERENCES bio_feature_types(catu_bio_feature),
+  amt_bio_feature_p DECIMAL (6, 2) CHECK (amt_bio_feature_p BETWEEN 0 AND 100)
+  );
+  
+```
 
