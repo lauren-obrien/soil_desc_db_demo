@@ -1620,7 +1620,6 @@ CREATE TABLE IF NOT EXISTS horizon_voids (
 
 ## Horizon colour
 
-
 ```{sql}
 --| connection: con
 
@@ -1752,4 +1751,154 @@ CREATE TABLE IF NOT EXISTS horizon_colour_patterns (
 
 ```
   
+## Horizon texture
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS simple_textures (
+  id_simple_texture INTEGER PRIMARY KEY,
+  cato_simple_texture VARCHAR UNIQUE,
+  txt_simple_texture_name VARCHAR,
+  txt_simple_texture_desc VARCHAR
+  );
+
+/* Table 15.3 */
+INSERT INTO simple_textures VALUES
+ (1, 'C', 'Clayey', 'Clay content ≥ 35%, texture class C, LC or ZC'),
+ (2, 'Z', 'Silty', 'Clay content < 35%, silt content ≥ 40%; texture class Z, LZ, ZL'),
+ (3, 'L', 'Loamy', 'Clay content 8 - 35%, silt content < 40%; texture class SL, SC, CL'),
+ (4, 'S', 'Sandy', 'Clay content < 8, silt content, < 40%, texture class S, LS'),
+ (5, 'R', 'Rocky', 'Fine earth fraction < 15%, dominated by rock fragments > 2 mm');
+
+CREATE TABLE IF NOT EXISTS mineral_textures (
+  id_mineral_texture INTEGER PRIMARY KEY,
+  cato_mineral_texture VARCHAR UNIQUE,
+  txt_mineral_texture_name VARCHAR
+  );
+
+/* Table 15.2 */
+INSERT INTO mineral_textures VALUES
+(1, 'S', 'Sand'),
+(2, 'LS', 'Loamy Sand'),
+(3, 'SL', 'Sandy Loam'),
+(4, 'LZ', 'Loamy Silt'),
+(5, 'Z', 'Silt'),
+(6, 'SC', 'Sandy Clay Loam'),
+(7, 'CL', 'Clay Loam'),
+(8, 'ZL', 'Silt Loam'),
+(9, 'LC', 'Loamy Clay'),
+(10, 'AC', 'Silty Clay'),
+(11, 'C', 'Clay');
+
+CREATE TABLE IF NOT EXISTS sand_sizes (
+  id_sand_size INTEGER PRIMARY KEY,
+  cato_sand_size VARCHAR UNIQUE,
+  txt_sand_size_name VARCHAR,
+  txt_sand_size_desc VARCHAR
+  );
   
+/* Table 15.4 */
+INSERT INTO sand_sizes VALUES
+  (1, 'K', 'Coarse', 'Sand is dominantly 2.0 - 0.6 mm'),
+  (2, 'M', 'Medium', 'Sand is dominantly 0.6 - 0.2 mm'),
+  (3, 'F', 'Fine',   'Sand is dominantly 0.2 - 0.06 mm');
+  
+CREATE TABLE IF NOT EXISTS organic_levels (
+  id_organic INTEGER PRIMARY KEY,
+  cato_organic VARCHAR UNIQUE,
+  txt_organic_name VARCHAR,
+  txt_organic_desc VARCHAR
+  );
+  
+/* Table 15.5 */
+INSERT INTO organic_levels VALUES  
+   (1, 'T', 'Slightly organic', '17-30% organic matter'),
+   (2, 'P', 'Moderately organic', '30-50% organic matter');
+   
+CREATE TABLE IF NOT EXISTS organic_types (
+  id_organic_type INTEGER PRIMARY KEY,
+  cato_organic_type VARCHAR UNIQUE,
+  txt_organic_type_name VARCHAR,
+  txt_organic_type_desc VARCHAR
+  );
+  
+/* Table 15.6 */
+INSERT INTO organic_types VALUES  
+  (1, 'M', 'Moss', 'Organic materials dominantly derived from moss and/or herb species e.g. *Sphagnum spp.*'),
+  (2, 'R', 'Reed', 'Organic materials dominantly derived from grasses, reeds, flaxes or similar e.g. *Phormium spp.*'),
+  (3, 'T', 'Tree', 'Organic materials dominantly derived from woody shrubs and trees, e.g. Kānuka'),
+  (4, 'U', 'Unknown', 'Origin of organic materials cannot be identified with confidence');
+
+CREATE TABLE IF NOT EXISTS organic_decomps (
+  id_organic_decomp INTEGER PRIMARY KEY,
+  cato_organic_decomp VARCHAR UNIQUE,
+  txt_organic_decomp_name VARCHAR,
+  txt_organic_decomp_desc VARCHAR
+  );
+
+/* Table 15.7 */
+INSERT INTO organic_decomps VALUES 
+ (1, 'F', 'Fibric', 'Organic matter weakly decomposed and dominated by visible plant remains'),
+ (2, 'M', 'Mesic', 'Organic matter moderately decomposed, some visible plant structures but mostly amorphous'),
+ (3, 'H', 'Humic', 'Organic matter no longer identifiable, minimal fibre content');
+
+CREATE TABLE IF NOT EXISTS nzsc_mineralogies (
+  id_nzsc_mineralogy INTEGER PRIMARY KEY,
+  catu_nzsc_mineralogy VARCHAR UNIQUE,
+  txt_nzsc_mineralogy_name VARCHAR,
+  txt_nzsc_mineralogy_desc VARCHAR
+  );
+
+/* Table 5.2 */
+INSERT INTO nzsc_mineralogies VALUES
+  (1, 'Gy', 'Gypsic', '>15% by weight of gypsum in the < 20 mm fraction'),
+  (2, 'Ca', 'Carbonatic', '>30% by weight carbonates in the < 20 mm fraction'),
+  (3, 'Sf', 'Superferritic', '> 28% citrate-dithionite extractable Fe in the < 2 mm fraction'),
+  (4, 'Fe', 'Ferritic', '> 7.0% citrate-dithionite extractable Fe in the < 2 mm fraction'),
+  (5, 'Al', 'Aluminitic', '> 40% by weight aluminium hydroxides and oxyhydroxides in the < 2 mm fraction'),
+  (6, 'Si', 'Siliceous', '> 90% by weight silica minerals (quartz, chalcedony, or opal) and other durable minerals that are resistant to weathering, provided that the silica minerals are > 60% by weight in the < 2 mm fraction'),
+  (7, 'Am', 'Amorphous', '> 5% by weight of minerals with short-range order (principally allophane, imogolite, and ferrihydrite) in the < 2 mm fraction'),
+  (8, 'Mi', 'Micaceous', '> 40% by weight of mica minerals in the < 2 mm fraction'),
+  (9, 'Cl', 'Chloritic', '> 40% by weight of chlorite in the < 2 mm fraction'),
+  (10, 'Sp', 'Serpentinitic', '> 40% by weight of serpentine minerals (antigorite, chrysotile, fibrolite, and talc) in the < 2 mm fraction'),
+  (11, 'Sm', 'Smectitic', 'More smectites than any other mineral group or single mineral (if mineral group not applicable, e.g. crandallite, chlorite in the < 0.002 mm fraction'),
+  (12, 'Vm', 'Vermiculitic', 'More vermiculites than any other mineral group or single mineral in the < 0.002 mm fraction'),
+  (13, 'Il', 'Illitic', 'More illites than any other mineral group or single mineral in the < 0.002 mm fraction'),
+  (14, 'Ka', 'Kandic', '> 50% by weight Kaolin-group minerals (kaolinite, halloysite, dickite, and nacrite) *and* < 10% by weight smectites in the < 0.002 mm fraction'),
+  (15, 'Cm', 'Clay-mineralic', 'Other soils with > 10% clay. The dominant mineral or mineral group in the clay fraction is named (e.g. clay-mineralic (crandallite)) in the < 0.002 mm fraction'),
+  (16, 'Gl', 'Glassy', '> 40% by weight volcanic glass in the < 2 mm fraction'),
+  (17, 'Wh', 'Whole-soil-mineralic', '> 40% by weight of any mineral or mineral group, other than silica minerals or feldspars in the < 2 mm fraction'),
+  (18, 'Ot', 'Other soils', '');
+
+```
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_texture (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  PRIMARY KEY (id_site, id_horizon),
+  cato_texture_simple VARCHAR REFERENCES simple_textures(cato_simple_texture),
+  cato_texture VARCHAR REFERENCES mineral_textures(cato_mineral_texture),
+  cato_texture_sandmod VARCHAR REFERENCES sand_sizes(cato_sand_size),
+  cato_texture_orgmod VARCHAR REFERENCES organic_levels(cato_organic),
+  cato_organic_type VARCHAR REFERENCES organic_types(cato_organic_type),
+  catu_organic_decomp VARCHAR REFERENCES organic_decomps(cato_organic_decomp),
+  catu_organic_minmod VARCHAR REFERENCES simple_textures(cato_simple_texture),
+  amt_sand_est_med_p DECIMAL (6, 2) CHECK (amt_sand_est_med_p BETWEEN 0 AND 100),
+  amt_sand_est_min_p DECIMAL (6, 2) CHECK (amt_sand_est_min_p BETWEEN 0 AND 100),
+  amt_sand_est_max_p DECIMAL (6, 2) CHECK (amt_sand_est_max_p BETWEEN 0 AND 100),
+  amt_clay_est_med_p DECIMAL (6, 2) CHECK (amt_clay_est_med_p BETWEEN 0 AND 100),
+  amt_clay_est_min_p DECIMAL (6, 2) CHECK (amt_clay_est_min_p BETWEEN 0 AND 100),
+  amt_clay_est_max_p DECIMAL (6, 2) CHECK (amt_clay_est_max_p BETWEEN 0 AND 100),
+  catu_lithology VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
+  catu_mineralogy VARCHAR REFERENCES nzsc_mineralogies(catu_nzsc_mineralogy)
+  );
+  
+```
+
+
