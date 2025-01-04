@@ -1617,3 +1617,139 @@ CREATE TABLE IF NOT EXISTS horizon_voids (
   );
 
 ```
+
+## Horizon colour
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS munsell_colours (
+  id_munsell INTEGER PRIMARY KEY,
+  cato_munsell VARCHAR UNIQUE,
+  txt_colour_hex VARCHAR
+  );
+
+/* Per charts - just a few for demo */
+INSERT INTO munsell_colours VALUES
+  (1, '10YR 5/4', '#947650'),
+  (2, '7.5YR 3/2', '#584537'),
+  (3, '5R 3/8', '#822930'),
+  (4, 'N 4/0', '#616161');
+  
+CREATE TABLE IF NOT EXISTS short_colours (
+  id_colour INTEGER PRIMARY KEY,
+  catu_colour VARCHAR UNIQUE,
+  txt_colour_name VARCHAR,
+  txt_colour_desc VARCHAR
+  );
+
+/* Table 14.2 */
+INSERT INTO short_colours VALUES
+  (1, 'R', 'Red', '2.5YR or redder, with value < 7 and chroma > 2'),
+  (2, 'O', 'Orange', '5YR or 7.5YR, with value < 7 and chroma > 2'),
+  (3, 'B', 'Brown', '7.5YR or 10YR, with value > 4 and chroma > 2'),
+  (4, 'Y', 'Yellow', '2.5Y or 5Y, with value > 4 and chroma > 2'),
+  (5, 'G', 'Grey', 'Any non-gley hue, value 4--7, chroma 1'),
+  (6, 'D', 'Dark', 'Any non-gley hue, values ≤ 3 and chromas ≤ 2'),
+  (7, 'P', 'Pale', 'Any non-gley hue, values ≥ 7 and chromas ≤ 2'),
+  (8, 'L', 'Gley', 'Gley charts');
+  
+CREATE TABLE IF NOT EXISTS colour_moistures (
+  id_colour_moisture INTEGER PRIMARY KEY,
+  cato_colour_moisture VARCHAR UNIQUE,
+  txt_colour_moisture_name VARCHAR
+  );
+  
+INSERT INTO colour_moistures VALUES
+  (1, 'M', 'Moist'),
+  (2, 'D', 'Dry');
+  
+CREATE TABLE IF NOT EXISTS pattern_types (
+  id_pattern INTEGER PRIMARY KEY,
+  catu_pattern VARCHAR UNIQUE,
+  txt_pattern_name VARCHAR,
+  txt_pattern_desc VARCHAR
+  );
+ 
+/* Table 14.3 */
+INSERT INTO pattern_types VALUES
+  (1, 'M', 'Mottles', 'Colour patterns induced by redox processes'),
+  (2, 'R', 'Reticulate', 'Colour patterns induced by preferential flow (e.g. gammate patterns in pallic soils)'),
+  (3, 'W', 'Weathering', 'Colour patterns induced by parent material weathering, most commonly seen in BC horizons and below (e.g. rock ghost patterns)'),
+  (4, 'X', 'Mixing', 'Colour patterns created by biological (e.g. worm tunnels) or mechanical (e.g. landslide) means');
+
+CREATE TABLE IF NOT EXISTS pattern_shapes (
+  id_pattern_shape INTEGER PRIMARY KEY,
+  catu_pattern_shape VARCHAR UNIQUE,
+  txt_pattern_shape_name VARCHAR,
+  txt_pattern_shape_desc VARCHAR
+  );
+ 
+/* Table 14.4 */
+INSERT INTO pattern_shapes VALUES
+  (1, 'B', 'Blotches', 'Rounded shapes, blobs, where colour patterns penetrate the soil mass'),
+  (2, 'S', 'Stripes', 'Linear colour patterns e.g. root linings'),
+  (3, 'C', 'Coatings', 'Patterns caused by ped surface features e.g. cutans');
+  
+CREATE TABLE IF NOT EXISTS pattern_contrasts (
+  id_pattern_contrast INTEGER PRIMARY KEY,
+  catu_pattern_contrast VARCHAR UNIQUE,
+  txt_pattern_contrast_name VARCHAR,
+  txt_pattern_contrast_desc VARCHAR
+  );
+ 
+/* Table 14.5 */
+INSERT INTO pattern_contrasts VALUES
+  (1, 'F', 'Faint', 'Indistinct colour variation evident only on close examination'),
+  (2, 'D', 'Distinct', 'Although not striking, the colour variation is readily seen'),
+  (3, 'P', 'Prominent', 'The colour variation is conspicuous');
+  
+CREATE TABLE IF NOT EXISTS pattern_edges (
+  id_pattern_edge INTEGER PRIMARY KEY,
+  catu_pattern_edge VARCHAR UNIQUE,
+  txt_pattern_edge_name VARCHAR,
+  txt_pattern_edge_desc VARCHAR
+  );
+ 
+/* Table 14.6 */
+INSERT INTO pattern_edges VALUES 
+  (1, 'S', 'Sharp', 'Knife-edge boundaries between colours'),
+  (2, 'C', 'Clear', 'Colour transition < 2 mm wide'),
+  (3, 'D', 'Diffuse', 'Colour transition > 2 mm wide');
+
+```  
+  
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_matrix_colours (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_colour_matrix INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_colour_matrix),
+  cato_matrix_munsell VARCHAR REFERENCES munsell_colours(cato_munsell),
+  catu_colour_moisture VARCHAR REFERENCES munsell_colours(cato_munsell)
+  );
+
+CREATE TABLE IF NOT EXISTS horizon_colour_patterns (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  id_colour_pattern INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_colour_pattern),
+  cato_pattern_munsell VARCHAR REFERENCES munsell_colours(cato_munsell),
+  catu_pattern_short_colour VARCHAR REFERENCES short_colours(catu_colour),
+  catu_pattern_type VARCHAR REFERENCES pattern_types(catu_pattern),
+  amt_pattern_p DECIMAL(6, 2) CHECK (amt_pattern_p BETWEEN 0 AND 100),
+  catu_pattern_shape VARCHAR REFERENCES pattern_shapes(catu_pattern_shape),
+  amt_pattern_size_mm DECIMAL(6, 2) CHECK (amt_pattern_p > 0),
+  cato_pattern_contrast VARCHAR REFERENCES pattern_contrasts(catu_pattern_contrast),
+  cato_pattern_edge VARCHAR REFERENCES pattern_edges(catu_pattern_edge)
+  );
+
+```
+  
+  
