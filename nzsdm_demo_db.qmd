@@ -2090,3 +2090,300 @@ CREATE TABLE IF NOT EXISTS horizon_bio_features (
   
 ```
 
+## Horizon consistence tests
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS strengths (
+  id_strength INTEGER PRIMARY KEY,
+  cato_strength VARCHAR UNIQUE,
+  txt_strength_name VARCHAR,
+  txt_strength_desc VARCHAR
+  );
+
+/* Table 17.1 */
+INSERT INTO strengths VALUES
+  (1, '1', 'Very Weak', 'Very gentle force in hand'),
+  (2, '2', 'Weak', 'Gentle force in hand'),
+  (3, '3', 'Slightly firm', 'Moderate force in hand'),
+  (4, '4', 'Firm', 'Strong/maximum force in hand'),
+  (5, '5', 'Very firm', 'Gentle force underfoot'),
+  (6, '6', 'Hard', 'Full body weight (~80 kg) applied slowly'),
+  (7, '7', 'Very hard', 'Withstands full body weight');
+
+CREATE TABLE IF NOT EXISTS sensitivities (
+  id_sensitivity INTEGER PRIMARY KEY,
+  cato_sensitivity VARCHAR UNIQUE,
+  txt_sensitivity_name VARCHAR,
+  txt_sensitivity_desc VARCHAR
+  );
+
+/* Table 17.2 */
+INSERT INTO sensitivities VALUES
+  (1, '1', 'Non-sensitive', 'the sample does not smear under shear force, and may soften only slightly'),
+  (2, '2', 'Weakly sensitive', 'the sample smears and skids under moderate shear force (20-40 kPa)'),
+  (3, '3', 'Moderately sensitive', 'the sample suddenly turns fluid under moderate shear force (20-40 kPa) and the fingers skid. Some free water is evident on fingers after shearing'),
+  (4, '4', 'Very sensitive', 'the soil suddenly turns fluid and slippery under only gentle shear force (<20 kPa). Free water is easily seen on the fingers after shearing');
+
+CREATE TABLE IF NOT EXISTS plasticities (
+  id_plasticity INTEGER PRIMARY KEY,
+  cato_plasticity VARCHAR UNIQUE,
+  txt_plasticity_name VARCHAR,
+  txt_plasticity_desc VARCHAR
+  );
+
+/* Table 17.3 */
+INSERT INTO plasticities VALUES
+  (1, '1', 'Non-plastic', 'A roll 40 mm long and 6 mm thick that supports its own weight cannot be formed.'),
+  (2, '2', 'Slightly plastic', 'A roll 40 mm long and 6 mm thick can be formed and will support its own weight, but a roll 4 mm thick will not support its own weight.'),
+  (3, '3', 'Moderately plastic', 'A roll 40 mm long and 4 mm diameter can be formed, and will support its own weight, but a roll 2 mm thick will not support its own weight.'),
+  (4, '4', 'Very plastic', 'A roll 40 mm long and 2 mm thick can be formed and will support its own weight.');
+
+CREATE TABLE IF NOT EXISTS stickinesses (
+  id_stickiness INTEGER PRIMARY KEY,
+  cato_stickiness VARCHAR UNIQUE,
+  txt_stickiness_name VARCHAR,
+  txt_stickiness_desc VARCHAR
+  );
+
+/* Table 17.4 */
+INSERT INTO stickinesses VALUES
+  (1, '1', 'Non-sticky', 'After release of pressure, practically no soil material adheres to the thumb or forefinger'),
+  (2, '2', 'Slightly sticky', 'After release of pressure, soil material adheres perceptibly to both thumb and forefinger but, as the digits are separated, it tends to come off one or the other cleanly. The material is not stretched appreciably when the thumb and finger are separated'),
+  (3, '3', 'Moderately sticky', 'After release of pressure, soil material adheres to both thumb and forefinger and tends to stretch somewhat and pull apart rather than pulling free from either digit'),
+  (4, '4', 'Very sticky', 'After release of pressure, soil material adheres so strongly to both thumb and forefinger that it is decidedly stretched when they are separated, and finally pulls apart leaving part of the soil on thumb and part on the forefinger.');
+
+CREATE TABLE IF NOT EXISTS penrests (
+  id_penrest INTEGER PRIMARY KEY,
+  cato_penrest VARCHAR UNIQUE,
+  txt_penrest_name VARCHAR,
+  txt_penrest_desc VARCHAR
+  );
+
+/* Table 17.5 */
+INSERT INTO penrests VALUES
+ (1, '1', 'Extremely low', 'Easily penetrated by fist'),
+ (2, '2', 'Very low', 'Easily penetrated by thumb'),
+ (3, '3', 'Low', 'Readily indented by thumb but penetrated with considerable effort. Imprinted by finger with some effort.'),
+ (4, '4', 'Moderate', 'Readily indented by thumbail'),
+ (5, '5', 'High', 'Barely imprinted by thumb or forefinger'),
+ (6, '6', 'Very high', 'Indented by thumbnail. No imprint by thumb or finger'),
+ (7, '7', 'Extremely high', 'Barely indented by thumbnail');
+
+CREATE TABLE IF NOT EXISTS packings (
+  id_packing INTEGER PRIMARY KEY,
+  cato_packing VARCHAR UNIQUE,
+  txt_packing_name VARCHAR,
+  txt_packing_desc VARCHAR
+  );
+
+/* Table 17.6 */
+INSERT INTO packings VALUES
+  (1, '1', 'Loose', 'Easily dislodged by spade or pick; does not maintain a vertical face'),
+  (2, '2', 'Compact', 'Intermediate between loose and dense'),
+  (3, '3', 'Dense', 'Difficult to dislodge except with spade and by removing individual fragments; maintains a stable vertical face'),
+  (4, '4', 'Very dense', 'Very difficult to dislodge except by pick and removing individual fragments; maintains a stable vertical face');
+          
+CREATE TABLE IF NOT EXISTS failures (
+  id_failure INTEGER PRIMARY KEY,
+  catu_failure VARCHAR UNIQUE,
+  txt_failure_name VARCHAR,
+  txt_failure_desc VARCHAR
+  );
+
+/* Table 17.7 */
+INSERT INTO failures VALUES     
+  (1, 'N', 'Not determinable', 'Soil is either too dry or too wet to reliably test'),
+  (2, 'V', 'Very friable', 'Test specimen cannot be formed, or crumbles under very slight stress on crushing within the hand, into aggregates predominantly <2 mm in size. In most instances the test specimen is difficult to obtain.'),
+  (3, 'F', 'Friable', 'Test sample cannot be formed, or crumbles under very slight stress on crushing within the hand, into aggregates predominantly >2 mm in size, or crumbles under slight stress on crushing within the hand into aggregates predominantly <2 mm in size.'),
+  (4, 'B', 'Brittle', 'Under slowly increasing pressure between the extended thumb and forefinger, a test specimen retains its size and shape with few or no cracks until it fractures abruptly into aggregates predominantly > 2 mm in size.'),
+  (5, 'S', 'Semi-deformable', 'Under increasing pressure between the extended thumb and forefinger the test specimen as a whole is perceptibly compressed in the direction along which pressure is exerted, but cracks develop and the specimen ruptures before it has been compressed to half its original thickness. Before rupture, parts crumble and fall away if the specimen is shaken while held between the thumb and forefinger.'),
+  (6, 'D', 'Deformable', 'Under slowly increasing pressure between the extended thumb and forefinger, the test specimen can be compressed to at least half its original thickness without the appearance of cracks and without rupture.');
+  
+CREATE TABLE IF NOT EXISTS fluidities (
+  id_fluidity INTEGER PRIMARY KEY,
+  catu_fluidity VARCHAR UNIQUE,
+  txt_fluidity_name VARCHAR,
+  txt_fluidity_desc VARCHAR
+  );
+
+/* Table 17.8 */
+INSERT INTO fluidities VALUES   
+  (1, '1', 'Slightly fluid', 'Some material tends to flow into the spaces between the fingers, but after full pressure is exerted most of the residue is left in the hand'),
+  (2, '2', 'Moderately fluid', 'Soil material flows easily between the fingers, but a small residue is left in the hand after full pressure is exerted'),
+  (3, '3', 'Very fluid', 'Soil material flows like a slightly viscous liquid between the fingers, and very little or no residue is left in the hand after full pressure is exerted');
+  
+CREATE TABLE IF NOT EXISTS indurations (
+  id_induration INTEGER PRIMARY KEY,
+  cato_induration VARCHAR UNIQUE,
+  txt_induration_name VARCHAR,
+  txt_induration_desc VARCHAR
+  );
+
+/* Table 17.9 */
+INSERT INTO indurations VALUES   
+  (1, '1', 'Non-indurated', 'A wet test specimen slakes within one hour when placed in water'),
+  (2, '2', 'Very weakly indurated', 'A wet test specimen that has been immersed for one hour and has not slaked has strength class of 2-4'),
+  (3, '3', 'Weakly indurated', 'A wet test specimen that has been immersed for one hour has a strength class of 6'),
+  (4, '4', 'Strongly indurated', 'A wet test specimen that has been immersed for an hour has a strength class of 7'),
+  (5, '5', 'Very strongly indurated', 'A wet test specimen after immersion for an hour has a strength class of >7 and does not break when struck by a sharp blow with a hammer.');
+
+
+```
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS consistence_tests (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  PRIMARY KEY (id_site, id_horizon),
+  ind_cohesive BOOLEAN,
+  cato_strength_unconfined VARCHAR REFERENCES strengths(cato_strength),
+  cato_strength_ped VARCHAR REFERENCES strengths(cato_strength),
+  cato_strength_remoulded VARCHAR REFERENCES strengths(cato_strength),
+  cato_strength_plastic VARCHAR REFERENCES strengths(cato_strength),
+  cato_strength_sensitivity VARCHAR REFERENCES sensitivities(cato_sensitivity),
+  cato_strength_plasticity VARCHAR REFERENCES plasticities(cato_plasticity),
+  cato_strength_stickiness VARCHAR REFERENCES stickinesses(cato_stickiness),
+  ind_dilatent BOOLEAN,
+  cato_penetration_rest VARCHAR REFERENCES penrests(cato_penrest),
+  cato_packing VARCHAR REFERENCES packings(cato_packing),
+  catu_failure VARCHAR REFERENCES failures(catu_failure),
+  cato_fluidity VARCHAR REFERENCES fluidities(catu_fluidity),
+  cato_induration VARCHAR REFERENCES indurations(cato_induration)
+  );
+
+```
+
+## Field tests
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS pH_raupachs (
+  id_raupach INTEGER PRIMARY KEY,
+  cato_raupach VARCHAR UNIQUE
+  );
+
+INSERT INTO pH_raupachs VALUES
+  (1, '2.0'),
+  (2, '2.5'),
+  (3, '3.0'),
+  (4, '3.5'),
+  (5, '4.0'),
+  (6, '4.5'),
+  (7, '5.0'),
+  (8, '5.5'),
+  (9, '6.0'),
+  (10, '6.5'),
+  (11, '7.0'),
+  (12, '7.5'),
+  (13, '8.0'),
+  (14, '8.5'),
+  (15, '9.0'),
+  (16, '9.5'),
+  (17, '10.0'),
+  (18, '10.5');
+
+CREATE TABLE IF NOT EXISTS h2o2_rxns (
+  id_h2o2_rxn INTEGER PRIMARY KEY,
+  cato_h2o2_rxn VARCHAR UNIQUE,
+  txt_h2o2_rxn_name VARCHAR,
+  txt_h2o2_rxn_desc VARCHAR
+  );
+
+/* Table 18.1 */
+INSERT INTO h2o2_rxns VALUES
+  (1, 'N', 'No reaction',  'No fizzing or bubbling after 15 minutes'),
+  (2, 'L', 'Slight reaction', 'Sample fizzes or bubbles slightly but does not steam'),
+  (3, 'M', 'Moderate reaction', 'Sample bubbles and steams slightly but does not completely boil. Unlikely to continue reacting if more peroxide is added'),
+  (4, 'H', 'High reaction', 'Sample boils and steams but does not boil over. May continue to react when more peroxide is added'),
+  (5, 'X', 'Explosive reaction', 'Sample rapidly boils over and puts off considerable steam; likely to continue to react when more peroxide is added');
+
+CREATE TABLE IF NOT EXISTS hcl_rxns (
+  id_hcl_rxn INTEGER PRIMARY KEY,
+  cato_hcl_rxn VARCHAR UNIQUE,
+  txt_hcl_rxn_name VARCHAR,
+  txt_hcl_rxn_desc VARCHAR
+  );
+
+/* Table 18.2 */
+INSERT INTO hcl_rxns VALUES
+ (1, 'N', 'No reaction',  'No audible or visible fizzing'),
+ (2, 'L', 'Slight reaction', 'Fizzing faintly audible and barely visible'),
+ (3, 'M', 'Moderate reaction', 'Fizzing audible and clearly visible, small bubbles ≤ 3 mm diameter'),
+ (4, 'H', 'High reaction', 'Fizzing easily audible and visible, bubbles up to 7 mm diameter');
+ 
+CREATE TABLE IF NOT EXISTS naf_rxns (
+  id_naf_rxn INTEGER PRIMARY KEY,
+  cato_naf_rxn VARCHAR UNIQUE,
+  txt_naf_rxn_name VARCHAR,
+  txt_naf_rxn_desc VARCHAR
+  );
+
+/* Table 18.3 */
+INSERT INTO naf_rxns VALUES
+  (1, 'N', 'No reaction',  'No colour change'),
+  (2, 'L', 'Slight reaction', 'Paper turns faint pink within two minutes'),
+  (3, 'M', 'Moderate reaction', 'Paper turns moderate pink, usually within 30 seconds'),
+  (4, 'H', 'Strong reaction', 'Paper turns dark pink, usually instantly');
+  
+CREATE TABLE IF NOT EXISTS slaking_rxns (
+  id_slaking_rxn INTEGER PRIMARY KEY,
+  cato_slaking_rxn VARCHAR UNIQUE,
+  txt_slaking_rxn_name VARCHAR,
+  txt_slaking_rxn_desc VARCHAR
+  );
+
+/* Table 18.4 */
+INSERT INTO slaking_rxns VALUES
+  (1, 'N', 'No slaking',  'Peds remain intact. Some bubbles may develop on their surfaces'),
+  (2, 'P', 'Partial slaking', 'Peds have broken open or partially collapsed, mostly into smaller peds'),
+  (3, 'C', 'Complete slaking', 'Peds have collapsed into a pile of separated grains, little to no ped structure remains visible');
+  
+CREATE TABLE IF NOT EXISTS dispersion_rxns (
+  id_dispersion_rxn INTEGER PRIMARY KEY,
+  cato_dispersion_rxn VARCHAR UNIQUE,
+  txt_dispersion_rxn_name VARCHAR,
+  txt_dispersion_rxn_desc VARCHAR
+  );
+
+/* Table 18.5 */
+INSERT INTO dispersion_rxns VALUES  
+   (1, 'N', 'No dispersal',  'Peds remain intact and water remains clear'),
+   (2, 'S', 'Slight dispersion', 'Peds remain largely intact but a faint milky halo of suspended clay particles can be seen around them'),
+   (3, 'M', 'Moderate dispersion', 'Peds partly collapse and a milky halo is visible around the sample'),
+   (4, 'C', 'Complete dispersion', 'Peds have collapsed into a pile of separate grains, and are surrounded by an extensive and dense halo.');
+   
+```
+
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS field_tests (
+  id_site VARCHAR,
+  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  PRIMARY KEY (id_site),
+  
+  amt_test_depth_cm DECIMAL (6, 2) CHECK (amt_test_depth_cm >= 0),
+  cato_pH_raupach VARCHAR REFERENCES pH_raupachs(cato_raupach),
+  val_pH_water DECIMAL (6, 2) CHECK (val_pH_water BETWEEN 0 AND 14),
+  val_pH_h2o2 DECIMAL (6, 2) CHECK (val_pH_h2o2 BETWEEN 0 AND 14),
+  cato_h2o2_rxn VARCHAR REFERENCES h2o2_rxns(cato_h2o2_rxn),
+  amt_ec_dSm DECIMAL (6, 2) CHECK (amt_ec_dSm <= 0),
+  cato_hcl_rxn VARCHAR REFERENCES hcl_rxns(cato_hcl_rxn),
+  ind_mn_rxn BOOLEAN,
+  cato_naf_rxn VARCHAR REFERENCES naf_rxns(cato_naf_rxn),
+  ind_22bip_rxn BOOLEAN,
+  ind_water_repellent BOOLEAN,
+  cato_slaking VARCHAR REFERENCES slaking_rxns(cato_slaking_rxn),
+  cato_dispersion VARCHAR REFERENCES dispersion_rxns(cato_dispersion_rxn)
+  );
+
+```
