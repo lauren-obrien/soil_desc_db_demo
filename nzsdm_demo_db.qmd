@@ -2361,8 +2361,6 @@ INSERT INTO dispersion_rxns VALUES
    
 ```
 
-
-
 ```{sql}
 --| connection: con
 
@@ -2387,3 +2385,169 @@ CREATE TABLE IF NOT EXISTS field_tests (
   );
 
 ```
+
+## Interpretations
+
+### Horizon names
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_names_primary (
+  id_horizon_primary INTEGER PRIMARY KEY,
+  catu_horizon_primary VARCHAR UNIQUE,
+  txt_horizon_primary_name VARCHAR,
+  txt_horizon_primary_desc VARCHAR
+  );
+
+/* Table 20.1 */
+INSERT INTO horizon_names_primary VALUES
+  (1, 'F', 'Fibric', 'Partly decomposed litter deposited or accumulated at the surface and not saturated with water for more than ~1 month at a time.'),
+  (2, 'H', 'Humic', 'Well-decomposed litter deposited or accumulated at the surface and not saturated with water for more than ~1 month at a time. Original plant structures cannot be seen.'),
+  (3, 'O', 'Peat', 'Organic horizon accumulated under wet conditions. It is saturated with water for at least 30 consecutive days in most years, or has been artificially drained.'),
+  (4, 'A', 'Surface', 'Mineral horizon formed at the surface, or below an organic horizon. It is characterised by incorporation of humified organic matter, or properties resulting from disturbance by cultivation.'),
+  (5, 'E', 'Eluviated', 'Subsurface mineral horizon that contains less organic matter and/or iron and/or clay than the horizon immediately below, as a result of downward or lateral movement.'),
+  (6, 'B', 'Subsoil', 'Subsurface mineral horizon without rock structure, characterised by any of: illuvial concentration of secondary soil materials, development of colour or structure, loss of carbonate to lower horizons'),
+  (7, 'C', 'Regolith', 'Unconsolidated or weakly consolidated mineral horizon that is little affected by pedogenic processes and lacks properties of A, E or B horizons.'),
+  (8, 'R', 'Rock', 'Hard or very hard bedrock that is impracticable to dig with a spade.');
+  
+CREATE TABLE IF NOT EXISTS horizon_names_secondary (
+  id_horizon_secondary INTEGER PRIMARY KEY,
+  catu_horizon_secondary VARCHAR UNIQUE,
+  txt_horizon_secondary_name VARCHAR,
+  txt_horizon_secondary_desc VARCHAR
+  );
+  
+/* Tables 20.2 - 20.7 */
+INSERT INTO horizon_names_secondary VALUES
+  (1, 'Of', 'Fibric peat' , 'Peat dominated by well-preserved plant remains, with at least 75% fibre content after rubbing (e.g. preserved timber)'),
+  (2, 'Om', 'Mesic peat', 'Peat intermediate in composition between Of and Oh.'),
+  (3, 'Oh', 'Humic peat', 'Peat dominated by strongly decomposed plant remains, with less than 15% fibre content after rubbing. Plant species cannot be directly identified.'),
+  (4, 'Ah', 'Natural' , 'An A horizon in which there is no evident disturbance due to cultivation or pastoral land use.'),
+  (5, 'Ap', 'Agricultural', 'An A horizon in which incorporation of organic matter has involved mixing due to cultivation or to increased biological activity associated with topdressing or manuring. It may contain material from pre-existing E, B or C horizons.'),
+  (6, 'App', 'Recently tilled', 'An Ap horizon consisting mainly of clods and fragments with little pedal material, caused by cultivation during the past year.'),
+  (7, 'Ea', 'Leached' , 'No redox segregations; grains largely uncoated. Can be very pale if quartz-dominated. Rarely saturated, usually overlies Bh or Bs.'),
+  (8, 'Ew', 'Weathered', 'Both a moist chroma of 4 or more but less than 6, and < 2% redox segregations.'),
+  (9, 'Bfm', 'Placic' , 'Sharply defined, cemented, pan-like B horizon, dark and usually less then 10 mm thick. It forms a barrier to most roots and restricts water movement.'),
+  (10, 'Bh', 'Humose', 'Dark-coloured B horizon of podzolised soils enriched in organic matter, associated with aluminium, or iron and aluminium, as a result of illuviation.'),
+  (11, 'Bo', 'Ochreous', 'A strongly weathered, clayey B horizon formed in mixed crystalline iron and aluminium oxides and kaolin minerals, with low activity clay properties. '),
+  (12, 'Bs', 'Sesquioxides', 'Ochreous B horizon of podzolised soils containing illuvial aluminium, iron, or both, that is closely associated, or complexed, with illuvial organic matter. The aluminium and iron is apparently mainly present as minerals with short-range order (especially allophane and ferrihydrite), though some aluminium is often present as aluminium-humus.'),
+  (13, 'Bt', 'Translocated', 'B horizon containing translocated clay. Must have clay coatings, or if beneath an A or AE horizon, a signifcant increase in clay content'),
+  (14, 'Bw', 'Weathered', 'B horizon that shows evidence of alteration under well aerated conditions and does not qualify as Bh, Bs or Bt.'),
+  (15, 'BC', 'B-ish', 'A horizon transitional in character between a B and a C horizon, usually below a B horizon. It is distinguished from a B horizon in similar material by lacking some required characteristic of colour, pedality or degree of weathering. It differs from a C horizon by having some B horizon feature, albeit weakly expressed.'),
+  (16, 'CR', 'Consolidated' , 'A weakly consolidated C horizon that is sufficiently dense and coherent to form a significant barrier to roots. Soft rocks (with a hardness on Mohs scale of < 3) such as shale and siltstone, and some exceptionally dense glacial tills are included. The material can be dug with difficulty with a spade when moist.'),
+  (17, 'Cu', 'Unconsolidated', 'Unconsolidated C horizon without evidence of strong gleying, accumulation of carbonates or more soluble salts. It is normally apedal, may show stratification and has less than 2% redox segregations.'),
+  (18, 'R', 'Rock' , 'Hard or very hard bedrock that is impracticable to dig with a spade. The rock may contain cracks, but these are generally too few and too small for significant root development.');
+
+CREATE TABLE IF NOT EXISTS horizon_suffix_redox (
+  id_horizon_suffix_redox INTEGER PRIMARY KEY,
+  catu_horizon_suffix_redox VARCHAR UNIQUE,
+  txt_horizon_suffix_redox_name VARCHAR,
+  txt_horizon_suffix_redox_desc VARCHAR
+  );
+  
+/* Table 20.8 */
+INSERT INTO horizon_suffix_redox VALUES
+  (1, '(f)', 'Slightly reduced', '≥ 2% redox segregations, no low-chroma colours'),
+  (2, '(g)', 'Reduced', '≥ 2% redox segregations, matrix and/or ped faces have < 50% low-chroma colours'),
+  (3, 'g' , 'Very reduced', '≥ 2% redox segregations, matrix has 50-85% low chroma colours, and/or ped faces have > 50% low-chroma colours'),
+  (4, 'r', 'Completely reduced', 'Matrix has > 85% low-chroma colours.');
+  
+CREATE TABLE IF NOT EXISTS horizon_suffix_other (
+  id_horizon_suffix_other INTEGER PRIMARY KEY,
+  catu_horizon_suffix_other VARCHAR UNIQUE,
+  txt_horizon_suffix_other_name VARCHAR,
+  txt_horizon_suffix_other_desc VARCHAR
+  );
+  
+/* Table 20.9 */
+INSERT INTO horizon_suffix_other VALUES
+  (1, 'c', 'Concretionary', '> 5% by volume of concretions'),
+  (2, 'd', 'Densipan', 'To denote an E horizon with densipan properties'),
+  (3, 'e', 'Unripe', 'To denote an unripe horizon'),
+  (4, '(h)', 'Cutanic', 'To denote a horizon with cutanic horizon properties'),
+  (5, 'i', 'Nodular', 'To denote that the horizon contains more than 15% by volume of nodules, subrounded or irregular segregations of iron or aluminium oxyhydroxides with some kaolin.'),
+  (6, 'j', 'Jarositic', 'To denote the presence of straw-coloured jarosite'),
+  (7, 'k', 'Calcareous', ' To denote an accumulation of secondary carbonate, CaCO3.'),
+  (8, 'l', 'Gibbsitic', 'To denote an accumulation of gibbsite, Al(OH)3.'),
+  (9, 'm', 'Cemented', 'To denote a continuously cemented horizon that is strong enough to resist root penetration.'),
+  (10, 'n', 'Sodic', 'To denote an accumulation of sodium (identified in the field).'),
+  (11, 'q', 'Silicic', 'To denote an accumulation of secondary silica.'),
+  (12, 'v', 'Variegated', 'To denote a horizon with mottles or variegated colour pattern due to differential weathering of mineral components and not attributable to reduction and segregation of iron caused by saturation with water.'),
+  (13, 'x', 'Fragic', 'To denote a horizon with fragipan properties'),
+  (14, '(x)', 'Almost fragic', ' To denote a brittle horizon that does not meet all the requirements of a fragipan'),
+  (15, 'y', 'Gypsic', 'To denote an accumulation of gypsum, CaSO4.'),
+  (16, 'z', 'Salty', 'To denote an accumulation of salts more soluble than gypsum.');
+  
+ CREATE TABLE IF NOT EXISTS horizon_names_functional (
+  id_horizon_functional INTEGER PRIMARY KEY,
+  catu_horizon_functional VARCHAR UNIQUE,
+  txt_horizon_functional_name VARCHAR
+  );
+
+/* Table 20.18 - just a few for demo */  
+INSERT INTO horizon_names_functional VALUES 
+  (1, 'Lw', 'Loamy weak'),
+  (2, 'SLw', 'Stony loamy, weak'),
+  (3, 'VLc', 'Very stony loamy compact'),
+  (4, 'XL', 'Extremely stony loamy');
+
+CREATE TABLE IF NOT EXISTS horizon_permeabilities (
+  id_horizon_perm INTEGER PRIMARY KEY,
+  cato_functional_perm VARCHAR UNIQUE,
+  txt_functional_perm_name VARCHAR,
+  txt_functional_perm_desc VARCHAR,
+  );
+
+/* Table 20.17 */  
+INSERT INTO horizon_permeabilities VALUES 
+  (1, 'xs', 'Extremely slow', '< 0.1 mm/h'),
+  (2, 's', 'Slow', '0.1 - 4 mm/h'),
+  (3, 'ms', 'Moderately slow', '4 - 18 mm/h'),
+  (4, 'm', 'Moderate', '18 - 72 mm/h'),
+  (5, 'r', 'Rapid', '> 72 mm/h');
+
+
+
+```
+
+
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS horizon_names (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  PRIMARY KEY (id_site, id_horizon),
+  /* conventional */
+  catu_horizon_primary VARCHAR REFERENCES horizon_names_primary(catu_horizon_primary),
+  catu_horizon_secondary VARCHAR REFERENCES horizon_names_secondary(catu_horizon_secondary),
+  catu_horizon_suffix_redox VARCHAR REFERENCES horizon_suffix_redox(catu_horizon_suffix_redox),
+  /* 'other' 1:n so in subtable see below */
+  val_lith_discont INTEGER CHECK (val_lith_discont > 0) DEFAULT 1,
+  val_duplicate INTEGER CHECK (val_duplicate > 0) DEFAULT 1,
+  ind_buried BOOLEAN DEFAULT FALSE,
+  txt_horizon_name_full VARCHAR, /* this is for the weird ones - most cases can be handled with the controlled fields */
+  /* FH */
+  catu_functional_name VARCHAR REFERENCES horizon_names_functional(catu_horizon_functional),
+  cato_functional_perm VARCHAR REFERENCES horizon_permeabilities(cato_functional_perm),
+  ind_topsoil BOOLEAN DEFAULT FALSE,
+  ind_tephra_acid BOOLEAN DEFAULT FALSE,
+  ind_tephra_basic BOOLEAN DEFAULT FALSE
+  );
+
+CREATE TABLE IF NOT EXISTS horizon_names_suffix_other (
+  id_site VARCHAR,
+  id_horizon INTEGER,
+  id_suffix INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon_names(id_site, id_horizon),
+  PRIMARY KEY (id_site, id_horizon, id_suffix),
+  catu_horizon_suffix VARCHAR REFERENCES horizon_suffix_other(catu_horizon_suffix_other)
+  );
+  
+
+```
+
