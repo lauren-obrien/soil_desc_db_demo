@@ -2390,6 +2390,8 @@ CREATE TABLE IF NOT EXISTS field_tests (
 
 ### Horizon names
 
+Including horizon drainage here
+
 ```{sql}
 --| connection: con
 
@@ -2507,12 +2509,22 @@ INSERT INTO horizon_permeabilities VALUES
   (4, 'm', 'Moderate', '18 - 72 mm/h'),
   (5, 'r', 'Rapid', '> 72 mm/h');
 
+CREATE TABLE IF NOT EXISTS horizon_drainage_classes (
+  id_horizon_drainage INTEGER PRIMARY KEY,
+  cato_horizon_drainage VARCHAR UNIQUE,
+  txt_horizon_drainage_name VARCHAR
+  );
 
+/* Table 21.5 */
+INSERT INTO horizon_drainage_classes VALUES
+  (1, 'VP', 'Very Poor'),
+  (2, 'PO', 'Poor'),
+  (3, 'IP', 'Imprefect'),
+  (4, 'MW', 'Moderately well'),
+  (5, 'WE', 'Well');
+  
 
 ```
-
-
-
 
 ```{sql}
 --| connection: con
@@ -2536,7 +2548,8 @@ CREATE TABLE IF NOT EXISTS horizon_names (
   cato_functional_perm VARCHAR REFERENCES horizon_permeabilities(cato_functional_perm),
   ind_topsoil BOOLEAN DEFAULT FALSE,
   ind_tephra_acid BOOLEAN DEFAULT FALSE,
-  ind_tephra_basic BOOLEAN DEFAULT FALSE
+  ind_tephra_basic BOOLEAN DEFAULT FALSE,
+  cato_horizon_drainage VARCHAR REFERENCES horizon_drainage_classes(cato_horizon_drainage)
   );
 
 CREATE TABLE IF NOT EXISTS horizon_names_suffix_other (
@@ -2551,3 +2564,83 @@ CREATE TABLE IF NOT EXISTS horizon_names_suffix_other (
 
 ```
 
+### Horizon data classification
+
+These should only be used in database views e.g. to underpin report generation 
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS size_classes_solids (
+  id_size_solid INTEGER PRIMARY KEY,
+  catu_size_solid VARCHAR UNIQUE,
+  txt_size_solid_name VARCHAR,
+  txt_size_solid_desc VARCHAR
+  );
+
+/* Table 21.1 */
+INSERT INTO size_classes_solids VALUES
+   (1, '1', 'Microfine', '< 1 mm'),
+   (2, '2', 'Extremely fine', '1 - 2 mm'),
+   (3, '3', 'Very fine', '2 - 6 mm'),
+   (4, '4', 'Fine', '6 - 10 mm'),
+   (5, '5', 'Medium', '10 - 20 mm'),
+   (6, '6', 'Coarse', '20 - 60 mm'),
+   (7, '7', 'Very Coarse', '60 - 100 mm'),
+   (8, '8', 'Extremely coarse', '100 - 200 mm'),
+   (9, '9', 'Gross', '> 200 mm');
+  
+  
+CREATE TABLE IF NOT EXISTS size_classes_rocks (
+  id_size_rock INTEGER PRIMARY KEY,
+  catu_size_rock VARCHAR UNIQUE,
+  txt_size_rock_name VARCHAR,
+  txt_size_rock_desc VARCHAR
+  );
+
+/* Table 21.2 */
+INSERT INTO size_classes_rocks VALUES
+         (1, '1', 'Fine gravel',    '2 - 6 mm'),
+         (2, '2', 'Medium gravel',  '6 - 20 mm'),
+         (3, '3', 'Coarse gravel',  '20 - 60 mm'),
+         (4, '4', 'Cobbles',        '60 - 200 mm'),
+         (5, '5', 'Stones',         '200 - 600 mm'),
+         (6, '6', 'Boulders',       '600 - 2000 mm'), 
+         (7, '7', 'Large boulders', '>2000 mm');
+  
+CREATE TABLE IF NOT EXISTS abundance_classes_roots (
+  id_abund_root INTEGER PRIMARY KEY,
+  catu_abund_root VARCHAR UNIQUE,
+  txt_abund_root_name VARCHAR,
+  txt_abund_root_desc VARCHAR
+  );
+
+/* Table 21.3 */
+INSERT INTO abundance_classes_roots VALUES
+  (1, '0',     'None',          '0%'),
+  (2, '1',      'Few',   '> 0 - 5%'),
+  (3, '2',   'Common',  '> 5 - 25%'),
+  (4, '3',     'Many',  '> 25 - 50%'),
+  (5, '4', 'Abundant',       '> 50%');
+  
+CREATE TABLE IF NOT EXISTS abundance_classes_solids (
+  id_abund_solid INTEGER PRIMARY KEY,
+  catu_abund_solid VARCHAR UNIQUE,
+  txt_abund_solid_name VARCHAR,
+  txt_abund_solid_desc VARCHAR
+  );
+
+/* Table 21.4 */
+INSERT INTO abundance_classes_solids VALUES
+ (1, '0',     'None',          '0%'),
+ (2, '1', 'Very Few',    '> 0 - 2%'),
+ (3, '2',      'Few',    '> 2 - 10'),
+ (4, '3',   'Common',  '> 10 - 35%'),
+ (5, '4',     'Many',  '> 35 - 50%'),
+ (6, '5', 'Abundant',  '> 50 - 75%'),
+ (7, '6',  'Dominant',      '> 75%' );
+ 
+```
+## NZSC
+
+```{}
