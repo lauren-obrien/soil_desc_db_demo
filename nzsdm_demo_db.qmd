@@ -1769,7 +1769,8 @@ INSERT INTO simple_textures VALUES
  (2, 'Z', 'Silty', 'Clay content < 35%, silt content ≥ 40%; texture class Z, LZ, ZL'),
  (3, 'L', 'Loamy', 'Clay content 8 - 35%, silt content < 40%; texture class SL, SC, CL'),
  (4, 'S', 'Sandy', 'Clay content < 8, silt content, < 40%, texture class S, LS'),
- (5, 'R', 'Rocky', 'Fine earth fraction < 15%, dominated by rock fragments > 2 mm');
+ (5, 'R', 'Rocky', 'Fine earth fraction < 15%, dominated by rock fragments > 2 mm'),
+ (6, 'O', 'Organic', 'Organic matter fraction > 18%');
 
 CREATE TABLE IF NOT EXISTS mineral_textures (
   id_mineral_texture INTEGER PRIMARY KEY,
@@ -1858,7 +1859,7 @@ INSERT INTO nzsc_mineralogies VALUES
   (4, 'Fe', 'Ferritic', '> 7.0% citrate-dithionite extractable Fe in the < 2 mm fraction'),
   (5, 'Al', 'Aluminitic', '> 40% by weight aluminium hydroxides and oxyhydroxides in the < 2 mm fraction'),
   (6, 'Si', 'Siliceous', '> 90% by weight silica minerals (quartz, chalcedony, or opal) and other durable minerals that are resistant to weathering, provided that the silica minerals are > 60% by weight in the < 2 mm fraction'),
-  (7, 'Am', 'Amorphous', '> 5% by weight of minerals with short-range order (principally allophane, imogolite, and ferrihydrite) in the < 2 mm fraction'),
+  (7, 'Am', 'Amorphous', '> 5% by weight of minerals with short-range group (principally allophane, imogolite, and ferrihydrite) in the < 2 mm fraction'),
   (8, 'Mi', 'Micaceous', '> 40% by weight of mica minerals in the < 2 mm fraction'),
   (9, 'Cl', 'Chloritic', '> 40% by weight of chlorite in the < 2 mm fraction'),
   (10, 'Sp', 'Serpentinitic', '> 40% by weight of serpentine minerals (antigorite, chrysotile, fibrolite, and talc) in the < 2 mm fraction'),
@@ -2433,7 +2434,7 @@ INSERT INTO horizon_names_secondary VALUES
   (9, 'Bfm', 'Placic' , 'Sharply defined, cemented, pan-like B horizon, dark and usually less then 10 mm thick. It forms a barrier to most roots and restricts water movement.'),
   (10, 'Bh', 'Humose', 'Dark-coloured B horizon of podzolised soils enriched in organic matter, associated with aluminium, or iron and aluminium, as a result of illuviation.'),
   (11, 'Bo', 'Ochreous', 'A strongly weathered, clayey B horizon formed in mixed crystalline iron and aluminium oxides and kaolin minerals, with low activity clay properties. '),
-  (12, 'Bs', 'Sesquioxides', 'Ochreous B horizon of podzolised soils containing illuvial aluminium, iron, or both, that is closely associated, or complexed, with illuvial organic matter. The aluminium and iron is apparently mainly present as minerals with short-range order (especially allophane and ferrihydrite), though some aluminium is often present as aluminium-humus.'),
+  (12, 'Bs', 'Sesquioxides', 'Ochreous B horizon of podzolised soils containing illuvial aluminium, iron, or both, that is closely associated, or complexed, with illuvial organic matter. The aluminium and iron is apparently mainly present as minerals with short-range group (especially allophane and ferrihydrite), though some aluminium is often present as aluminium-humus.'),
   (13, 'Bt', 'Translocated', 'B horizon containing translocated clay. Must have clay coatings, or if beneath an A or AE horizon, a signifcant increase in clay content'),
   (14, 'Bw', 'Weathered', 'B horizon that shows evidence of alteration under well aerated conditions and does not qualify as Bh, Bs or Bt.'),
   (15, 'BC', 'B-ish', 'A horizon transitional in character between a B and a C horizon, usually below a B horizon. It is distinguished from a B horizon in similar material by lacking some required characteristic of colour, pedality or degree of weathering. It differs from a C horizon by having some B horizon feature, albeit weakly expressed.'),
@@ -2495,10 +2496,10 @@ INSERT INTO horizon_names_functional VALUES
   (4, 'XL', 'Extremely stony loamy');
 
 CREATE TABLE IF NOT EXISTS horizon_permeabilities (
-  id_horizon_perm INTEGER PRIMARY KEY,
+  id_functional_perm INTEGER PRIMARY KEY,
   cato_functional_perm VARCHAR UNIQUE,
   txt_functional_perm_name VARCHAR,
-  txt_functional_perm_desc VARCHAR,
+  txt_functional_perm_desc VARCHAR
   );
 
 /* Table 20.17 */  
@@ -2519,7 +2520,7 @@ CREATE TABLE IF NOT EXISTS horizon_drainage_classes (
 INSERT INTO horizon_drainage_classes VALUES
   (1, 'VP', 'Very Poor'),
   (2, 'PO', 'Poor'),
-  (3, 'IP', 'Imprefect'),
+  (3, 'IP', 'Imperfect'),
   (4, 'MW', 'Moderately well'),
   (5, 'WE', 'Well');
   
@@ -2641,6 +2642,632 @@ INSERT INTO abundance_classes_solids VALUES
  (7, '6',  'Dominant',      '> 75%' );
  
 ```
+
 ## NZSC
 
-```{}
+### Order, Group and Subgroup
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS nzsc_orders (
+  catu_nzsc_order VARCHAR PRIMARY KEY,
+  txt_nzsc_order_name VARCHAR
+  );
+  
+INSERT INTO nzsc_orders VALUES
+  ('O', 'Organic'),
+  ('G', 'Gley'),
+  ('U', 'Ultic'),
+  ('Z', 'Podzol'),
+  ('L', 'Allophanic'),
+  ('M', 'Pumice'),
+  ('E', 'Melanic'),
+  ('S', 'Semiarid'),
+  ('X', 'Oxidic'),
+  ('N', 'Granular'),
+  ('P', 'Pallic'),
+  ('B', 'Brown'),
+  ('A', 'Anthropic'),
+  ('R', 'Recent'),
+  ('W', 'Raw');
+
+CREATE TABLE IF NOT EXISTS nzsc_groups (
+  catu_nzsc_order VARCHAR REFERENCES nzsc_orders(catu_nzsc_order),
+  catu_nzsc_group VARCHAR,
+  PRIMARY KEY (catu_nzsc_order, catu_nzsc_group),
+  txt_nzsc_group_name VARCHAR 
+  );
+
+INSERT INTO nzsc_groups VALUES
+  ('O', 'L', 'Litter'),
+  ('O', 'M', 'Mesic'),
+  ('O', 'F', 'Fibric'),
+  ('O', 'H', 'Humic'),
+  ('G', 'U', 'Sulphuric'),
+  ('G', 'T', 'Tephric'),
+  ('G', 'S', 'Sandy'),
+  ('G', 'X', 'Oxidic'),
+  ('G', 'R', 'Recent'),
+  ('G', 'A', 'Acid'),
+  ('G', 'O', 'Orthic'),
+  ('U', 'D', 'Densipan'),
+  ('U', 'E', 'Albic'),
+  ('U', 'P', 'Perch-gley'),
+  ('U', 'S', 'Sandy'),
+  ('U', 'Y', 'Yellow'),
+  ('Z', 'D', 'Densipan'),
+  ('Z', 'P', 'Perch-gley'),
+  ('Z', 'G', 'Groundwater-gley'),
+  ('Z', 'X', 'Pan'),
+  ('Z', 'O', 'Orthic'),
+  ('L', 'P', 'Perch-gley'),
+  ('L', 'G', 'Gley'),
+  ('L', 'I', 'Impeded'),
+  ('L', 'O', 'Orthic'),
+  ('M', 'P', 'Perch-gley'),
+  ('M', 'I', 'Impeded'),
+  ('M', 'O', 'Orthic'),
+  ('E', 'V', 'Vertic'),
+  ('E', 'P', 'Perch-gley'),
+  ('E', 'R', 'Rendzic'),
+  ('E', 'M', 'Mafic'),
+  ('E', 'O', 'Orthic'),
+  ('S', 'A', 'Aged-argillic'),
+  ('S', 'Z', 'Solonetzic'),
+  ('S', 'J', 'Argillic'),
+  ('S', 'I', 'Immature'),
+  ('X', 'P', 'Perch-gley'),
+  ('X', 'N', 'Nodular'),
+  ('X', 'O', 'Orthic'),
+  ('N', 'P', 'Perch-gley'),
+  ('N', 'E', 'Melanic'),
+  ('N', 'X', 'Oxidic'),
+  ('N', 'O', 'Orthic'),
+  ('P', 'P', 'Perch-gley'),
+  ('P', 'U', 'Duric'),
+  ('P', 'X', 'Fragic'),
+  ('P', 'L', 'Laminar'),
+  ('P', 'J', 'Argillic'),
+  ('P', 'I', 'Immature'),
+  ('B', 'L', 'Allophanic'),
+  ('B', 'S', 'Sandy'),
+  ('B', 'X', 'Oxidic'),
+  ('B', 'M', 'Mafic'),
+  ('B', 'A', 'Acid'),
+  ('B', 'F', 'Firm'),
+  ('B', 'O', 'Orthic'),
+  ('A', 'T', 'Truncated'),
+  ('A', 'R', 'Refuse'),
+  ('A', 'M', 'Mixed'),
+  ('A', 'F', 'Fill'),
+  ('R', 'H', 'Hydrothermal'),
+  ('R', 'X', 'Rocky'),
+  ('R', 'S', 'Sandy'),
+  ('R', 'F', 'Fluvial'),
+  ('R', 'T', 'Tephric'),
+  ('R', 'O', 'Orthic'),
+  ('W', 'G', 'Gley'),
+  ('W', 'H', 'Hydrothermal'),
+  ('W', 'X', 'Rocky'),
+  ('W', 'S', 'Sandy'),
+  ('W', 'F', 'Fluvial'),
+  ('W', 'T', 'Tephric'),
+  ('W', 'O', 'Orthic');
+
+CREATE TABLE IF NOT EXISTS nzsc_subgroups (
+  catu_nzsc_order VARCHAR,
+  catu_nzsc_group VARCHAR, 
+  FOREIGN KEY (catu_nzsc_order, catu_nzsc_group) REFERENCES nzsc_groups(catu_nzsc_order, catu_nzsc_group),
+  catu_nzsc_subgroup VARCHAR,
+  PRIMARY KEY (catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup),
+  txt_nzsc_subgroup_name VARCHAR
+  );
+
+INSERT INTO nzsc_subgroups VALUES
+  ('O', 'L', 'BZ', 'Buried-podzol'),
+  ('O', 'L', 'BG', 'Buried-gley'),
+  ('O', 'L', 'O', 'Orthic-litter'),
+  ('O', 'F', 'S', 'Sphagnic'),
+  ('O', 'F', 'A', 'Acid'),
+  ('O', 'F', 'M', 'Mellow'),
+  ('O', 'M', 'A', 'Acid'),
+  ('O', 'M', 'M', 'Mellow'),
+  ('O', 'H', 'A', 'Acid'),
+  ('O', 'H', 'M', 'Mellow'),
+  ('G', 'U', 'FQ', 'Fluid-saline'),
+  ('G', 'U', 'F', 'Fluid'),
+  ('G', 'U', 'O', 'Peaty'),
+  ('G', 'U', 'SQ', 'Sandy-saline'),
+  ('G', 'U', 'T', 'Typic'),
+  ('G', 'T', 'O', 'Peaty'),
+  ('G', 'T', 'A', 'Acidic'),
+  ('G', 'T', 'T', 'Tephric'),
+  ('G', 'S', 'O', 'Peaty'),
+  ('G', 'S', 'Q', 'Saline'),
+  ('G', 'S', 'C', 'Concretionary'),
+  ('G', 'S', 'A', 'Acidic'),
+  ('G', 'S', 'T', 'Typic'),
+  ('G', 'X', 'N', 'Nodular'),
+  ('G', 'X', 'T', 'Typic'),
+  ('G', 'R', 'O', 'Peaty'),
+  ('G', 'R', 'F', 'Fluid'),
+  ('G', 'R', 'Q', 'Saline'),
+  ('G', 'R', 'C', 'Calcareous'),
+  ('G', 'R', 'A', 'Acidic'),
+  ('G', 'R', 'T', 'Typic'),
+  ('G', 'A', 'O', 'Peaty'),
+  ('G', 'A', 'G', 'Granular'),
+  ('G', 'A', 'Y', 'Ultic'),
+  ('G', 'A', 'PH', 'Placic-humose'),
+  ('G', 'A', 'H', 'Humose'),
+  ('G', 'A', 'T', 'Typic'),
+  ('G', 'O', 'O', 'Peaty'),
+  ('G', 'O', 'Q', 'Saline'),
+  ('G', 'O', 'C', 'Calcareous'),
+  ('G', 'O', 'I', 'Ironstone'),
+  ('G', 'O', 'E', 'Melanic'),
+  ('G', 'O', 'J', 'Argillic'),
+  ('G', 'O', 'A', 'Acidic'),
+  ('G', 'O', 'T', 'Typic'),
+  ('U', 'D', 'P', 'Perch-gleyed'),
+  ('U', 'D', 'M', 'Mottled'),
+  ('U', 'E', 'P', 'Perch-gleyed'),
+  ('U', 'E', 'M', 'Mottled'),
+  ('U', 'E', 'Y', 'Yellow'),
+  ('U', 'P', 'S', 'Sandy'),
+  ('U', 'P', 'T', 'Typic'),
+  ('U', 'S', 'E', 'Albic'),
+  ('U', 'S', 'M', 'Mottled'),
+  ('U', 'S', 'T', 'Typic'),
+  ('U', 'Y', 'G',  'Magnesic'),
+  ('U', 'Y', 'MZ', 'Mottled-podzolic'),
+  ('U', 'Y', 'M',  'Mottled'),
+  ('U', 'Y', 'Z',  'Podzolic'),
+  ('U', 'Y', 'BG', 'Buried-granular'),
+  ('U', 'Y', 'T',  'Typic'),
+  ('Z', 'D', 'U',  'Humus-pan'),
+  ('Z', 'D', 'YH', 'Ultic-humose'),
+  ('Z', 'D', 'H',  'Humose'),
+  ('Z', 'D', 'Q',  'Ortstein'),
+  ('Z', 'D', 'T',  'Typic'),
+  ('Z', 'P', 'F',  'Fluid'),
+  ('Z', 'P', 'OZ', 'Peaty-silt-mantled'),
+  ('Z', 'P', 'Z',  'Silt-mantled'),
+  ('Z', 'P', 'U',  'Humus-pan'),
+  ('Z', 'P', 'HQ', 'Humose-ortstein'),
+  ('Z', 'P', 'HP', 'Humose-placic'),
+  ('Z', 'P', 'H',  'Humose'),
+  ('Z', 'P', 'Q',  'Ortstein'),
+  ('Z', 'P', 'P',  'Placic'),
+  ('Z', 'P', 'T',  'Typic'),
+  ('Z', 'G', 'H',  'Humose'),
+  ('Z', 'G', 'T',  'Typic'),
+  ('Z', 'X', 'U',  'Humus-pan'),
+  ('Z', 'X', 'H',  'Humose'),
+  ('Z', 'X', 'X',  'Fragic'),
+  ('Z', 'X', 'Q',  'Ortstein'),
+  ('Z', 'X', 'P',  'Placic'),
+  ('Z', 'X', 'F',  'Firm'),
+  ('Z', 'O', 'H',  'Humose'),
+  ('Z', 'O', 'T',  'Typic'),
+  ('L', 'P', 'I',  'Ironstone'),
+  ('L', 'P', 'T',  'Typic'),
+  ('L', 'G', 'O',  'Peaty'),
+  ('L', 'G', 'T',  'Typic'),
+  ('L', 'I', 'MI', 'Mottled-ironstone'),
+  ('L', 'I', 'M', 'Mottled'),
+  ('L', 'I', 'T', 'Typic'),
+  ('L', 'O', 'M', 'Mottled'),
+  ('L', 'O', 'VA', 'Vitric-acidic'),
+  ('L', 'O', 'V', 'Vitric'),
+  ('L', 'O', 'A', 'Acidic'),
+  ('L', 'O', 'T', 'Typic'),
+  ('M', 'P', 'U', 'Duric'),
+  ('M', 'P', 'T', 'Typic'),
+  ('M', 'I', 'MW', 'Mottled-welded'),
+  ('M', 'I', 'W', 'Welded'),
+  ('M', 'I', 'M', 'Mottled'),
+  ('M', 'I', 'T', 'Typic'),
+  ('M', 'O', 'M', 'Mottled'),
+  ('M', 'O', 'Z', 'Podzolic'),
+  ('M', 'O', 'L', 'Allophanic'),
+  ('M', 'O', 'BL', 'Buried-allophanic'),
+  ('M', 'O', 'I', 'Immature'),
+  ('M', 'O', 'T', 'Typic'),
+  ('E', 'V', 'MC', 'Mottled-calcareous'),
+  ('E', 'V', 'M', 'Mottled'),
+  ('E', 'V', 'C', 'Calcareous'),
+  ('E', 'V', 'T', 'Typic'),
+  ('E', 'P', 'V', 'Vertic'),
+  ('E', 'P', 'J', 'Argillic'),
+  ('E', 'P', 'T', 'Typic'),
+  ('E', 'R', 'O', 'Peaty'),
+  ('E', 'R', 'M', 'Mottled'),
+  ('E', 'R', 'W', 'Weathered'),
+  ('E', 'R', 'T', 'Typic'),
+  ('E', 'M', 'G', 'Magnesic'),
+  ('E', 'M', 'M', 'Mottled'),
+  ('E', 'M', 'T', 'Typic'),
+  ('E', 'O', 'MC', 'Mottled-calcareous'),
+  ('E', 'O', 'JC', 'Argillic-calcareous'),
+  ('E', 'O', 'DC', 'Pedal-calcareous'),
+  ('E', 'O', 'C', 'Calcareous'),
+  ('E', 'O', 'MJ', 'Mottled-argillic'),
+  ('E', 'O', 'M', 'Mottled'),
+  ('E', 'O', 'J', 'Argillic'),
+  ('E', 'O', 'T', 'Typic'),
+  ('S', 'A', 'M', 'Mottled'),
+  ('S', 'A', 'W', 'Weathered'),
+  ('S', 'A', 'K', 'Alkaline'),
+  ('S', 'A', 'H', 'Thick'),
+  ('S', 'A', 'T', 'Typic'),
+  ('S', 'Z', 'Q', 'Saline'),
+  ('S', 'Z', 'T', 'Typic'),
+  ('S', 'J', 'M', 'Mottled'),
+  ('S', 'J', 'Q', 'Saline'),
+  ('S', 'J', 'K', 'Alkaline'),
+  ('S', 'J', 'L', 'Laminar'),
+  ('S', 'J', 'T', 'Typic'),
+  ('S', 'I', 'M', 'Mottled'),
+  ('S', 'I', 'Q', 'Saline'),
+  ('S', 'I', 'K', 'Alkaline'),
+  ('S', 'I', 'T', 'Typic'),
+  ('X', 'P', 'N', 'Nodular'),
+  ('X', 'P', 'T', 'Typic'),
+  ('X', 'N', 'T', 'Typic'),
+  ('X', 'O', 'M', 'Mottled'),
+  ('X', 'O', 'B', 'Brown'),
+  ('X', 'O', 'T', 'Typic'),
+  ('N', 'P', 'X', 'Oxidic'),
+  ('N', 'P', 'A', 'Acidic'),
+  ('N', 'P', 'T', 'Typic'),
+  ('N', 'E', 'M', 'Mottled'),
+  ('N', 'E', 'L', 'Allophanic'),
+  ('N', 'E', 'T', 'Typic'),
+  ('N', 'X', 'MA', 'Mottled-acidic'),
+  ('N', 'X', 'M', 'Mottled'),
+  ('N', 'X', 'L', 'Allophanic'),
+  ('N', 'X', 'A', 'Acidic'),
+  ('N', 'X', 'T', 'Typic'),
+  ('N', 'O', 'MA', 'Mottled-acidic'),
+  ('N', 'O', 'M', 'Mottled'),
+  ('N', 'O', 'L', 'Allophanic'),
+  ('N', 'O', 'A', 'Acidic'),
+  ('N', 'O', 'T', 'Typic'),
+  ('P', 'P', 'U', 'Duric'),
+  ('P', 'P', 'JX', 'Argillic-fragic'),
+  ('P', 'P', 'X', 'Fragic'),
+  ('P', 'P', 'WJ', 'Weathered-argillic'),
+  ('P', 'P', 'J', 'Argillic'),
+  ('P', 'P', 'C', 'Cemented'),
+  ('P', 'P', 'T', 'Typic'),
+  ('P', 'U', 'M', 'Mottled'),
+  ('P', 'U', 'JN', 'Argillic-sodic'),
+  ('P', 'U', 'J', 'Argillic'),
+  ('P', 'U', 'T', 'Typic'),
+  ('P', 'X', 'JN', 'Argillic-sodic'),
+  ('P', 'X', 'JM', 'Argillic-mottled'),
+  ('P', 'X', 'JC', 'Argillic-calcareous'),
+  ('P', 'X', 'J', 'Argillic'),
+  ('P', 'X', 'MC', 'Mottled-calcareous'),
+  ('P', 'X', 'M', 'Mottled'),
+  ('P', 'X', 'CN', 'Calcareous-sodic'),
+  ('P', 'X', 'C', 'Calcareous'),
+  ('P', 'X', 'T', 'Typic'),
+  ('P', 'L', 'M', 'Mottled'),
+  ('P', 'L', 'C', 'Calcareous'),
+  ('P', 'L', 'T', 'Typic'),
+  ('P', 'J', 'MW', 'Mottled-weathered'),
+  ('P', 'J', 'M', 'Mottled'),
+  ('P', 'J', 'A', 'Aged'),
+  ('P', 'J', 'MU', 'Mottled-ultic'),
+  ('P', 'J', 'U', 'Utlic'),
+  ('P', 'J', 'N', 'Sodic'),
+  ('P', 'J', 'W', 'Weathered'),
+  ('P', 'J', 'C', 'Calcareous'),
+  ('P', 'J', 'T', 'Typic'),
+  ('P', 'I', 'MD', 'Mottled-pedal'),
+  ('P', 'I', 'M', 'Mottled'),
+  ('P', 'I', 'C', 'Calcareous'),
+  ('P', 'I', 'D', 'Pedal'),
+  ('P', 'I', 'T', 'Typic'),
+  ('B', 'L', 'M', 'Mottled'),
+  ('B', 'L', 'A', 'Acidic'),
+  ('B', 'L', 'F', 'Firm'),
+  ('B', 'L', 'AM', 'Acidic-mafic'),
+  ('B', 'L', 'T', 'Typic'),
+  ('B', 'L', 'AD', 'Acidic-pedal'),
+  ('B', 'L', 'D', 'Pedal'),
+  ('B', 'S', 'MP', 'Mottled-placic'),
+  ('B', 'S', 'M', 'Mottled'),
+  ('B', 'S', 'A', 'Acidic'),
+  ('B', 'S', 'P', 'Pallic'),
+  ('B', 'S', 'X', 'Pan'),
+  ('B', 'S', 'T', 'Typic'),
+  ('B', 'X', 'T', 'Typic'),
+  ('B', 'M', 'MG', 'Mottled-magnesic'),
+  ('B', 'M', 'G', 'Magnesic'),
+  ('B', 'M', 'M', 'Mottled'),
+  ('B', 'M', 'A', 'Acidic'),
+  ('B', 'M', 'T', 'Typic'),
+  ('B', 'A', 'O', 'Peaty'),
+  ('B', 'A', 'MP', 'Mottled-placic'),
+  ('B', 'A', 'M', 'Mottled'),
+  ('B', 'A', 'P', 'Placic'),
+  ('B', 'A', 'X', 'Pan'),
+  ('B', 'A', 'T', 'Typic'),
+  ('B', 'F', 'MA', 'Mottled-acidic'),
+  ('B', 'F', 'MC', 'Mottled-cemented'),
+  ('B', 'F', 'MW', 'Mottled-weathered'),
+  ('B', 'F', 'MP', 'Mottled-pallic'),
+  ('B', 'F', 'M', 'Mottled'),
+  ('B', 'F', 'AC', 'Acidic-cemented'),
+  ('B', 'F', 'C', 'Cemented'),
+  ('B', 'F', 'AL', 'Acidic-allophanic'),
+  ('B', 'F', 'L', 'Allophanic'),
+  ('B', 'F', 'W', 'Weathered'),
+  ('B', 'F', 'P', 'Pallic'),
+  ('B', 'F', 'A', 'Acidic'),
+  ('B', 'F', 'T', 'Typic'),
+  ('B', 'O', 'MW', 'Mottled-weathered'),
+  ('B', 'O', 'MA', 'Mottled-acidic'),
+  ('B', 'O', 'M', 'Mottled'),
+  ('B', 'O', 'H', 'Humose'),
+  ('B', 'O', 'I', 'Immature'),
+  ('B', 'O', 'P', 'Pallic'),
+  ('B', 'O', 'A', 'Acidic'),
+  ('B', 'O', 'W', 'Weathered'),
+  ('B', 'O', 'C', 'Calcareous'),
+  ('B', 'O', 'T', 'Typic'),
+  ('A', 'T', 'X', 'Rocky'),
+  ('A', 'T', 'T', 'Typic'),
+  ('A', 'R', 'B', 'Buried'),
+  ('A', 'R', 'T', 'Typic'),
+  ('A', 'F', 'C', 'Compacted'),
+  ('A', 'F', 'W', 'Wet'),
+  ('A', 'F', 'ST', 'Stony-tailings'),
+  ('A', 'F', 'A', 'Artifact'),
+  ('A', 'F', 'E', 'Earthy'),
+  ('R', 'H', 'I', 'Inactive'),
+  ('R', 'X', 'OA', 'Peaty-acidic'),
+  ('R', 'X', 'A', 'Acidic'),
+  ('R', 'X', 'T', 'Typic'),
+  ('R', 'S', 'M', 'Mottled'),
+  ('R', 'S', 'A', 'Acidic'),
+  ('R', 'S', 'K', 'Tephric'),
+  ('R', 'S', 'T', 'Typic'),
+  ('R', 'F', 'MA', 'Mottled-acidic'),
+  ('R', 'F', 'MQ', 'Mottled-saline'),
+  ('R', 'F', 'Q', 'Saline'),
+  ('R', 'F', 'MW', 'Mottled-weathered'),
+  ('R', 'F', 'M', 'Mottled'),
+  ('R', 'F', 'AW', 'Acidic-weathered'),
+  ('R', 'F', 'W', 'Weathered'),
+  ('R', 'F', 'A', 'Acidic'),
+  ('R', 'F', 'T', 'Typic'),
+  ('R', 'T', 'M', 'Mottled'),
+  ('R', 'T', 'BP', 'Buried-pumice'),
+  ('R', 'T', 'BL', 'Buried-allophanic'),
+  ('R', 'T', 'T', 'Typic'),
+  ('R', 'O', 'MP', 'Mottled-pallic'),
+  ('R', 'O', 'M', 'Mottled'),
+  ('R', 'O', 'AW', 'Acidic-weathered'),
+  ('R', 'O', 'W', 'Weathered'),
+  ('R', 'O', 'A', 'Acidic'),
+  ('R', 'O', 'T', 'Typic'),
+  ('W', 'G', 'FU', 'Fluid-sulphidic'),
+  ('W', 'G', 'U', 'Sulphidic'),
+  ('W', 'G', 'FQ', 'Fluid-saline'),
+  ('W', 'G', 'Q', 'Saline'),
+  ('W', 'G', 'F', 'Fluid'),
+  ('W', 'G', 'S', 'Sandy'),
+  ('W', 'G', 'T', 'Typic'),
+  ('W', 'H', 'A', 'Active');
+
+```
+
+### Family and sibling
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS nzsc_fam_profile_materials (
+  id_nzsc_fam_pm INTEGER PRIMARY KEY,
+  catu_nzsc_fam_pm VARCHAR UNIQUE,
+  txt_nzsc_fam_pm_name VARCHAR,
+  txt_nzsc_fam_pm_desc VARCHAR
+  );
+
+/* Table 24.1 */
+INSERT INTO nzsc_fam_profile_materials VALUES
+  (1,  'Mf', 'Fragmental', 'Rock fragments with minimal fine earth from within 20 cm to > 60 cm depth'),
+  (2,  'Ml' ,'Lithic', 'Other soils with a coherent- or shattered lithic contact within 45 cm'),
+  (3,  'Mp', 'Paralithic', 'Other soils with a paralithic contact within 45 cm'),
+  (4,  'Mt', 'Tephric', 'Other soils with at least 30 cm of tephric soil material within 100 cm'),
+  (5,  'Mr', 'Rounded-stony', 'Other soils with ≥ 35% by volume rounded or sub-rounded rock fragments from within 45 cm to > 100 cm.'),
+  (6,  'Ma', 'Angular-stony', 'Other soils with ≥ 35% by volume angular or sub-angular rock fragments from within 45 cm to > 100 cm.'),
+  (7,  'Mm', 'Moderately deep on rock', 'Other soils with a lithic or paralithic contact at < 100 cm.'),
+  (8,  'Mg', 'Moderately deep on rock fragments', 'Other soils with ≥ 35% by volume rounded or sub-rounded rock fragments from within 45-90 cm, extending continuously to 100 cm with a cumulative thickness of ≥ 50 cm (unless over rock).'),
+  (9,  'Md', 'Stoneless', 'Other soils with weighted average < 3% rock fragments by volume in the top 100 cm.'),
+  (10, 'Ms', 'Stony', 'Other mineral soils.'),
+  (11, 'Sl', 'Organic-lithic', 'Organic soils with a coherent- or shattered lithic contact within 45 cm.'),
+  (12, 'Sp', 'Organic-paralithic', 'Other organic soils with a paralithic contact within 45 cm.'),
+  (13, 'Sd', 'Organic-deep', 'Other organic soils with continuous peat throughout the top 100 cm.'),
+  (14, 'So', 'Organic-other', 'Other organic soils.');
+
+/* lithologies implemented earlier - see rock fragments */
+
+/* using simple textures in Table 15.3 for fam texture class - 
+   same concept applied to a different control section */
+   
+CREATE TABLE IF NOT EXISTS nzsc_fam_permeabilities (
+  id_nzsc_fam_perm INTEGER PRIMARY KEY,
+  cato_nzsc_fam_perm VARCHAR UNIQUE,
+  txt_nzsc_fam_perm_name VARCHAR,
+  txt_nzsc_fam_perm_desc VARCHAR
+  );
+
+/* Table 24.4 */  
+INSERT INTO nzsc_fam_permeabilities VALUES 
+  (1, 's', 'Slow', '< 4 mm/h'),
+  (2, 'm', 'Moderate', '4 - 72 mm/h'),
+  (3, 'r', 'Rapid', '> 72 mm/h');
+
+CREATE TABLE IF NOT EXISTS nzsc_sib_depths (
+  id_nzsc_sib_depth INTEGER PRIMARY KEY,
+  cato_nzsc_sib_depth VARCHAR UNIQUE,
+  txt_nzsc_sib_depth_name VARCHAR,
+  txt_nzsc_sib_depth_desc VARCHAR
+  );
+
+/* Table 24.6 */  
+INSERT INTO nzsc_sib_depths VALUES 
+  (1, 'd', 'Deep', '> 100 cm'), 
+  (2, 'md', 'Moderately deep', '≥ 45 - < 100 cm'),
+  (3, 's', 'Shallow', '≥ 20 - < 45 cm'),
+  (4, 'vs', 'Very Shallow' , '< 20 cm');
+
+CREATE TABLE IF NOT EXISTS nzsc_sib_tsstone (
+  id_nzsc_sib_tsstone INTEGER PRIMARY KEY,
+  cato_nzsc_sib_tsstone VARCHAR UNIQUE,
+  txt_nzsc_sib_tsstone_name VARCHAR,
+  txt_nzsc_sib_tsstone_desc VARCHAR
+  );
+
+/* Table 24.7 */  
+INSERT INTO nzsc_sib_tsstone VALUES 
+ (1, '1', 'Stoneless', '< 1 %'),
+ (2, '2', 'Slightly stony', '≥ 1 - < 5 %'),
+ (3, '3', 'Moderately stony', '≥ 5 - < 35 %'),
+ (4, '4', 'Very stony' , '≥ 35 % ');
+ 
+ 
+CREATE TABLE IF NOT EXISTS nzsc_sib_texture (
+  id_nzsc_sib_texture INTEGER PRIMARY KEY,
+  cato_nzsc_sib_texture VARCHAR UNIQUE,
+  txt_nzsc_sib_texture_name VARCHAR
+  );
+
+/* Table 24.8 */  
+INSERT INTO nzsc_sib_texture VALUES 
+  (1, 'k', 'Skeletal'),
+  (2, 'Tp', 'Peat or litter'),
+  (3, 'Tc', 'Clayey peat'),
+  (4, 'Tl', 'Loamy peat'),
+  (5, 'Ts', 'Sandy peat'),
+  (6,  'c',  'Clayey'),
+  (7,  's',  'Sandy'),
+  (8,  'l',  'Loamy'),
+  (9,  'z',  'Silty'); 
+  
+  
+CREATE TABLE IF NOT EXISTS nzsc_sib_drainage (
+  id_nzsc_sib_drainage INTEGER PRIMARY KEY,
+  cato_nzsc_sib_drainage VARCHAR UNIQUE,
+  txt_nzsc_sib_drainage_name VARCHAR,
+  txt_nzsc_sib_drainage_desc VARCHAR
+  );
+
+/* Table 24.9 */  
+INSERT INTO nzsc_sib_drainage VALUES  
+  (1, 'VP', 'Very Poor', 'Profiles with very poorly drained horizons starting <10 cm from the land surface'),
+  (2, 'PO', 'Poor', 'Profiles with poorly drained horizons starting <30 cm from the land surface'),
+  (3, 'IP', 'Imperfect', 'Profiles with poorly drained horizons starting 30-60 cm from the land surface, or profiles with imperfectly drained horizons starting <30 cm from the land surface'),
+  (4, 'MW', 'Moderately Well', 'Profiles with moderately well-drained horizons starting <90 cm from the surface, or profiles with poorly-drained horizons starting 60-90 cm from the surface, or profiles with imperfectly drained horizons starting 30-90 cm from the surface'), 
+  (5, 'WE', 'Well', 'All horizons starting within 90 cm of the surface are well-drained.');
+ 
+CREATE TABLE IF NOT EXISTS nzsc_sib_drainage_mods (
+  id_nzsc_sib_drainage_mod INTEGER PRIMARY KEY,
+  cato_nzsc_sib_drainage_mod VARCHAR UNIQUE,
+  txt_nzsc_sib_drainage_mod_name VARCHAR,
+  txt_nzsc_sib_drainage_mod_desc VARCHAR
+  );
+
+/* Table 24.10 */  
+INSERT INTO nzsc_sib_drainage_mods VALUES   
+ (1, 'N', 'Natural', 'No evidence of human impacts on the local drainage regime'),
+ (2, 'M', 'Minor', 'Drainage regime passively altered by e.g. conversion to or from forest; or ambiguous evidence of any human impacts beyond clearing'),
+ (3, 'A', 'Major', 'Clear evidence of directed human alteration to the drainage regime e.g. drain or dam construction adjacent to site, flow diversions, infill, levelling or contouring works');
+
+CREATE TABLE IF NOT EXISTS nzsc_bp_rootbarriers (
+  id_nzsc_bp_rootbarrier INTEGER PRIMARY KEY,
+  catu_nzsc_bp_rootbarrier VARCHAR UNIQUE,
+  txt_nzsc_bp_rootbarrier_name VARCHAR
+  );
+
+/* Table 24.11-12 */  
+INSERT INTO nzsc_bp_rootbarriers VALUES 
+  (1,  'C',  'Chemical'),
+  (2,  'D',  'Densely packed gravels'),
+  (3,  'G',  'Extremely gravelly'),
+  (4,  'L',  'Extremely dense'),
+  (5,  'P',  'Pan - continuous'),
+  (6,  'Pd', 'Pan - discontinuous'),
+  (7,  'S',  'Clean sand'),
+  (8,  'A',  'Anoxic'),
+  (9,  'F',  'Fractured rock'),
+  (10, 'M',  'Massive rock');
+
+```
+
+
+
+
+```{sql}
+--| connection: con
+
+CREATE TABLE IF NOT EXISTS nzsc (
+  id_site VARCHAR REFERENCES sites(id_site) PRIMARY KEY,
+  
+  /* top levels */
+  catu_nzsc_order VARCHAR,
+  catu_nzsc_group VARCHAR,
+  catu_nzsc_subgroup VARCHAR,
+  FOREIGN KEY (catu_nzsc_order) REFERENCES nzsc_orders(catu_nzsc_order),
+  FOREIGN KEY (catu_nzsc_order, catu_nzsc_group) REFERENCES nzsc_groups(catu_nzsc_order, catu_nzsc_group),
+  FOREIGN KEY (catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup)
+     REFERENCES nzsc_subgroups(catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup),
+  
+  /* family */
+  catu_nzsc_fam_profile_material_1 VARCHAR REFERENCES nzsc_fam_profile_materials(catu_nzsc_fam_pm),
+  catu_nzsc_fam_profile_material_2 VARCHAR REFERENCES nzsc_fam_profile_materials(catu_nzsc_fam_pm),
+  
+  catu_nzsc_fam_rock_1 VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
+  catu_nzsc_fam_rock_2 VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
+  ind_nzsc_fam_rock_mixed BOOLEAN,
+  
+  catu_nzsc_fam_rofines_1 VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
+  catu_nzsc_fam_rofines_2 VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
+  ind_nzsc_fam_rofines_mixed BOOLEAN,
+  
+  catu_nzsc_fam_texture VARCHAR REFERENCES simple_textures(cato_simple_texture),
+  
+  catu_nzsc_fam_perm_1 VARCHAR REFERENCES nzsc_fam_permeabilities(cato_nzsc_fam_perm),
+  catu_nzsc_fam_perm_2 VARCHAR REFERENCES nzsc_fam_permeabilities(cato_nzsc_fam_perm),
+  
+  catu_nzsc_fam_pmo_1 VARCHAR REFERENCES nzsc_pmo(catu_pmo),
+  catu_nzsc_fam_pmo_2 VARCHAR REFERENCES nzsc_pmo(catu_pmo),
+  
+  /* sibling */
+  cato_nzsc_sib_depth VARCHAR REFERENCES nzsc_sib_depths(cato_nzsc_sib_depth),
+  cato_nzsc_sib_tsstone VARCHAR REFERENCES nzsc_sib_tsstone(cato_nzsc_sib_tsstone),
+  cato_nzsc_sib_texture_1 VARCHAR REFERENCES nzsc_sib_texture(cato_nzsc_sib_texture),
+  cato_nzsc_sib_texture_2 VARCHAR REFERENCES nzsc_sib_texture(cato_nzsc_sib_texture),
+  cato_nzsc_sib_drainage VARCHAR REFERENCES nzsc_sib_drainage(cato_nzsc_sib_drainage),
+  
+  /* not officially part of the sib definition 
+     but doesn't make sense to store it elsewhere: */
+  cato_nzsc_sib_drainage_mod VARCHAR REFERENCES nzsc_sib_drainage_mods(cato_nzsc_sib_drainage_mod),
+  
+  /* bps */
+  catu_nzsc_bp_rootbarrier VARCHAR REFERENCES nzsc_bp_rootbarriers(catu_nzsc_bp_rootbarrier),
+  val_nzsc_bp_rootbarrier_hzn INTEGER CHECK (val_nzsc_bp_rootbarrier_hzn > 0)
+  
+  );
+  
+```
+
+
+
+
