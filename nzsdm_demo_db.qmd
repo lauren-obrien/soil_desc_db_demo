@@ -43,6 +43,8 @@ LOAD spatial;
 
 Keeping the data and metadata tables separate is Nice, but at present DuckDB does not support creating foreign keys across different schemas. This step will be skipped unless that functionality is implemented.
 
+A naming convention is applied to the tables to clearly distingish data-storing tables ('dat_\*') from controlled code lists ('cod_\*').
+
 ## Sites
 
 After [Appendix D.3](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-siteover)
@@ -50,14 +52,14 @@ After [Appendix D.3](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_data
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS site_purposes (
+CREATE TABLE IF NOT EXISTS cod_site_purposes (
   id_site_purpose INTEGER PRIMARY KEY,
   catu_site_purpose VARCHAR UNIQUE,
   txt_site_purpose_name VARCHAR
   );
   
 /* Table 10.1 */
-INSERT INTO site_purposes VALUES
+INSERT INTO cod_site_purposes VALUES
   (1, 'E', 'Mapping exploration'),
   (2, 'V', 'Mapping validation'),
   (3, 'R', 'Research'),
@@ -65,14 +67,14 @@ INSERT INTO site_purposes VALUES
   (5, 'T', 'Reference'),
   (6, 'D', 'Development');
 
-CREATE TABLE IF NOT EXISTS site_selection_methods (
+CREATE TABLE IF NOT EXISTS cod_site_selection_methods (
   id_site_selection INTEGER PRIMARY KEY,
   catu_site_selection VARCHAR UNIQUE,
   txt_site_selection_name VARCHAR
   );
 
 /* Table 10.2*/
-INSERT INTO site_selection_methods VALUES
+INSERT INTO cod_site_selection_methods VALUES
   (1, 'A', 'Arbitrary/opportunistic'),
   (2, 'D', 'Data-driven'),
   (3, 'M', 'Model-based'),
@@ -80,7 +82,7 @@ INSERT INTO site_selection_methods VALUES
   (5, 'T', 'Transect'),
   (6, 'G', 'Grid');
 
-CREATE TABLE IF NOT EXISTS site_exposure_types (
+CREATE TABLE IF NOT EXISTS cod_site_exposure_types (
   id_site_exposure INTEGER PRIMARY KEY,
   catu_site_exposure VARCHAR UNIQUE, 
   txt_site_exposure_name VARCHAR,
@@ -88,7 +90,7 @@ CREATE TABLE IF NOT EXISTS site_exposure_types (
   );
   
 /* Table 10.3 */
-INSERT INTO site_exposure_types VALUES
+INSERT INTO cod_site_exposure_types VALUES
   (1, 'P1', 'Quick pit', 'Pit up to 0.5 m wide and generally no deeper than 1m'),
   (2, 'P2', 'Full pit', 'Pit or trench > 1 m wide, exposing the complete profile to regolith or bedrock'),
   (3, 'E', 'Exposure', 'Road cutting or similar, chipped back and cleaned'),
@@ -96,7 +98,7 @@ INSERT INTO site_exposure_types VALUES
   (5, 'C2', 'Large core', 'Relatively undisturbed soil core, ≥ 50 mm diameter'),
   (6, 'A', 'Auger', 'Hand or mechanical auger, including e.g. post hole diggers');
   
-CREATE TABLE IF NOT EXISTS site_early_stop_types (
+CREATE TABLE IF NOT EXISTS cod_site_early_stop_types (
   id_site_early_stop INTEGER PRIMARY KEY,
   catu_site_early_stop VARCHAR UNIQUE,
   txt_site_early_stop_name VARCHAR,
@@ -104,21 +106,21 @@ CREATE TABLE IF NOT EXISTS site_early_stop_types (
   );
   
 /* Table 10.4 */
-INSERT INTO site_early_stop_types VALUES
+INSERT INTO cod_site_early_stop_types VALUES
   (1, 'B', 'Bedrock', 'Underlying rock mass encountered, no more material to describe'),
   (2, 'R', 'Resistance', 'Material too difficult to extract with available equipment'),
   (3, 'C', 'Collapse', 'Excavation unstable or unsafe due to wetness or loose particle packing'),
   (4, 'I', 'Identified', 'The depth required to confirm a key parameter was reached'),
   (5, 'O', 'Other', 'Circumstances unrelated to the soil itself caused early stoppage');
   
-CREATE TABLE IF NOT EXISTS current_weather (
+CREATE TABLE IF NOT EXISTS cod_current_weather (
   id_weather INTEGER PRIMARY KEY,
   catu_weather VARCHAR UNIQUE, 
   txt_weather_name VARCHAR
   );
   
 /* Table 6.3.1 */
-INSERT INTO current_weather VALUES
+INSERT INTO cod_current_weather VALUES
   (1, 'SU', 'Sunny'),
   (2, 'PC', 'Partly cloudy'),
   (3, 'OV', 'Overcast'),
@@ -126,14 +128,14 @@ INSERT INTO current_weather VALUES
   (5, 'SL', 'Sleet'),
   (6, 'SN', 'Snow');
 
-CREATE TABLE IF NOT EXISTS recent_rainfall (
+CREATE TABLE IF NOT EXISTS cod_recent_rainfall (
   id_rainfall INTEGER PRIMARY KEY,
   cato_rainfall VARCHAR UNIQUE, 
   txt_rainfall_name VARCHAR 
   );
 
 /* Table 6.3.2 */
-INSERT INTO recent_rainfall VALUES 
+INSERT INTO cod_recent_rainfall VALUES 
   (1, 'NM', 'No rain in the last month'),
   (2, 'NW', 'No rain in the last week'),
   (3, 'ND', 'No rain in the last 24 hours'),
@@ -147,18 +149,18 @@ INSERT INTO recent_rainfall VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS sites (
+CREATE TABLE IF NOT EXISTS dat_sites (
   id_site VARCHAR PRIMARY KEY,
   usr_author VARCHAR,  /* should be FK in a full implementation */
   dt_site TIMESTAMP, /* probably needs a 'future dates not allowed' check */ 
-  catu_site_purpose VARCHAR REFERENCES site_purposes(catu_site_purpose),
-  catu_site_selection VARCHAR REFERENCES site_selection_methods(catu_site_selection),
-  catu_site_exposure VARCHAR REFERENCES site_exposure_types(catu_site_exposure),
+  catu_site_purpose VARCHAR REFERENCES cod_site_purposes(catu_site_purpose),
+  catu_site_selection VARCHAR REFERENCES cod_site_selection_methods(catu_site_selection),
+  catu_site_exposure VARCHAR REFERENCES cod_site_exposure_types(catu_site_exposure),
   amt_site_depth_max_cm DECIMAL(5, 1) CHECK (amt_site_depth_max_cm BETWEEN 0 AND 1000),
-  catu_early_stop VARCHAR REFERENCES site_early_stop_types(catu_site_early_stop),
-  catu_site_weather VARCHAR REFERENCES current_weather(catu_weather),
+  catu_early_stop VARCHAR REFERENCES cod_site_early_stop_types(catu_site_early_stop),
+  catu_site_weather VARCHAR REFERENCES cod_current_weather(catu_weather),
   val_temperature_c DECIMAL(2, 1) CHECK (val_temperature_c BETWEEN -50 AND 50), 
-  cato_site_rainfall VARCHAR REFERENCES recent_rainfall(cato_rainfall)
+  cato_site_rainfall VARCHAR REFERENCES cod_recent_rainfall(cato_rainfall)
   );
   
 ```
@@ -168,14 +170,14 @@ CREATE TABLE IF NOT EXISTS sites (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS disturbance_types (
+CREATE TABLE IF NOT EXISTS cod_disturbance_types (
   id_disturbance INTEGER PRIMARY KEY,
   catu_disturbance VARCHAR UNIQUE,
   txt_disturbance_name VARCHAR
   );
 
 /* Table 10.5 */
-INSERT INTO disturbance_types VALUES
+INSERT INTO cod_disturbance_types VALUES
   (1,  'MC', 'Mechanical disturbance (e.g. tillage, deep ripping, subsoiling)'),
   (2,  'AN', 'Animal disturbance (e.g. pugging, rooting, tunnelling, excretion)'),
   (3,  'CL', 'Complete vegetation clearance (e.g. clearfelling)'),
@@ -192,14 +194,14 @@ INSERT INTO disturbance_types VALUES
   (14, 'UK', 'Unknown');  
   
 
-CREATE TABLE IF NOT EXISTS disturbance_ages (
+CREATE TABLE IF NOT EXISTS cod_disturbance_ages (
   id_disturbance_age INTEGER PRIMARY KEY,
   catu_disturbance_age VARCHAR UNIQUE, 
   txt_disturbance_age_name VARCHAR
   );
   
 /* Table 10.6 */
-INSERT INTO disturbance_ages VALUES 
+INSERT INTO cod_disturbance_ages VALUES 
   (1,  'D', 'Within the past day'),
   (2,  'W', 'Within the past week'),
   (3,  'M', 'Within the past month'),
@@ -211,12 +213,12 @@ INSERT INTO disturbance_ages VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS disturbances (
-  id_site VARCHAR REFERENCES sites(id_site),
+CREATE TABLE IF NOT EXISTS dat_disturbances (
+  id_site VARCHAR REFERENCES dat_sites(id_site),
   id_disturbance INTEGER,
   PRIMARY KEY (id_site, id_disturbance),
-  catu_disturbance VARCHAR REFERENCES disturbance_types(catu_disturbance),
-  catu_disturbance_age VARCHAR REFERENCES disturbance_ages(catu_disturbance_age),
+  catu_disturbance VARCHAR REFERENCES cod_disturbance_types(catu_disturbance),
+  catu_disturbance_age VARCHAR REFERENCES cod_disturbance_ages(catu_disturbance_age),
   amt_disturbance_age_days INTEGER CHECK (amt_disturbance_age_days >= 0)
   );
 
@@ -231,21 +233,21 @@ From [Appendix D.2](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_datab
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS elevation_measurement_methods (
+CREATE TABLE IF NOT EXISTS cod_elevation_measurement_methods (
   id_elevation_method INTEGER PRIMARY KEY,
   catu_elevation_method VARCHAR UNIQUE,
   txt_elevation_method_name VARCHAR
   );
   
 /* Table 3.1 */
-INSERT INTO elevation_measurement_methods VALUES  
+INSERT INTO cod_elevation_measurement_methods VALUES  
   (1, 'E', 'Estimate'),
   (2, 'A', 'Measured by a calibrated altimeter'),
   (3, 'M', 'Interpolated from contour map with interval of ≤ 20 m, or extracted from similar-quality Digital Elevation Model (DEM)'),
   (4, 'G', 'Measured using a GNSS system with an adequate 3D fix'),
   (5, 'D', 'Extracted from high-accuracy DEM (Lidar or similar)');
   
-CREATE TABLE IF NOT EXISTS gnss_types (
+CREATE TABLE IF NOT EXISTS cod_gnss_types (
   id_gnss INTEGER PRIMARY KEY,
   catu_gnss VARCHAR UNIQUE,
   txt_gnss_name VARCHAR,
@@ -253,7 +255,7 @@ CREATE TABLE IF NOT EXISTS gnss_types (
   );
 
 /* Table 3.1 */
-INSERT INTO gnss_types VALUES  
+INSERT INTO cod_gnss_types VALUES  
   (1, 'GS', 'Single-band GNSS',  'Satellite based location, single band'),
   (2, 'GM',	'Multi-band GNSS',   'Satellite based location, multiple band'),
   (3, 'GR', 'Differential GNSS', 'Satellite based location, on-ground correction'),
@@ -266,14 +268,14 @@ INSERT INTO gnss_types VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS locations (
-  id_site VARCHAR REFERENCES sites(id_site) PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS dat_locations (
+  id_site VARCHAR REFERENCES dat_sites(id_site) PRIMARY KEY,
   /* NB can't yet enforce projection or geom type */
   geo_point_site_xy GEOMETRY NOT NULL,  
   amt_elevation_abs_m DECIMAL(6, 2) CHECK (amt_elevation_abs_m BETWEEN -5 AND 3724),
   amt_error_location_m DECIMAL(6, 2) CHECK (amt_error_location_m >= 0),
-  catu_elevation_method VARCHAR REFERENCES elevation_measurement_methods(catu_elevation_method),
-  catu_gnss VARCHAR REFERENCES gnss_types(catu_gnss),
+  catu_elevation_method VARCHAR REFERENCES cod_elevation_measurement_methods(catu_elevation_method),
+  catu_gnss VARCHAR REFERENCES cod_gnss_types(catu_gnss),
   amt_elevation_rel_m DECIMAL(6, 2) CHECK (amt_elevation_rel_m BETWEEN -5 AND 3724), 
   txt_notes_triangulation VARCHAR,
   txt_location_desc VARCHAR,
@@ -288,7 +290,7 @@ CREATE TABLE IF NOT EXISTS locations (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS provinces (
+CREATE TABLE IF NOT EXISTS cod_provinces (
   id_province INTEGER PRIMARY KEY,
   catu_province VARCHAR UNIQUE,
   txt_province_name VARCHAR
@@ -296,7 +298,7 @@ CREATE TABLE IF NOT EXISTS provinces (
   );
   
 /* Table 4.1 */
-INSERT INTO provinces VALUES  
+INSERT INTO cod_provinces VALUES  
   (1, 'NN', 'Northland'),
   (2, 'NL', 'Northern Lowlands'),
   (3, 'NW', 'North-western sedimentary hills'),
@@ -320,7 +322,7 @@ INSERT INTO provinces VALUES
   (21, 'SL', 'Southland mountains, hills and plains'),
   (22, 'ST', 'Stewart Island');
   
-CREATE TABLE IF NOT EXISTS landscapes (
+CREATE TABLE IF NOT EXISTS cod_landscapes (
   id_landscape INTEGER PRIMARY KEY,
   catu_landscape VARCHAR UNIQUE,
   txt_landscape_name VARCHAR,
@@ -328,7 +330,7 @@ CREATE TABLE IF NOT EXISTS landscapes (
   ); 
 
 /* Table 4.2 */
-INSERT INTO landscapes VALUES  
+INSERT INTO cod_landscapes VALUES  
   (1, 'Mt', 'Mountains', 'Steep to very steep, high relief (>300 m), fixed and well connected stream channels, often deep'),
   (2, 'Hi', 'Hills', 'Gentle to very steep, moderately high to high relief (90-300 m), fixed and well connected stream channels, shallow to deep'),
   (3, 'Up', 'Uplands', 'Gentle to very steep, low relief (30-90 m) but relatively high elevation, fixed and well connected stream channels, shallow valleys and plateaus, located among hills and mountains'),
@@ -343,13 +345,13 @@ INSERT INTO landscapes VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS landscape (
+CREATE TABLE IF NOT EXISTS dat_landscape (
   id_site VARCHAR,
-  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
   id_landscape INTEGER,
   PRIMARY KEY (id_site, id_landscape),
-  catu_province VARCHAR REFERENCES provinces(catu_province),
-  catu_landscape VARCHAR REFERENCES landscapes(catu_landscape),
+  catu_province VARCHAR REFERENCES cod_provinces(catu_province),
+  catu_landscape VARCHAR REFERENCES cod_landscapes(catu_landscape),
   amt_lscape_relief_med_m DECIMAL(6, 2) CHECK (amt_lscape_relief_med_m >= 0),
   amt_lscape_slope_med_m DECIMAL(6, 2) CHECK (amt_lscape_slope_med_m >= 0),
   amt_lscape_slope_min_m DECIMAL(6, 2) CHECK (amt_lscape_slope_min_m >= 0),
@@ -363,18 +365,18 @@ CREATE TABLE IF NOT EXISTS landscape (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS landuse_primary (
+CREATE TABLE IF NOT EXISTS cod_landuse_primary (
   id_landuse_primary INTEGER PRIMARY KEY,
   catu_landuse_primary VARCHAR UNIQUE,
   txt_landuse_primary_name VARCHAR
   );
   
-INSERT INTO landuse_primary VALUES  
+INSERT INTO cod_landuse_primary VALUES  
   (1, '1', 'Conservation and minimal use of natural environments'),
   (2, '2', 'Production agriculture and plantations'),
   (3, '3', 'Built environment');
   
-CREATE TABLE IF NOT EXISTS landuse_secondary (
+CREATE TABLE IF NOT EXISTS cod_landuse_secondary (
   id_landuse_primary INTEGER,
   id_landuse_secondary INTEGER,
   PRIMARY KEY (id_landuse_primary, id_landuse_secondary),
@@ -382,7 +384,7 @@ CREATE TABLE IF NOT EXISTS landuse_secondary (
   txt_landuse_secondary_name VARCHAR
   );
 
-INSERT INTO landuse_secondary VALUES  
+INSERT INTO cod_landuse_secondary VALUES  
   (1,  '1', '1.1.0', 'Biodiversity protection'),
   (2,  '1', '1.2.0', 'Cultural and natural heritage'),
   (3,  '1', '1.3.0', 'Minimal use from relatively natural environments'),
@@ -410,14 +412,14 @@ INSERT INTO landuse_secondary VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS lscape_landuse (
+CREATE TABLE IF NOT EXISTS dat_lscape_landuse (
   id_site VARCHAR,
   id_landscape INTEGER,
-  FOREIGN KEY (id_site, id_landscape) REFERENCES landscape(id_site, id_landscape),
+  FOREIGN KEY (id_site, id_landscape) REFERENCES dat_landscape(id_site, id_landscape),
   id_lscape_landuse INTEGER,
   PRIMARY KEY (id_site, id_landscape, id_lscape_landuse),
-  catu_lscape_landuse_primary VARCHAR REFERENCES landuse_primary(catu_landuse_primary),
-  catu_lscape_landuse_secondary VARCHAR REFERENCES landuse_secondary(catu_landuse_secondary),
+  catu_lscape_landuse_primary VARCHAR REFERENCES cod_landuse_primary(catu_landuse_primary),
+  catu_lscape_landuse_secondary VARCHAR REFERENCES cod_landuse_secondary(catu_landuse_secondary),
   amt_landuse_area_p DECIMAL(6, 2) CHECK (amt_landuse_area_p BETWEEN 0 AND 100)
   );
 
@@ -428,7 +430,7 @@ CREATE TABLE IF NOT EXISTS lscape_landuse (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS landform_types (
+CREATE TABLE IF NOT EXISTS cod_landform_types (
   id_landform INTEGER PRIMARY KEY,
   catu_landform VARCHAR UNIQUE,
   txt_landform_name VARCHAR,
@@ -436,7 +438,7 @@ CREATE TABLE IF NOT EXISTS landform_types (
   );
   
 /* Table 4.3 */
-INSERT INTO landform_types VALUES  
+INSERT INTO cod_landform_types VALUES  
   (1, 'Ba', 'Bar', 'A ridge-like accumulation of sand, gravel, or other alluvial material formed in the channels, along the banks, or at the mouth of a stream where a decrease in velocity induces deposition'),
   (2, 'Bc', 'Beach', 'Low-slope, shorefront accumulation of unconsolidated sediment (usually sand to cobble sized)'),
   (3, 'Bo', 'Bog', 'Rainfall-fed, peat-accumulating freshwater wetland with low pH and nutrient availability and restricted water flow'),
@@ -473,7 +475,7 @@ INSERT INTO landform_types VALUES
   (34, 'Em', 'Embankment', 'Ridge or slope built up by human activity'),
   (35, 'Fi', 'Fill-top', 'Flat built up by human activity');
 
-CREATE TABLE IF NOT EXISTS land_cover_types (
+CREATE TABLE IF NOT EXISTS cod_land_cover_types (
   id_land_cover INTEGER PRIMARY KEY,
   catu_land_cover VARCHAR UNIQUE,
   txt_land_cover_name VARCHAR,
@@ -482,7 +484,7 @@ CREATE TABLE IF NOT EXISTS land_cover_types (
   
 /* Table 4.3 */
 /* just doing the first 6 for demo purposes */
-INSERT INTO land_cover_types VALUES  
+INSERT INTO cod_land_cover_types VALUES  
   (1, '40', 'High producing Exotic Grassland', 'Exotic sward grassland of good pastoral quality and vigour reflecting relatively high soil fertility and intensive grazing management.'),
   (2, '41', 'Low Producing Grassland', 'Exotic sward grassland and indigenous short tussock grassland of poor pastoral quality reflecting lower soil fertility and extensive grazing management or non-agricultural use.'),
   (3, '43', 'Tall Tussock Grassland', 'Indigenous snow tussocks in mainly alpine mountain-lands and red tussock in the central North Island and locally in poorly-drained valley floors, terraces and basins of both islands.'),
@@ -490,26 +492,26 @@ INSERT INTO land_cover_types VALUES
   (5, '69', 'Indigenous Forest', 'Tall forest dominated by indigenous conifer, broadleaved or beech species.'),
   (6, '71', 'Exotic Forest', 'Planted or naturalised forest.'); 
 
-CREATE TABLE IF NOT EXISTS measurement_types (
+CREATE TABLE IF NOT EXISTS cod_measurement_types (
   id_mtype INTEGER PRIMARY KEY,
   catu_mtype VARCHAR UNIQUE,
   txt_mtype_name VARCHAR
   );
 
 /* Table D.1.1 */
-INSERT INTO measurement_types VALUES   
+INSERT INTO cod_measurement_types VALUES   
    (1, 'NM', 'Parameter was recorded normally'),
    (2, 'ND', 'Parameter could not be reliably determined or does not apply'),
    (3, 'NR', 'Parameter was not recorded');
 
 /* Table 4.4 */
-CREATE TABLE IF NOT EXISTS landform_elements (
+CREATE TABLE IF NOT EXISTS cod_landform_elements (
   id_landform_element INTEGER PRIMARY KEY,
   catu_landform_element VARCHAR UNIQUE,
   txt_landform_element_name VARCHAR
   );
 
-INSERT INTO landform_elements VALUES   
+INSERT INTO cod_landform_elements VALUES   
    (1, 'CR', 'Crest'),
    (2, 'RI', 'Ridge'),
    (3, 'SL', 'Slope'),
@@ -518,28 +520,28 @@ INSERT INTO landform_elements VALUES
    (6, 'DC', 'Closed depression');
 
 /* Table 4.5 */
-CREATE TABLE IF NOT EXISTS landform_element_vmods (
+CREATE TABLE IF NOT EXISTS cod_landform_element_vmods (
   id_landform_element_vmod INTEGER PRIMARY KEY,
   catu_landform_element_vmod VARCHAR UNIQUE,
   txt_landform_element_vmod_name VARCHAR,
   txt_landform_element_vmod_desc VARCHAR
   );
 
-INSERT INTO landform_element_vmods VALUES   
+INSERT INTO cod_landform_element_vmods VALUES   
    (1, 'X', 'Waxing', 'Element upslope is gentler, element downslope is steeper.'),
    (2, 'N', 'Waning', 'Element upslope is steeper, element downslope is gentler.'),
    (3, 'A', 'Maximal', 'Element upslope is gentler, element downslope is gentler.'),
    (4, 'I', 'Minimal', 'Element upslope is steeper, element downslope is steeper.');
 
 /* Table 4.6 */
-CREATE TABLE IF NOT EXISTS landform_element_hmods (
+CREATE TABLE IF NOT EXISTS cod_landform_element_hmods (
   id_landform_element_hmod INTEGER PRIMARY KEY,
   catu_landform_element_hmod VARCHAR UNIQUE,
   txt_landform_element_hmod_name VARCHAR,
   txt_landform_element_hmod_desc VARCHAR
   );
 
-INSERT INTO landform_element_hmods VALUES   
+INSERT INTO cod_landform_element_hmods VALUES   
    (1, 'L', 'Enclosed', 'Adjacent slope elements face towards each other'),
    (2, 'E', 'Exposed',  'Adjacent slope elements face away from each other'),
    (3, 'O', 'Open',     'Adjacent slope elements face the same direction');
@@ -550,18 +552,18 @@ INSERT INTO landform_element_hmods VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS landform (
+CREATE TABLE IF NOT EXISTS dat_landform (
   id_site VARCHAR,
   id_landscape INTEGER,
-  FOREIGN KEY (id_site, id_landscape) REFERENCES landscape(id_site, id_landscape),
+  FOREIGN KEY (id_site, id_landscape) REFERENCES dat_landscape(id_site, id_landscape),
   id_landform INTEGER,
   PRIMARY KEY (id_site, id_landscape, id_landform),
   /* basics: */
-  catu_landform VARCHAR REFERENCES landform_types(catu_landform),
+  catu_landform VARCHAR REFERENCES cod_landform_types(catu_landform),
   amt_landform_p DECIMAL(6, 2) CHECK (amt_landform_p BETWEEN 0 AND 100),
   /* can only be true for one landform per site/landscape: */
   ind_landform_contains_site BOOLEAN,
-  catu_land_cover VARCHAR REFERENCES land_cover_types(catu_land_cover),
+  catu_land_cover VARCHAR REFERENCES cod_land_cover_types(catu_land_cover),
   /* detailed optional stuff: */
   amt_landform_relief_m DECIMAL(6, 2) CHECK (amt_landform_relief_m >= 0),
   amt_landform_slope_med_d DECIMAL(6, 2) CHECK (amt_landform_slope_med_d BETWEEN 0 AND 90),
@@ -570,10 +572,10 @@ CREATE TABLE IF NOT EXISTS landform (
   val_landform_aspect_med_d DECIMAL(6, 2) CHECK (val_landform_aspect_med_d BETWEEN 0 AND 359),
   val_landform_aspect_min_d DECIMAL(6, 2) CHECK (val_landform_aspect_min_d BETWEEN 0 AND 359),
   val_landform_aspect_max_d DECIMAL(6, 2) CHECK (val_landform_aspect_max_d BETWEEN 0 AND 359),
-  catu_landform_aspect_rec VARCHAR REFERENCES measurement_types(catu_mtype) NOT NULL DEFAULT 'NR',
-  catu_landform_element VARCHAR REFERENCES landform_elements(catu_landform_element),
-  catu_landform_element_vmod VARCHAR REFERENCES landform_element_vmods(catu_landform_element_vmod),
-  catu_landform_element_hmod VARCHAR REFERENCES landform_element_hmods(catu_landform_element_hmod),
+  catu_landform_aspect_rec VARCHAR REFERENCES cod_measurement_types(catu_mtype) NOT NULL DEFAULT 'NR',
+  catu_landform_element VARCHAR REFERENCES cod_landform_elements(catu_landform_element),
+  catu_landform_element_vmod VARCHAR REFERENCES cod_landform_element_vmods(catu_landform_element_vmod),
+  catu_landform_element_hmod VARCHAR REFERENCES cod_landform_element_hmods(catu_landform_element_hmod),
   /* extremely optional stuff: */
   amt_slope_length_m DECIMAL(6, 2) CHECK (amt_slope_length_m >= 0),
   amt_mesoscale_topo_index DECIMAL(6, 2) CHECK (amt_mesoscale_topo_index BETWEEN -90 AND 90),
@@ -587,7 +589,7 @@ CREATE TABLE IF NOT EXISTS landform (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS landuse_tertiary (
+CREATE TABLE IF NOT EXISTS cod_landuse_tertiary (
   id_landuse_secondary INTEGER,
   id_landuse_tertiary INTEGER,
   PRIMARY KEY (id_landuse_secondary, id_landuse_tertiary),
@@ -596,7 +598,7 @@ CREATE TABLE IF NOT EXISTS landuse_tertiary (
   );
 
 /* Fig 8.1 - just including one of each tertiary code for demo */
-INSERT INTO landuse_tertiary VALUES  
+INSERT INTO cod_landuse_tertiary VALUES  
   (1,  1,  '1.1.1', 'High degree of biodivserity protection'),
   (2,  2,  '1.2.1', 'Indigenous cultural heritage'),
   (3,  3,  '1.3.1', 'Surface water supply'),
@@ -620,14 +622,14 @@ INSERT INTO landuse_tertiary VALUES
   (21, 21, '3.9.1', 'Vacant land');
   
 /* Table 8.2 */
-CREATE TABLE IF NOT EXISTS landuse_impacts (
+CREATE TABLE IF NOT EXISTS cod_landuse_impacts (
   id_landuse_impact INTEGER PRIMARY KEY,
   catu_landuse_impact VARCHAR UNIQUE,
   txt_landuse_impact_name VARCHAR,
   txt_landuse_impact_desc VARCHAR
   );
   
-INSERT INTO landuse_impacts VALUES  
+INSERT INTO cod_landuse_impacts VALUES  
   (1,  'N', 'None', 'The land use has not significantly impacted the soil profile'),
   (2,  'M', 'Indirect', 'The land use has impacted flows of energy/matter into/out of the profile but not physically disturbed it (e.g. by fertiliser application or drainage alteration)'),
   (3,  'E', 'Direct', 'The land use has caused physical disturbance to the soil profile (e.g. from tillage or excavation)');
@@ -638,18 +640,18 @@ INSERT INTO landuse_impacts VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS lform_landuse (
+CREATE TABLE IF NOT EXISTS dat_lform_landuse (
   id_site VARCHAR,
   id_landscape INTEGER,
   id_landform INTEGER,
-  FOREIGN KEY (id_site, id_landscape, id_landform) REFERENCES landform(id_site, id_landscape, id_landform),
+  FOREIGN KEY (id_site, id_landscape, id_landform) REFERENCES dat_landform(id_site, id_landscape, id_landform),
   id_lform_landuse INTEGER,
   PRIMARY KEY (id_site, id_landscape, id_landform, id_lform_landuse),
-  catu_lform_landuse_primary VARCHAR REFERENCES landuse_primary(catu_landuse_primary),
-  catu_lform_landuse_secondary VARCHAR REFERENCES landuse_secondary(catu_landuse_secondary),
-  catu_lform_landuse_tertiary VARCHAR REFERENCES landuse_tertiary(catu_landuse_tertiary),
+  catu_lform_landuse_primary VARCHAR REFERENCES cod_landuse_primary(catu_landuse_primary),
+  catu_lform_landuse_secondary VARCHAR REFERENCES cod_landuse_secondary(catu_landuse_secondary),
+  catu_lform_landuse_tertiary VARCHAR REFERENCES cod_landuse_tertiary(catu_landuse_tertiary),
   amt_landuse_area_p DECIMAL(6, 2) CHECK (amt_landuse_area_p BETWEEN 0 AND 100),
-  catu_landuse_impact VARCHAR REFERENCES landuse_impacts(catu_landuse_impact)
+  catu_landuse_impact VARCHAR REFERENCES cod_landuse_impacts(catu_landuse_impact)
   );
 
 ```
@@ -659,7 +661,7 @@ CREATE TABLE IF NOT EXISTS lform_landuse (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS slope_methods (
+CREATE TABLE IF NOT EXISTS cod_slope_methods (
   id_slope_method INTEGER PRIMARY KEY,
   catu_slope_method VARCHAR UNIQUE,
   txt_slope_method_name VARCHAR,
@@ -667,13 +669,13 @@ CREATE TABLE IF NOT EXISTS slope_methods (
   );
   
 /* Table 11.1 */
-INSERT INTO slope_methods VALUES  
+INSERT INTO cod_slope_methods VALUES  
   (1, 'E', 'Estimate',   'Estimated by eye'),
   (2, 'C', 'Clinometer', 'Handheld clinometer'),
   (3, 'T', 'Tripod',     'Survey-grade equipment mounted on a tripod'),
   (4, 'D', 'DEM',        'Calculated from a DEM with suitable resolution and vertical accuracy');
 
-CREATE TABLE IF NOT EXISTS aspect_methods (
+CREATE TABLE IF NOT EXISTS cod_aspect_methods (
   id_aspect_method INTEGER PRIMARY KEY,
   catu_aspect_method VARCHAR UNIQUE,
   txt_aspect_method_name VARCHAR,
@@ -681,12 +683,12 @@ CREATE TABLE IF NOT EXISTS aspect_methods (
   );
   
 /* Table 11.2 */
-INSERT INTO aspect_methods VALUES  
+INSERT INTO cod_aspect_methods VALUES  
   (1, 'E', 'Estimate', 'Estimated by eye'),
   (2, 'C', 'Compass', 'Handheld magnestic compass'),
   (3, 'D', 'DEM', 'Calculated from a DEM with suitable resolution and vertical accuracy');
 
-CREATE TABLE IF NOT EXISTS surface_water_types (
+CREATE TABLE IF NOT EXISTS cod_surface_water_types (
   id_surface_water INTEGER PRIMARY KEY,
   catu_surface_water VARCHAR UNIQUE,
   txt_surface_water_name VARCHAR,
@@ -694,14 +696,14 @@ CREATE TABLE IF NOT EXISTS surface_water_types (
   );
   
 /* Table 11.4 */
-INSERT INTO surface_water_types VALUES  
+INSERT INTO cod_surface_water_types VALUES  
   (1, 'S', 'Seawater', 'Saline ocean or brackish tidal waters'),
   (2, 'I', 'Surface water', 'Waters flowing over the surface from further inland'),
   (3, 'G', 'Groundwater', 'Waters rising from adjacent springs or an elevated natural water table'),
   (4, 'R', 'Rainfall', 'Rain falling on or near the site and perching on the surface'),
   (5, 'A', 'Anthropic', 'Water from a manmade discharge location or backing up behind a dam');
 
-CREATE TABLE IF NOT EXISTS surface_water_persts (
+CREATE TABLE IF NOT EXISTS cod_surface_water_persts (
   id_surface_water_perst INTEGER PRIMARY KEY,
   catu_surface_water_perst VARCHAR UNIQUE,
   txt_surface_water_perst_name VARCHAR,
@@ -709,12 +711,12 @@ CREATE TABLE IF NOT EXISTS surface_water_persts (
   );
   
 /* Table 11.5 */
-INSERT INTO surface_water_persts VALUES  
+INSERT INTO cod_surface_water_persts VALUES  
   (1, 'P', 'Permanent', 'Surface water persists year-round'),
   (2, 'S', 'Seasonal', 'Surface water is present during wet seasons'),
   (3, 'T', 'Temporary', 'Surface water is present due to a specific event');
   
-CREATE TABLE IF NOT EXISTS surface_crack_types (
+CREATE TABLE IF NOT EXISTS cod_surface_crack_types (
   id_surface_crack INTEGER PRIMARY KEY,
   catu_surface_crack VARCHAR UNIQUE,
   txt_surface_crack_name VARCHAR,
@@ -722,12 +724,12 @@ CREATE TABLE IF NOT EXISTS surface_crack_types (
   );
 
 /* Table 11.6 */
-INSERT INTO surface_crack_types VALUES  
+INSERT INTO cod_surface_crack_types VALUES  
   (1, 'NO', 'None',         'No surface cracks'),
   (2, 'RT', 'Reversible',   'Cracks that open and close with changing soil moisture'),
   (3, 'IT', 'Irreversible', 'Cracks that persist year-round');
 
-CREATE TABLE IF NOT EXISTS surface_crack_shapes (
+CREATE TABLE IF NOT EXISTS cod_surface_crack_shapes (
   id_surface_crack_shp INTEGER PRIMARY KEY,
   catu_surface_crack_shp VARCHAR UNIQUE,
   txt_surface_crack_shp_name VARCHAR,
@@ -735,12 +737,12 @@ CREATE TABLE IF NOT EXISTS surface_crack_shapes (
   );
 
 /* Table 11.7 */
-INSERT INTO surface_crack_shapes VALUES  
+INSERT INTO cod_surface_crack_shapes VALUES  
   (1, 'P', 'Polygonal', 'Surface cracks forming closed shapes on the land surface'),
   (2, 'L', 'Linear',    'Surface cracks running roughly parallel to each other'),
   (3, 'I', 'Irregular', 'Surface cracks with no discernible pattern');
 
-CREATE TABLE IF NOT EXISTS site_microrelief_nat (
+CREATE TABLE IF NOT EXISTS cod_site_microrelief_nat (
   id_microrelief_nat INTEGER PRIMARY KEY,
   catu_microrelief_nat VARCHAR UNIQUE,
   txt_microrelief_nat_name VARCHAR,
@@ -748,7 +750,7 @@ CREATE TABLE IF NOT EXISTS site_microrelief_nat (
   );
 
 /* Table 11.8 */
-INSERT INTO site_microrelief_nat VALUES  
+INSERT INTO cod_site_microrelief_nat VALUES  
   (1, 'N', 'None',   'Site surface is naturally smooth or level'),
   (2, 'G', 'Gilgai', 'Induced by shrink-swell clay activity'),
   (3, 'S', 'Swamp',  'Hummocky surfaces common in wetland areas, derived by biotic activity'),
@@ -757,7 +759,7 @@ INSERT INTO site_microrelief_nat VALUES
   (6, 'T', 'Terracettes', 'Small terraces on moderate to steep slopes, generally induced by larger animals navigating the terrain'),
   (7, 'F', 'Frost', 'Induced by freeze-thaw activity');
   
-CREATE TABLE IF NOT EXISTS site_microrelief_ant (
+CREATE TABLE IF NOT EXISTS cod_site_microrelief_ant (
   id_microrelief_ant INTEGER PRIMARY KEY,
   catu_microrelief_ant VARCHAR UNIQUE,
   txt_microrelief_ant_name VARCHAR,
@@ -765,14 +767,14 @@ CREATE TABLE IF NOT EXISTS site_microrelief_ant (
   );
   
 /* Table 11.9 */
-INSERT INTO site_microrelief_ant VALUES  
+INSERT INTO cod_site_microrelief_ant VALUES  
   (1, 'N', 'None',   'Site surface is not significantly altered by humans'),
   (2, 'C', 'Smoothed', 'Site surface has been smoothed, contoured, rock-picked, infilled or levelled, beyond normal tillage effects'),
   (3, 'B', 'Raised Beds',  'Elevated areas have been created and maintained for specific crops, e.g. raised rows or puke for kūmara'),
   (4, 'R', 'Terraces and tracks',  'Hillsides have been cut/filled into terraces, or tracks cut in across the slope'),
   (5, 'D', 'Drained', 'Open drainage ditches have been installed');
 
-CREATE TABLE IF NOT EXISTS water_depths (
+CREATE TABLE IF NOT EXISTS cod_water_depths (
   id_depth_water INTEGER PRIMARY KEY,
   catu_depth_water VARCHAR UNIQUE,
   txt_depth_water_name VARCHAR,
@@ -780,12 +782,12 @@ CREATE TABLE IF NOT EXISTS water_depths (
   );
 
 /* Table 12.4 */
-INSERT INTO water_depths VALUES  
+INSERT INTO cod_water_depths VALUES  
   (1, 'NA', 'Not applicable',   'Water table not encountered'),
   (2, 'B', 'Below', 'Water table observed at or below the soil surface'),
   (3, 'A', 'Above',  'Water table observed above the soil surface');
 
-CREATE TABLE IF NOT EXISTS luc_vegetation_codes (
+CREATE TABLE IF NOT EXISTS cod_luc_vegetation_codes (
   id_vegetation_luc INTEGER PRIMARY KEY,
   catu_vegetation_luc VARCHAR UNIQUE,
   txt_vegetation_luc_name VARCHAR,
@@ -793,7 +795,7 @@ CREATE TABLE IF NOT EXISTS luc_vegetation_codes (
   );
 
 /* Just grabbing a few from the full list for demo purposes */
-INSERT INTO luc_vegetation_codes VALUES  
+INSERT INTO cod_luc_vegetation_codes VALUES  
   (1, 'gI', 'Improved pasture', 'Sown legume-based pastures maintaining high levels of pasture production'),
   (2, 'cC', 'Cereal crops', 'Principally wheat, oats and barley, but also including ryecorn and millet'),
   (3, 'sM', 'Mānuka, Kānuka', 'Scrub and shrubland dominated by manuka (Leptospermum scoparium) or kanuka (Kunzea ericoides)'),
@@ -806,29 +808,29 @@ INSERT INTO luc_vegetation_codes VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS site_surface (
+CREATE TABLE IF NOT EXISTS dat_site_surface (
   id_site VARCHAR,
-  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
   PRIMARY KEY (id_site),
   amt_slope_d DECIMAL(6, 2) CHECK (amt_slope_d BETWEEN 0 AND 90),
-  catu_slope_rec VARCHAR REFERENCES measurement_types(catu_mtype) NOT NULL DEFAULT 'NR',
-  catu_slope_method VARCHAR REFERENCES slope_methods(catu_slope_method),
+  catu_slope_rec VARCHAR REFERENCES cod_measurement_types(catu_mtype) NOT NULL DEFAULT 'NR',
+  catu_slope_method VARCHAR REFERENCES cod_slope_methods(catu_slope_method),
   amt_aspect_d DECIMAL(6, 2) CHECK (amt_slope_d BETWEEN 0 AND 359),
-  catu_aspect_rec VARCHAR REFERENCES measurement_types(catu_mtype) NOT NULL DEFAULT 'NR',
-  catu_aspect_method VARCHAR REFERENCES aspect_methods(catu_aspect_method),
-  catu_surface_water VARCHAR REFERENCES surface_water_types(catu_surface_water),
-  catu_surface_water_perst VARCHAR REFERENCES surface_water_persts(catu_surface_water_perst),
-  catu_surface_cracks VARCHAR REFERENCES surface_crack_types(catu_surface_crack),
-  catu_surface_crack_shp VARCHAR REFERENCES surface_crack_shapes(catu_surface_crack_shp),
-  catu_microrelief_nat VARCHAR REFERENCES site_microrelief_nat(catu_microrelief_nat),
+  catu_aspect_rec VARCHAR REFERENCES cod_measurement_types(catu_mtype) NOT NULL DEFAULT 'NR',
+  catu_aspect_method VARCHAR REFERENCES cod_aspect_methods(catu_aspect_method),
+  catu_surface_water VARCHAR REFERENCES cod_surface_water_types(catu_surface_water),
+  catu_surface_water_perst VARCHAR REFERENCES cod_surface_water_persts(catu_surface_water_perst),
+  catu_surface_cracks VARCHAR REFERENCES cod_surface_crack_types(catu_surface_crack),
+  catu_surface_crack_shp VARCHAR REFERENCES cod_surface_crack_shapes(catu_surface_crack_shp),
+  catu_microrelief_nat VARCHAR REFERENCES cod_site_microrelief_nat(catu_microrelief_nat),
   amt_microrelief_nat_width_cm DECIMAL(6, 2) CHECK (amt_microrelief_nat_width_cm >= 0),
   amt_microrelief_nat_height_cm DECIMAL(6, 2) CHECK (amt_microrelief_nat_height_cm >= 0),
-  catu_microrelief_ant VARCHAR REFERENCES site_microrelief_ant(catu_microrelief_ant),
+  catu_microrelief_ant VARCHAR REFERENCES cod_site_microrelief_ant(catu_microrelief_ant),
   amt_microrelief_ant_width_cm DECIMAL(6, 2) CHECK (amt_microrelief_ant_width_cm >= 0),
   amt_microrelief_ant_height_cm DECIMAL(6, 2) CHECK (amt_microrelief_ant_height_cm >= 0),
   amt_depth_water DECIMAL(6, 2) CHECK (amt_depth_water >= 0),
-  catu_depth_water VARCHAR REFERENCES water_depths(catu_depth_water),
-  catu_vegetation_luc VARCHAR REFERENCES luc_vegetation_codes(catu_vegetation_luc)
+  catu_depth_water VARCHAR REFERENCES cod_water_depths(catu_depth_water),
+  catu_vegetation_luc VARCHAR REFERENCES cod_luc_vegetation_codes(catu_vegetation_luc)
   );
 
 ``` 
@@ -838,7 +840,7 @@ CREATE TABLE IF NOT EXISTS site_surface (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS surface_cover_types (
+CREATE TABLE IF NOT EXISTS cod_surface_cover_types (
   id_surface_cover INTEGER PRIMARY KEY,
   catu_surface_cover VARCHAR UNIQUE,
   txt_surface_cover_name VARCHAR,
@@ -846,7 +848,7 @@ CREATE TABLE IF NOT EXISTS surface_cover_types (
   );
   
 /* Table 11.3 */
-INSERT INTO surface_cover_types VALUES  
+INSERT INTO cod_surface_cover_types VALUES  
   (1, 'BE', 'Earth', 'Bare sediment or soil, < 2 mm'),
   (2, 'BR', 'Fragments', 'Small rock fragments, shells, or bones, 2 - 60 mm'),
   (3, 'BO', 'Rock', 'Bare rock outcrop or rock fragments > 60 mm'),
@@ -862,11 +864,11 @@ INSERT INTO surface_cover_types VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS surface_cover (
+CREATE TABLE IF NOT EXISTS dat_surface_cover (
   id_site VARCHAR,
-  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
   PRIMARY KEY (id_site),
-  catu_surface_cover VARCHAR REFERENCES surface_cover_types(catu_surface_cover),
+  catu_surface_cover VARCHAR REFERENCES cod_surface_cover_types(catu_surface_cover),
   amt_surface_cover DECIMAL(6, 2) CHECK (amt_surface_cover BETWEEN 0 AND 100)
   );
 
@@ -877,7 +879,7 @@ CREATE TABLE IF NOT EXISTS surface_cover (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS erosion_types (
+CREATE TABLE IF NOT EXISTS cod_erosion_types (
   id_erosion INTEGER PRIMARY KEY,
   catu_erosion VARCHAR UNIQUE,
   txt_erosion_name VARCHAR,
@@ -885,7 +887,7 @@ CREATE TABLE IF NOT EXISTS erosion_types (
   );
   
 /* Table 11.10 */
-INSERT INTO erosion_types VALUES  
+INSERT INTO cod_erosion_types VALUES  
   (1, 'SH', 'Sheet', 'Thin layers of surface material are gradually removed more or less evenly from an extensive area of sloping land'),
   (2, 'RI', 'Rill', 'Formation of predominantly steep-sided erosion channel(s) ≤0.5 m deep.'),
   (3, 'GU', 'Gully', 'Formation of predominantly steep-sided erosion channel >0.5 m deep, not capable of being safely crossed by a wheeled tractor or obliterated by ploughing or deep cultivation'),
@@ -901,7 +903,7 @@ INSERT INTO erosion_types VALUES
   (13, 'NR', 'Not recorded', 'Mode of erosion not recorded'),
   (14, 'NO', 'No erosion', 'No evidence of erosion');
   
-CREATE TABLE IF NOT EXISTS erosion_severity (
+CREATE TABLE IF NOT EXISTS cod_erosion_severity (
   id_erosion_severity INTEGER PRIMARY KEY,
   catu_erosion_severity VARCHAR UNIQUE,
   txt_erosion_severity_name VARCHAR,
@@ -909,13 +911,13 @@ CREATE TABLE IF NOT EXISTS erosion_severity (
   );
   
 /* Table 11.11 */
-INSERT INTO erosion_severity VALUES  
+INSERT INTO cod_erosion_severity VALUES  
   (1, 'S', 'Slight', 'Some evidence of damage to surface layers, original ecological functions largely intact'), 
   (2, 'M', 'Moderate', 'Clear evidence of removal of surface layers, original ecological functions partly destroyed'),
   (3, 'V', 'Severe', 'Surface layers completely removed and subsurface layers exposed, original ecological functions largely destroyed'),
   (4, 'E', 'Extreme', 'Substantial removal of deeper subsurface layers, original ecological functions fully destroyed');
 
-CREATE TABLE IF NOT EXISTS erosion_activity (
+CREATE TABLE IF NOT EXISTS cod_erosion_activity (
   id_erosion_activity INTEGER PRIMARY KEY,
   catu_erosion_activity VARCHAR UNIQUE,
   txt_erosion_activity_name VARCHAR,
@@ -923,7 +925,7 @@ CREATE TABLE IF NOT EXISTS erosion_activity (
   );
   
 /* Table 11.12 */
-INSERT INTO erosion_activity VALUES  
+INSERT INTO cod_erosion_activity VALUES  
   (1, 'PR', 'Active', 'Active at present'),
   (2, 'RE', 'Recent', 'Active within the past 100 years'),
   (3, 'HI', 'Historical', 'Active in historical times (>100 years ago)'),
@@ -934,13 +936,13 @@ INSERT INTO erosion_activity VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS site_erosion (
+CREATE TABLE IF NOT EXISTS dat_site_erosion (
   id_site VARCHAR,
-  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
   PRIMARY KEY (id_site),
-  catu_erosion VARCHAR REFERENCES erosion_types(catu_erosion),
-  cato_erosion_severity VARCHAR REFERENCES erosion_severity(catu_erosion_severity),
-  cato_erosion_activity VARCHAR REFERENCES erosion_activity(catu_erosion_activity)
+  catu_erosion VARCHAR REFERENCES cod_erosion_types(catu_erosion),
+  cato_erosion_severity VARCHAR REFERENCES cod_erosion_severity(catu_erosion_severity),
+  cato_erosion_activity VARCHAR REFERENCES cod_erosion_activity(catu_erosion_activity)
   );
 
 ```
@@ -950,7 +952,7 @@ CREATE TABLE IF NOT EXISTS site_erosion (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS deposition_types (
+CREATE TABLE IF NOT EXISTS cod_deposition_types (
   id_deposition INTEGER PRIMARY KEY,
   catu_deposition VARCHAR UNIQUE,
   txt_deposition_name VARCHAR,
@@ -958,7 +960,7 @@ CREATE TABLE IF NOT EXISTS deposition_types (
   );
   
 /* Table 11.13 */
-INSERT INTO deposition_types VALUES  
+INSERT INTO cod_deposition_types VALUES  
   (1,  'FL', 'Flood', 'Deposition driven by inundation events along streams'),
   (2,  'SS', 'Surge', 'Deposition driven by storm surge'),
   (3,  'TI', 'Till',  'Glacial deposition'),
@@ -974,7 +976,7 @@ INSERT INTO deposition_types VALUES
   (13, 'NR', 'Not recorded', 'Mode of deposition not recorded'),
   (14, 'NO', 'No deposition', 'No evidence of deposition');
   
-CREATE TABLE IF NOT EXISTS deposition_severity (
+CREATE TABLE IF NOT EXISTS cod_deposition_severity (
   id_deposition_severity INTEGER PRIMARY KEY,
   catu_deposition_severity VARCHAR UNIQUE,
   txt_deposition_severity_name VARCHAR,
@@ -982,13 +984,13 @@ CREATE TABLE IF NOT EXISTS deposition_severity (
   );
   
 /* Table 11.14 */
-INSERT INTO deposition_severity VALUES  
+INSERT INTO cod_deposition_severity VALUES  
   (1, 'S', 'Slight', 'Patchy or thin cover over previous surface layers, original ecological functions largely intact'),
   (2, 'M', 'Moderate', 'Cover mostly complete but < 10cm thick, original ecological functions partly destroyed'),
   (3, 'V', 'Severe', 'Cover complete and > 10cm thick, original ecological functions largely destroyed'),
   (4, 'E', 'Extreme', 'Cover complete and permanent, original ecological functions fully destroyed');
 
-CREATE TABLE IF NOT EXISTS deposition_activity (
+CREATE TABLE IF NOT EXISTS cod_deposition_activity (
   id_deposition_activity INTEGER PRIMARY KEY,
   catu_deposition_activity VARCHAR UNIQUE,
   txt_deposition_activity_name VARCHAR,
@@ -996,7 +998,7 @@ CREATE TABLE IF NOT EXISTS deposition_activity (
   );
   
 /* Table 11.15 */
-INSERT INTO deposition_activity VALUES  
+INSERT INTO cod_deposition_activity VALUES  
   (1, 'FR', 'Fresh', 'Active within the past year'),
   (2, 'RE', 'Recent', 'Active within the past 10 years'),
   (3, 'HI', 'Historical', 'Active within the past 100 years'),
@@ -1007,13 +1009,13 @@ INSERT INTO deposition_activity VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS site_deposition (
+CREATE TABLE IF NOT EXISTS dat_site_deposition (
   id_site VARCHAR,
-  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
   PRIMARY KEY (id_site),
-  catu_deposition VARCHAR REFERENCES deposition_types(catu_deposition),
-  cato_deposition_severity VARCHAR REFERENCES deposition_severity(catu_deposition_severity),
-  cato_deposition_activity VARCHAR REFERENCES deposition_activity(catu_deposition_activity)
+  catu_deposition VARCHAR REFERENCES cod_deposition_types(catu_deposition),
+  cato_deposition_severity VARCHAR REFERENCES cod_deposition_severity(catu_deposition_severity),
+  cato_deposition_activity VARCHAR REFERENCES cod_deposition_activity(catu_deposition_activity)
   );
 
 ```
@@ -1023,7 +1025,7 @@ CREATE TABLE IF NOT EXISTS site_deposition (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS boundary_shapes (
+CREATE TABLE IF NOT EXISTS cod_boundary_shapes (
   id_boundary_shape INTEGER PRIMARY KEY,
   catu_boundary_shape VARCHAR UNIQUE,
   txt_boundary_shape_name VARCHAR,
@@ -1031,14 +1033,14 @@ CREATE TABLE IF NOT EXISTS boundary_shapes (
   );
   
 /* Table 12.1 */
-INSERT INTO boundary_shapes VALUES  
+INSERT INTO cod_boundary_shapes VALUES  
   (1, 'S', 'Smooth', 'the boundary surface is a plane with few or no irregularities and usually occurs at the same depth across the profile face'), 
   (2, 'W', 'Wavy', 'the boundary surface has broad, shallow, relatively regular pockets and none deeper than they are wide'),
   (3, 'I', 'Irregular', 'the boundary surface has pockets which are deeper than they are wide but not recurved'),
   (4, 'C', 'Convolute', 'the boundary surface has pockets which are deeper than they are wide and, in parts, recurved'),
   (5, 'D', 'Discontinuous', 'the boundary is discontinuous, usually due to external disturbance');
   
-CREATE TABLE IF NOT EXISTS boundary_widths (
+CREATE TABLE IF NOT EXISTS cod_boundary_widths (
   id_boundary_width INTEGER PRIMARY KEY,
   cato_boundary_width VARCHAR UNIQUE,
   txt_boundary_width_name VARCHAR,
@@ -1046,28 +1048,28 @@ CREATE TABLE IF NOT EXISTS boundary_widths (
   );
   
 /* Table 12.2 */
-INSERT INTO boundary_widths VALUES
+INSERT INTO cod_boundary_widths VALUES
   (1, 'S', 'Sharp', '< 0.5 cm'),
   (2, 'A', 'Abrupt', '0.5 - 2.0 cm'),
   (3, 'C', 'Clear', '2.0 - 5.0 cm'),
   (4, 'G', 'Gradual', '5.0 - 10.0 cm'),
   (5, 'D', 'Diffuse', '10 - 30.0 cm'); 
   
-CREATE TABLE IF NOT EXISTS soil_moistures (
+CREATE TABLE IF NOT EXISTS cod_soil_moistures (
   id_soil_moisture INTEGER PRIMARY KEY,
   cato_soil_moisture VARCHAR UNIQUE,
   txt_soil_moisture_name VARCHAR
   );  
   
 /* Table 12.3 */
-INSERT INTO soil_moistures VALUES  
+INSERT INTO cod_soil_moistures VALUES  
   (1, 'D', 'Dry'),
   (2, 'T', 'Moderately moist'),
   (3, 'M', 'Moist'),
   (4, 'W', 'Wet'),
   (5, 'S', 'Saturated');
   
-CREATE TABLE IF NOT EXISTS nzsc_pmo (
+CREATE TABLE IF NOT EXISTS cod_nzsc_pmo (
   id_pmo INTEGER PRIMARY KEY,
   catu_pmo VARCHAR UNIQUE,
   txt_pmo_name VARCHAR,
@@ -1075,7 +1077,7 @@ CREATE TABLE IF NOT EXISTS nzsc_pmo (
   ); 
 
 /* Table 24.5 */
-INSERT INTO nzsc_pmo VALUES 
+INSERT INTO cod_nzsc_pmo VALUES 
   (1, 'An', 'Anthropic', 'Deposits made by the direct actions of humans, including truncation, mixing, or deposition.'),
   (2, 'Cl', 'Colluvium', 'Weathered soil and rock material mantling slopes that has been transported primarily by gravity and sheet wash.'),
   (3, 'Fl', 'Alluvium', 'Sediments that have been deposited by streams, rivers and other running water.'),
@@ -1092,7 +1094,7 @@ INSERT INTO nzsc_pmo VALUES
   (14, 'Rx', 'Rock', '*In situ* unweathered to moderately weathered lithified geologic material comprising one or more minerals showing rock structure.'),
   (15, 'Uk', 'Unknown', 'Origin cannot be determined with certainty.');
 
-CREATE TABLE IF NOT EXISTS nzsc_pmo_mod (
+CREATE TABLE IF NOT EXISTS cod_nzsc_pmo_mod (
   id_pmo_mod INTEGER PRIMARY KEY,
   catu_pmo_mod VARCHAR UNIQUE,
   txt_pmo_mod_name VARCHAR,
@@ -1100,12 +1102,12 @@ CREATE TABLE IF NOT EXISTS nzsc_pmo_mod (
   ); 
   
 /* Table 12.5 */
-INSERT INTO nzsc_pmo_mod VALUES 
+INSERT INTO cod_nzsc_pmo_mod VALUES 
   (1, 'm', 'Māori', 'Soil modifications dating from Māori arrival in New Zealand, particularly pre-modern soil management practices'),
   (2, 'p', 'Pakeha', 'Soil modifications dating from Pakeha (non-Māori) arrival in New Zealand up to modern times (e.g. European agricultural practices)'),
   (3, 'n', 'Modern', 'Anthropic modifications resulting from modern techniques or addition of modern materials to the soil (e.g. plastics)');
 
-CREATE TABLE IF NOT EXISTS weathering (
+CREATE TABLE IF NOT EXISTS cod_weathering (
   id_weathering INTEGER PRIMARY KEY,
   cato_weathering VARCHAR UNIQUE,
   txt_weathering_name VARCHAR,
@@ -1114,7 +1116,7 @@ CREATE TABLE IF NOT EXISTS weathering (
   );
 
 /* Table 12.6 */
-INSERT INTO weathering VALUES 
+INSERT INTO cod_weathering VALUES 
   (1, '1', 'Unweathered', 'Material shows no discolouration, loss of strength, or any other effects due to weathering', 'Particles are uncoated and their physical arrangement has not been disturbed (e.g. visible cross-bedding, absence of burrows). Secondary minerals and precipitates are absent'),
   (2, '2', 'Slightly weathered', 'Material may be slightly discoloured. Discontinuities have discoloured surfaces. The rock material is not significantly weaker than fresh rock material', 'Particle physical arrangement is undisturbed, but some evidence of secondary mineral formation may be evident (e.g. pyrite formation in anoxic marine sediments)'),
   (3, '3', 'Moderately weathered', 'Rock material is discoloured and discontinuity surfaces will have a greater discolouration which also penetrates slightly into the rock material. The rock material is significantly weaker than the fresh rock and part of the rock mass may have been changed to soil material.', 'Sediments may be largely discoloured by secondary mineral precipitation or illuviation; some clay minerals may have weathered from the material, some physical disturbance by meso- or macrofauna may be apparent'),
@@ -1128,9 +1130,9 @@ INSERT INTO weathering VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon (
+CREATE TABLE IF NOT EXISTS dat_horizon (
   id_site VARCHAR,
-  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
   id_horizon INTEGER,
   PRIMARY KEY (id_site, id_horizon),
   amt_upper_depth_cm DECIMAL(6, 2) CHECK (amt_upper_depth_cm >= 0),
@@ -1141,13 +1143,13 @@ CREATE TABLE IF NOT EXISTS horizon (
   amt_lower_depth_med_cm DECIMAL(6, 2) CHECK (amt_lower_depth_med_cm > 0),
   amt_lower_depth_min_cm DECIMAL(6, 2) CHECK (amt_lower_depth_min_cm > 0),
   amt_lower_depth_max_cm DECIMAL(6, 2) CHECK (amt_lower_depth_max_cm > 0),
-  catu_boundary_shape VARCHAR REFERENCES boundary_shapes(catu_boundary_shape),
+  catu_boundary_shape VARCHAR REFERENCES cod_boundary_shapes(catu_boundary_shape),
   amt_boundary_cm DECIMAL(6, 2) CHECK (amt_boundary_cm >= 0),
-  cato_boundary_width VARCHAR REFERENCES boundary_widths(cato_boundary_width),
-  cato_soil_moisture VARCHAR REFERENCES soil_moistures(cato_soil_moisture),
-  catu_parent_material_origin VARCHAR REFERENCES nzsc_pmo(catu_pmo),
-  catu_anthropic_origin_modifier VARCHAR REFERENCES nzsc_pmo_mod(catu_pmo_mod),
-  cato_horizon_weathering VARCHAR REFERENCES weathering(cato_weathering),
+  cato_boundary_width VARCHAR REFERENCES cod_boundary_widths(cato_boundary_width),
+  cato_soil_moisture VARCHAR REFERENCES cod_soil_moistures(cato_soil_moisture),
+  catu_parent_material_origin VARCHAR REFERENCES cod_nzsc_pmo(catu_pmo),
+  catu_anthropic_origin_modifier VARCHAR REFERENCES cod_nzsc_pmo_mod(catu_pmo_mod),
+  cato_horizon_weathering VARCHAR REFERENCES cod_weathering(cato_weathering),
   );
 
 ```
@@ -1157,7 +1159,7 @@ CREATE TABLE IF NOT EXISTS horizon (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS structure_types (
+CREATE TABLE IF NOT EXISTS cod_structure_types (
   id_structure INTEGER PRIMARY KEY,
   catu_structure VARCHAR UNIQUE,
   txt_structure_name VARCHAR,
@@ -1165,13 +1167,13 @@ CREATE TABLE IF NOT EXISTS structure_types (
   );
   
 /* Table 13.1 */
-INSERT INTO structure_types VALUES
+INSERT INTO cod_structure_types VALUES
   (1, 'P', 'Pedogenic', 'Structural units meet the definition of natural soil peds and occur largely within the solum'),
   (2, 'G', 'Geogenic', 'Structural units are inherited from parent materials that have undergone limited weathering e.g. bedding planes, and occur largely below the solum'),
   (3, 'A', 'Anthrogenic', 'Structural units have been induced by human activity, usually within the solum and most commonly in surface horizons'),
   (4, 'U', 'Unknown', 'Type of structural development could not be determined with confidence');
 
-CREATE TABLE IF NOT EXISTS structure_grades (
+CREATE TABLE IF NOT EXISTS cod_structure_grades (
   id_structure_grade INTEGER PRIMARY KEY,
   cato_structure_grade VARCHAR UNIQUE,
   txt_structure_grade_name VARCHAR,
@@ -1179,14 +1181,14 @@ CREATE TABLE IF NOT EXISTS structure_grades (
   );
   
 /* Table 13.2 */
-INSERT INTO structure_grades VALUES
+INSERT INTO cod_structure_grades VALUES
   (1, 'G', 'Single grain', 'Material is structureless and incoherent, with more than 85% by weight of discrete primary particles ranging in size from sand to very coarse gravel.'),
   (2, 'V', 'Massive', 'Material is structureless but coherent, with no fissures at spacings of less than 200 mm'),
   (3, 'W', 'Weak', 'Material where 15-25% of the material comprises coherent structural units'),
   (4, 'M', 'Moderate', 'Material where 25-75% of the material comprises coherent structural units'),
   (5, 'S', 'Strong', 'Material where >75% of the material comprises coherent structural units');
 
-CREATE TABLE IF NOT EXISTS structure_sizes_rapid (
+CREATE TABLE IF NOT EXISTS cod_structure_sizes_rapid (
   id_structure_size_rapid INTEGER PRIMARY KEY,
   cato_structure_size_rapid VARCHAR UNIQUE,
   txt_structure_size_rapid_name VARCHAR,
@@ -1194,18 +1196,18 @@ CREATE TABLE IF NOT EXISTS structure_sizes_rapid (
   );  
 
 /* Section 13.1.4 and part Table 20.15 */
-INSERT INTO structure_sizes_rapid VALUES
+INSERT INTO cod_structure_sizes_rapid VALUES
   (1, 'C', 'Coarse', 'At least 50% peds of size > 20 mm (‘coarse’), or apedal massive structure'),
   (2, 'F', 'Fine', 'At least 50% peds of size < 20 mm (‘coarse’), including horizons where coarse structure breaks to finer nested peds');
 
-CREATE TABLE IF NOT EXISTS structure_shapes (
+CREATE TABLE IF NOT EXISTS cod_structure_shapes (
   id_structure_shape INTEGER PRIMARY KEY,
   catu_structure_shape VARCHAR UNIQUE,
   txt_structure_shape_name VARCHAR
   ); 
 
 /* Table 13.3 */
-INSERT INTO structure_shapes VALUES
+INSERT INTO cod_structure_shapes VALUES
 (1, 'AB', 'Angular blocky'),
 (2, 'BL', 'Blocky'),
 (3, 'PH', 'Polyhedral'),
@@ -1217,7 +1219,7 @@ INSERT INTO structure_shapes VALUES
 (9, 'LF', 'Lentiform'),
 (10, 'WL', 'Wedge-like');
 
-CREATE TABLE IF NOT EXISTS root_positions (
+CREATE TABLE IF NOT EXISTS cod_root_positions (
   id_root_pos INTEGER PRIMARY KEY,
   catu_root_pos VARCHAR UNIQUE,
   txt_root_pos_name VARCHAR,
@@ -1225,7 +1227,7 @@ CREATE TABLE IF NOT EXISTS root_positions (
   ); 
 
 /* Table 13.13 */
-INSERT INTO root_positions VALUES
+INSERT INTO cod_root_positions VALUES
    (1, 'W',     'Within', 'Roots are primarily located within peds.'),
    (2, 'B',    'Between', 'Roots are primarily located between peds, within fissures or along bedding planes'),
    (3, 'T', 'Throughout', 'Roots are spread throughout the soil mass.'),
@@ -1236,20 +1238,20 @@ INSERT INTO root_positions VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_arch (
+CREATE TABLE IF NOT EXISTS dat_horizon_arch (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   PRIMARY KEY (id_site, id_horizon),
-  catu_structure_type VARCHAR REFERENCES structure_types(catu_structure),
-  cato_structure_grade VARCHAR REFERENCES structure_grades(cato_structure_grade),
-  catu_structure_shape VARCHAR REFERENCES structure_shapes(catu_structure_shape),
-  cato_structure_size VARCHAR REFERENCES structure_sizes_rapid(cato_structure_size_rapid),
+  catu_structure_type VARCHAR REFERENCES cod_structure_types(catu_structure),
+  cato_structure_grade VARCHAR REFERENCES cod_structure_grades(cato_structure_grade),
+  catu_structure_shape VARCHAR REFERENCES cod_structure_shapes(catu_structure_shape),
+  cato_structure_size VARCHAR REFERENCES cod_structure_sizes_rapid(cato_structure_size_rapid),
   amt_total_frags_p DECIMAL(6, 2) CHECK (amt_total_frags_p BETWEEN 0 and 100),
   amt_otherfrags_p DECIMAL(6, 2) CHECK (amt_otherfrags_p BETWEEN 0 and 100),
   amt_artefacts_p DECIMAL(6, 2) CHECK (amt_artefacts_p BETWEEN 0 and 100),
   amt_total_roots_p DECIMAL(6, 2) CHECK (amt_total_roots_p BETWEEN 0 and 100),
-  catu_total_roots_pos VARCHAR REFERENCES root_positions(catu_root_pos),
+  catu_total_roots_pos VARCHAR REFERENCES cod_root_positions(catu_root_pos),
   amt_total_voids_p DECIMAL(6, 2) CHECK (amt_total_voids_p BETWEEN 0 and 100),
   amt_total_pores_p DECIMAL(6, 2) CHECK (amt_total_pores_p BETWEEN 0 and 100),
   amt_macropores_p DECIMAL(6, 2) CHECK (amt_macropores_p BETWEEN 0 and 100),
@@ -1263,15 +1265,15 @@ CREATE TABLE IF NOT EXISTS horizon_arch (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_structures (
+CREATE TABLE IF NOT EXISTS dat_horizon_structures (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_structure INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_structure),
-  catu_structure_type VARCHAR REFERENCES structure_types(catu_structure),
-  cato_structure_grade VARCHAR REFERENCES structure_grades(cato_structure_grade),
-  catu_structure_shape VARCHAR REFERENCES structure_shapes(catu_structure_shape),
+  catu_structure_type VARCHAR REFERENCES cod_structure_types(catu_structure),
+  cato_structure_grade VARCHAR REFERENCES cod_structure_grades(cato_structure_grade),
+  catu_structure_shape VARCHAR REFERENCES cod_structure_shapes(catu_structure_shape),
   amt_structure_size_med_mm DECIMAL(6, 2) CHECK (amt_structure_size_med_mm > 0),
   amt_structure_size_min_mm DECIMAL(6, 2) CHECK (amt_structure_size_min_mm > 0),
   amt_structure_size_max_mm DECIMAL(6, 2) CHECK (amt_structure_size_max_mm > 0)
@@ -1284,7 +1286,7 @@ CREATE TABLE IF NOT EXISTS horizon_structures (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS fragment_sizes_simple (
+CREATE TABLE IF NOT EXISTS cod_fragment_sizes_simple (
   id_fragment_size INTEGER PRIMARY KEY,
   cato_fragment_size VARCHAR UNIQUE,
   txt_fragment_size_name VARCHAR,
@@ -1292,12 +1294,12 @@ CREATE TABLE IF NOT EXISTS fragment_sizes_simple (
   );
   
 /* Table 13.4 */
-INSERT INTO fragment_sizes_simple VALUES
+INSERT INTO cod_fragment_sizes_simple VALUES
   (1, 'S', 'Small',   '2 - 60 mm'),
   (2, 'M', 'Medium', '60 - 200 mm'),
   (3, 'L', 'Large', '> 200 mm');
 
-CREATE TABLE IF NOT EXISTS rock_fragment_shapes (
+CREATE TABLE IF NOT EXISTS cod_rock_fragment_shapes (
   id_rockfrag_shape INTEGER PRIMARY KEY,
   catu_rockfrag_shape VARCHAR UNIQUE,
   txt_rockfrag_shape_name VARCHAR,
@@ -1305,19 +1307,19 @@ CREATE TABLE IF NOT EXISTS rock_fragment_shapes (
   );
 
 /* Table 13.5 */
-INSERT INTO rock_fragment_shapes VALUES
+INSERT INTO cod_rock_fragment_shapes VALUES
   (1, 'R', 'Rounded',   'Rock fragments considerably smoothed by transport processes'),
   (2, 'A', 'Angular', 'Rock fragments with little smoothing by transport processes'),
   (3, 'M', 'Mixed', 'Both rounded and angular fragments mixed together');
   
-CREATE TABLE IF NOT EXISTS nzsc_lithologies (
+CREATE TABLE IF NOT EXISTS cod_nzsc_lithologies (
   id_nzsc_lithology INTEGER PRIMARY KEY,
   catu_nzsc_lithology VARCHAR UNIQUE,
   txt_nzsc_lithology_name VARCHAR
   );
 
 /* Table 24.2 */
-INSERT INTO nzsc_lithologies VALUES
+INSERT INTO cod_nzsc_lithologies VALUES
     (1, 'Cb', 'Carbonaceous Rock (Coal)'),
     (2, 'Sq', 'Soft Quartzitic Sediments'),
     (3, 'Hq', 'Hard Quartzitic Sediments'),
@@ -1346,16 +1348,16 @@ INSERT INTO nzsc_lithologies VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_rock_fragments (
+CREATE TABLE IF NOT EXISTS dat_horizon_rock_fragments (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_rock_fragment INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_rock_fragment),
-  cato_rock_fragment_size VARCHAR REFERENCES fragment_sizes_simple(cato_fragment_size),
-  catu_rock_fragment_shape VARCHAR REFERENCES rock_fragment_shapes(catu_rockfrag_shape),
+  cato_rock_fragment_size VARCHAR REFERENCES cod_fragment_sizes_simple(cato_fragment_size),
+  catu_rock_fragment_shape VARCHAR REFERENCES cod_rock_fragment_shapes(catu_rockfrag_shape),
   amt_rock_fragment_p DECIMAL(6, 2) CHECK (amt_rock_fragment_p BETWEEN 0 and 100),
-  catu_rock_fragment_lithology VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
+  catu_rock_fragment_lithology VARCHAR REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology),
   );
 
 ```
@@ -1365,7 +1367,7 @@ CREATE TABLE IF NOT EXISTS horizon_rock_fragments (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS other_fragment_types (
+CREATE TABLE IF NOT EXISTS cod_other_fragment_types (
   id_other_fragment INTEGER PRIMARY KEY,
   catu_other_fragment VARCHAR UNIQUE,
   txt_other_fragment_name VARCHAR,
@@ -1373,7 +1375,7 @@ CREATE TABLE IF NOT EXISTS other_fragment_types (
   );
   
 /* Table 13.6 */
-INSERT INTO other_fragment_types VALUES
+INSERT INTO cod_other_fragment_types VALUES
    (1, 'S', 'Shell',    'Seashells or chitinous material'),
    (2, 'B', 'Bone',     'Skeletal fragments'),
    (3, 'T', 'Timber',   'Dead wood from trees and shrubs, coarse roots'),
@@ -1386,14 +1388,14 @@ INSERT INTO other_fragment_types VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_other_fragments (
+CREATE TABLE IF NOT EXISTS dat_horizon_other_fragments (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_other_fragment INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_other_fragment),
-  cato_other_fragment_size VARCHAR REFERENCES fragment_sizes_simple(cato_fragment_size),
-  catu_other_fragment VARCHAR REFERENCES other_fragment_types(catu_other_fragment),
+  cato_other_fragment_size VARCHAR REFERENCES cod_fragment_sizes_simple(cato_fragment_size),
+  catu_other_fragment VARCHAR REFERENCES cod_other_fragment_types(catu_other_fragment),
   amt_other_fragment_p DECIMAL(6, 2) CHECK (amt_other_fragment_p BETWEEN 0 and 100)
   );
 
@@ -1404,7 +1406,7 @@ CREATE TABLE IF NOT EXISTS horizon_other_fragments (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS artefact_types (
+CREATE TABLE IF NOT EXISTS cod_artefact_types (
   id_artefact INTEGER PRIMARY KEY,
   catu_artefact VARCHAR UNIQUE,
   txt_artefact_name VARCHAR,
@@ -1412,7 +1414,7 @@ CREATE TABLE IF NOT EXISTS artefact_types (
   );
   
 /* Table 13.7 */
-INSERT INTO artefact_types VALUES
+INSERT INTO cod_artefact_types VALUES
   (1,  'As', 'Asphalt',  'Asphalt and other bitumen-containing materials'),
   (2,  'Br', 'Brick',    'Fired clay building materials, usually unglazed'),
   (3,  'Cr', 'Ceramic',  'Fired clay objects, usually glazed'),
@@ -1430,14 +1432,14 @@ INSERT INTO artefact_types VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_artefacts (
+CREATE TABLE IF NOT EXISTS dat_horizon_artefacts (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_artefact INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_artefact),
-  cato_artefact_size VARCHAR REFERENCES fragment_sizes_simple(cato_fragment_size),
-  catu_artefact VARCHAR REFERENCES artefact_types(catu_artefact),
+  cato_artefact_size VARCHAR REFERENCES cod_fragment_sizes_simple(cato_fragment_size),
+  catu_artefact VARCHAR REFERENCES cod_artefact_types(catu_artefact),
   amt_artefact_p DECIMAL(6, 2) CHECK (amt_artefact_p BETWEEN 0 and 100)
   );
 
@@ -1448,7 +1450,7 @@ CREATE TABLE IF NOT EXISTS horizon_artefacts (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS plastic_types (
+CREATE TABLE IF NOT EXISTS cod_plastic_types (
   id_plastic INTEGER PRIMARY KEY,
   catu_plastic VARCHAR UNIQUE,
   txt_plastic_name VARCHAR,
@@ -1456,14 +1458,14 @@ CREATE TABLE IF NOT EXISTS plastic_types (
   );
 
 /* Table 13.8 */
-INSERT INTO plastic_types VALUES
+INSERT INTO cod_plastic_types VALUES
   (1, 'N', 'Not verifiable', 'Designation not possible / uncertain'),
   (2, 'C', 'Consumer', 'Consumer-products (everyday-products) like PET-bottles, SUP bags, packages, signs etc.'),  
   (3, 'A', 'Agricultural', 'Agricultural products like mulch film, silage film, straw bale nets, tire wear etc.'),
   (4, 'I', 'Industrial', 'Industrial products like broken pieces of industrial equipment, industrial waste'),
   (5, 'B', 'Construction', 'All plastic materials which were placed in soil for construction and supply purposes (e.g., power cables, geomembranes)');
   
-CREATE TABLE IF NOT EXISTS plastic_fixations (
+CREATE TABLE IF NOT EXISTS cod_plastic_fixations (
   id_plastic_fixation INTEGER PRIMARY KEY,
   cato_plastic_fixation VARCHAR UNIQUE,
   txt_plastic_fixation_name VARCHAR,
@@ -1471,13 +1473,13 @@ CREATE TABLE IF NOT EXISTS plastic_fixations (
   );
   
 /* Table 13.9 */
-INSERT INTO plastic_fixations VALUES
+INSERT INTO cod_plastic_fixations VALUES
   (1, 'NF', 'None',    'Plastic pieces are not included in soil aggregates (no soil aggregates or loose plastic)'),
   (2, 'SF', 'Solely',   'Single plastic pieces are in cooperated into soil aggregates, but others are loose'),
   (3, 'MF', 'Moderate', 'The majority of plastic pieces is in cooperated into soil aggregates, but single are loose'),
   (4, 'CF', 'Complete', 'All plastic pieces are in cooperated into soil aggregates');
 
-CREATE TABLE IF NOT EXISTS plastic_shapes (
+CREATE TABLE IF NOT EXISTS cod_plastic_shapes (
   id_plastic_shape INTEGER PRIMARY KEY,
   catu_plastic_shape VARCHAR UNIQUE,
   txt_plastic_shape_name VARCHAR,
@@ -1485,7 +1487,7 @@ CREATE TABLE IF NOT EXISTS plastic_shapes (
   );
 
 /* Table 13.10 */
-INSERT INTO plastic_shapes VALUES
+INSERT INTO cod_plastic_shapes VALUES
  (1, 'P', 'Preserved', 'The original manufactured shape of the object is recognisable'),
  (2, 'B', 'Broken',  'The fragment is recognisable as having been part of a larger object'),
  (3, 'F', 'Flat', 'Tabular or sheet-like'),
@@ -1493,7 +1495,7 @@ INSERT INTO plastic_shapes VALUES
  (5, 'R', 'Rounded', 'Has edges that are not sharp'),
  (6, 'S', 'Spherical', 'Ball shaped or ovoid');
 
-CREATE TABLE IF NOT EXISTS plastic_degradations (
+CREATE TABLE IF NOT EXISTS cod_plastic_degradations (
   id_plastic_degradation INTEGER PRIMARY KEY,
   catu_plastic_degradation VARCHAR UNIQUE,
   txt_plastic_degradation_name VARCHAR,
@@ -1501,7 +1503,7 @@ CREATE TABLE IF NOT EXISTS plastic_degradations (
   );
   
 /* Table 13.11 */
-INSERT INTO plastic_degradations VALUES
+INSERT INTO cod_plastic_degradations VALUES
   (1, 'N', 'Not verifiable', 'Designation not possible / uncertain'),
   (2, 'F', 'Fresh', 'Fresh plastic pieces with bright colours, unaffected shape, without signs of deterioration (cracks, broken edges, rough surfaces)'), 
   (3, 'I', 'Incipient alteration', 'Plastic pieces with incipient deterioration surface such as first cracks, broken edges or roughened/grooved surfaces'),
@@ -1514,16 +1516,16 @@ INSERT INTO plastic_degradations VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_plastics (
+CREATE TABLE IF NOT EXISTS dat_horizon_plastics (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_plastic INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_plastic),
-  catu_plastic VARCHAR REFERENCES plastic_types(catu_plastic),
-  cato_plastic_fixation VARCHAR REFERENCES plastic_fixations(cato_plastic_fixation),
-  catu_plastic_shape VARCHAR REFERENCES plastic_shapes(catu_plastic_shape),
-  catu_plastic_degradation VARCHAR REFERENCES plastic_degradations(catu_plastic_degradation),
+  catu_plastic VARCHAR REFERENCES cod_plastic_types(catu_plastic),
+  cato_plastic_fixation VARCHAR REFERENCES cod_plastic_fixations(cato_plastic_fixation),
+  catu_plastic_shape VARCHAR REFERENCES cod_plastic_shapes(catu_plastic_shape),
+  catu_plastic_degradation VARCHAR REFERENCES cod_plastic_degradations(catu_plastic_degradation),
   amt_plastic_p DECIMAL(6, 2) CHECK (amt_plastic_p BETWEEN 0 and 100)
   );
 
@@ -1534,7 +1536,7 @@ CREATE TABLE IF NOT EXISTS horizon_plastics (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS root_sizes_simple (
+CREATE TABLE IF NOT EXISTS cod_root_sizes_simple (
   id_root_size INTEGER PRIMARY KEY,
   cato_root_size VARCHAR UNIQUE,
   txt_root_size_name VARCHAR,
@@ -1542,7 +1544,7 @@ CREATE TABLE IF NOT EXISTS root_sizes_simple (
   );
 
 /* Table 13.12 */
-INSERT INTO root_sizes_simple VALUES
+INSERT INTO cod_root_sizes_simple VALUES
   (1, 'F',   'Fine',         '< 2 mm'),
   (2, 'M', 'Medium',      '2 - 10 mm'),
   (3, 'C', 'Coarse',        '> 10 mm');
@@ -1552,15 +1554,15 @@ INSERT INTO root_sizes_simple VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_roots (
+CREATE TABLE IF NOT EXISTS dat_horizon_roots (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_root INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_root),
-  catu_plastic VARCHAR REFERENCES plastic_types(catu_plastic),
-  cato_root_size VARCHAR REFERENCES root_sizes_simple(cato_root_size),
-  cato_root_pos VARCHAR REFERENCES root_positions(catu_root_pos),
+  catu_plastic VARCHAR REFERENCES cod_plastic_types(catu_plastic),
+  cato_root_size VARCHAR REFERENCES cod_root_sizes_simple(cato_root_size),
+  cato_root_pos VARCHAR REFERENCES cod_root_positions(catu_root_pos),
   amt_root_p DECIMAL(6, 2) CHECK (amt_root_p BETWEEN 0 and 100),
   );
 
@@ -1571,7 +1573,7 @@ CREATE TABLE IF NOT EXISTS horizon_roots (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS void_types (
+CREATE TABLE IF NOT EXISTS cod_void_types (
   id_void INTEGER PRIMARY KEY,
   catu_void VARCHAR UNIQUE,
   txt_void_name VARCHAR,
@@ -1579,7 +1581,7 @@ CREATE TABLE IF NOT EXISTS void_types (
   );
 
 /* Table 13.14 */
-INSERT INTO void_types VALUES
+INSERT INTO cod_void_types VALUES
   (1, 'BP', 'Bedding plane', 'A parting or discontinuity due to stratification during deposition of sedimentary particles.'), 
   (2, 'CH', 'Channel', 'Tubular void of biological origin that is less than 20 mm in diameter (e.g. insect burrow)'),
   (3, 'TU', 'Tunnel',  'Tubular void of biological origin that is 20 mm or more in diameter (e.g. rabbit burrow) '),
@@ -1587,7 +1589,7 @@ INSERT INTO void_types VALUES
   (5, 'IT', 'Interstitial', 'Irregular voids occupying space between aggregates that do not fit together');
 
 
-CREATE TABLE IF NOT EXISTS void_conns (
+CREATE TABLE IF NOT EXISTS cod_void_conns (
   id_void_conn INTEGER PRIMARY KEY,
   cato_void_conn VARCHAR UNIQUE,
   txt_void_conn_name VARCHAR,
@@ -1595,7 +1597,7 @@ CREATE TABLE IF NOT EXISTS void_conns (
   );
   
 /* Table 13.15 */
-INSERT INTO void_conns VALUES
+INSERT INTO cod_void_conns VALUES
   (1, 'I', 'Isolated', 'Voids are not connected to each other, and may only reach up to the soil surface'),
   (2, 'P', 'Partly connected', 'Voids are sometimes connected to each other within the horizon, or continue into neighbouring horizons'),
   (3, 'C', 'Continuous',  'Void spaces are well connected and form a continuous network');
@@ -1605,14 +1607,14 @@ INSERT INTO void_conns VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_voids (
+CREATE TABLE IF NOT EXISTS dat_horizon_voids (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_void INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_void),
-  catu_void VARCHAR REFERENCES void_types(catu_void),
-  cato_void_conn VARCHAR REFERENCES void_conns(cato_void_conn),
+  catu_void VARCHAR REFERENCES cod_void_types(catu_void),
+  cato_void_conn VARCHAR REFERENCES cod_void_conns(cato_void_conn),
   amt_void_p DECIMAL(6, 2) CHECK (amt_void_p BETWEEN 0 and 100),
   );
 
@@ -1623,20 +1625,20 @@ CREATE TABLE IF NOT EXISTS horizon_voids (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS munsell_colours (
+CREATE TABLE IF NOT EXISTS cod_munsell_colours (
   id_munsell INTEGER PRIMARY KEY,
   cato_munsell VARCHAR UNIQUE,
   txt_colour_hex VARCHAR
   );
 
 /* Per charts - just a few for demo */
-INSERT INTO munsell_colours VALUES
+INSERT INTO cod_munsell_colours VALUES
   (1, '10YR 5/4', '#947650'),
   (2, '7.5YR 3/2', '#584537'),
   (3, '5R 3/8', '#822930'),
   (4, 'N 4/0', '#616161');
   
-CREATE TABLE IF NOT EXISTS short_colours (
+CREATE TABLE IF NOT EXISTS cod_short_colours (
   id_colour INTEGER PRIMARY KEY,
   catu_colour VARCHAR UNIQUE,
   txt_colour_name VARCHAR,
@@ -1644,7 +1646,7 @@ CREATE TABLE IF NOT EXISTS short_colours (
   );
 
 /* Table 14.2 */
-INSERT INTO short_colours VALUES
+INSERT INTO cod_short_colours VALUES
   (1, 'R', 'Red', '2.5YR or redder, with value < 7 and chroma > 2'),
   (2, 'O', 'Orange', '5YR or 7.5YR, with value < 7 and chroma > 2'),
   (3, 'B', 'Brown', '7.5YR or 10YR, with value > 4 and chroma > 2'),
@@ -1654,17 +1656,17 @@ INSERT INTO short_colours VALUES
   (7, 'P', 'Pale', 'Any non-gley hue, values ≥ 7 and chromas ≤ 2'),
   (8, 'L', 'Gley', 'Gley charts');
   
-CREATE TABLE IF NOT EXISTS colour_moistures (
+CREATE TABLE IF NOT EXISTS cod_colour_moistures (
   id_colour_moisture INTEGER PRIMARY KEY,
   cato_colour_moisture VARCHAR UNIQUE,
   txt_colour_moisture_name VARCHAR
   );
   
-INSERT INTO colour_moistures VALUES
+INSERT INTO cod_colour_moistures VALUES
   (1, 'M', 'Moist'),
   (2, 'D', 'Dry');
   
-CREATE TABLE IF NOT EXISTS pattern_types (
+CREATE TABLE IF NOT EXISTS cod_pattern_types (
   id_pattern INTEGER PRIMARY KEY,
   catu_pattern VARCHAR UNIQUE,
   txt_pattern_name VARCHAR,
@@ -1672,13 +1674,13 @@ CREATE TABLE IF NOT EXISTS pattern_types (
   );
  
 /* Table 14.3 */
-INSERT INTO pattern_types VALUES
+INSERT INTO cod_pattern_types VALUES
   (1, 'M', 'Mottles', 'Colour patterns induced by redox processes'),
   (2, 'R', 'Reticulate', 'Colour patterns induced by preferential flow (e.g. gammate patterns in pallic soils)'),
   (3, 'W', 'Weathering', 'Colour patterns induced by parent material weathering, most commonly seen in BC horizons and below (e.g. rock ghost patterns)'),
   (4, 'X', 'Mixing', 'Colour patterns created by biological (e.g. worm tunnels) or mechanical (e.g. landslide) means');
 
-CREATE TABLE IF NOT EXISTS pattern_shapes (
+CREATE TABLE IF NOT EXISTS cod_pattern_shapes (
   id_pattern_shape INTEGER PRIMARY KEY,
   catu_pattern_shape VARCHAR UNIQUE,
   txt_pattern_shape_name VARCHAR,
@@ -1686,12 +1688,12 @@ CREATE TABLE IF NOT EXISTS pattern_shapes (
   );
  
 /* Table 14.4 */
-INSERT INTO pattern_shapes VALUES
+INSERT INTO cod_pattern_shapes VALUES
   (1, 'B', 'Blotches', 'Rounded shapes, blobs, where colour patterns penetrate the soil mass'),
   (2, 'S', 'Stripes', 'Linear colour patterns e.g. root linings'),
   (3, 'C', 'Coatings', 'Patterns caused by ped surface features e.g. cutans');
   
-CREATE TABLE IF NOT EXISTS pattern_contrasts (
+CREATE TABLE IF NOT EXISTS cod_pattern_contrasts (
   id_pattern_contrast INTEGER PRIMARY KEY,
   catu_pattern_contrast VARCHAR UNIQUE,
   txt_pattern_contrast_name VARCHAR,
@@ -1699,12 +1701,12 @@ CREATE TABLE IF NOT EXISTS pattern_contrasts (
   );
  
 /* Table 14.5 */
-INSERT INTO pattern_contrasts VALUES
+INSERT INTO cod_pattern_contrasts VALUES
   (1, 'F', 'Faint', 'Indistinct colour variation evident only on close examination'),
   (2, 'D', 'Distinct', 'Although not striking, the colour variation is readily seen'),
   (3, 'P', 'Prominent', 'The colour variation is conspicuous');
   
-CREATE TABLE IF NOT EXISTS pattern_edges (
+CREATE TABLE IF NOT EXISTS cod_pattern_edges (
   id_pattern_edge INTEGER PRIMARY KEY,
   catu_pattern_edge VARCHAR UNIQUE,
   txt_pattern_edge_name VARCHAR,
@@ -1712,7 +1714,7 @@ CREATE TABLE IF NOT EXISTS pattern_edges (
   );
  
 /* Table 14.6 */
-INSERT INTO pattern_edges VALUES 
+INSERT INTO cod_pattern_edges VALUES 
   (1, 'S', 'Sharp', 'Knife-edge boundaries between colours'),
   (2, 'C', 'Clear', 'Colour transition < 2 mm wide'),
   (3, 'D', 'Diffuse', 'Colour transition > 2 mm wide');
@@ -1723,30 +1725,30 @@ INSERT INTO pattern_edges VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_matrix_colours (
+CREATE TABLE IF NOT EXISTS dat_horizon_matrix_colours (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_colour_matrix INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_colour_matrix),
-  cato_matrix_munsell VARCHAR REFERENCES munsell_colours(cato_munsell),
-  catu_colour_moisture VARCHAR REFERENCES munsell_colours(cato_munsell)
+  cato_matrix_munsell VARCHAR REFERENCES cod_munsell_colours(cato_munsell),
+  catu_colour_moisture VARCHAR REFERENCES cod_munsell_colours(cato_munsell)
   );
 
-CREATE TABLE IF NOT EXISTS horizon_colour_patterns (
+CREATE TABLE IF NOT EXISTS dat_horizon_colour_patterns (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_colour_pattern INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_colour_pattern),
-  cato_pattern_munsell VARCHAR REFERENCES munsell_colours(cato_munsell),
-  catu_pattern_short_colour VARCHAR REFERENCES short_colours(catu_colour),
-  catu_pattern_type VARCHAR REFERENCES pattern_types(catu_pattern),
+  cato_pattern_munsell VARCHAR REFERENCES cod_munsell_colours(cato_munsell),
+  catu_pattern_short_colour VARCHAR REFERENCES cod_short_colours(catu_colour),
+  catu_pattern_type VARCHAR REFERENCES cod_pattern_types(catu_pattern),
   amt_pattern_p DECIMAL(6, 2) CHECK (amt_pattern_p BETWEEN 0 AND 100),
-  catu_pattern_shape VARCHAR REFERENCES pattern_shapes(catu_pattern_shape),
+  catu_pattern_shape VARCHAR REFERENCES cod_pattern_shapes(catu_pattern_shape),
   amt_pattern_size_mm DECIMAL(6, 2) CHECK (amt_pattern_p > 0),
-  cato_pattern_contrast VARCHAR REFERENCES pattern_contrasts(catu_pattern_contrast),
-  cato_pattern_edge VARCHAR REFERENCES pattern_edges(catu_pattern_edge)
+  cato_pattern_contrast VARCHAR REFERENCES cod_pattern_contrasts(catu_pattern_contrast),
+  cato_pattern_edge VARCHAR REFERENCES cod_pattern_edges(catu_pattern_edge)
   );
 
 ```
@@ -1756,7 +1758,7 @@ CREATE TABLE IF NOT EXISTS horizon_colour_patterns (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS simple_textures (
+CREATE TABLE IF NOT EXISTS cod_simple_textures (
   id_simple_texture INTEGER PRIMARY KEY,
   cato_simple_texture VARCHAR UNIQUE,
   txt_simple_texture_name VARCHAR,
@@ -1764,7 +1766,7 @@ CREATE TABLE IF NOT EXISTS simple_textures (
   );
 
 /* Table 15.3 */
-INSERT INTO simple_textures VALUES
+INSERT INTO cod_simple_textures VALUES
  (1, 'C', 'Clayey', 'Clay content ≥ 35%, texture class C, LC or ZC'),
  (2, 'Z', 'Silty', 'Clay content < 35%, silt content ≥ 40%; texture class Z, LZ, ZL'),
  (3, 'L', 'Loamy', 'Clay content 8 - 35%, silt content < 40%; texture class SL, SC, CL'),
@@ -1772,14 +1774,14 @@ INSERT INTO simple_textures VALUES
  (5, 'R', 'Rocky', 'Fine earth fraction < 15%, dominated by rock fragments > 2 mm'),
  (6, 'O', 'Organic', 'Organic matter fraction > 18%');
 
-CREATE TABLE IF NOT EXISTS mineral_textures (
+CREATE TABLE IF NOT EXISTS cod_mineral_textures (
   id_mineral_texture INTEGER PRIMARY KEY,
   cato_mineral_texture VARCHAR UNIQUE,
   txt_mineral_texture_name VARCHAR
   );
 
 /* Table 15.2 */
-INSERT INTO mineral_textures VALUES
+INSERT INTO cod_mineral_textures VALUES
 (1, 'S', 'Sand'),
 (2, 'LS', 'Loamy Sand'),
 (3, 'SL', 'Sandy Loam'),
@@ -1792,7 +1794,7 @@ INSERT INTO mineral_textures VALUES
 (10, 'AC', 'Silty Clay'),
 (11, 'C', 'Clay');
 
-CREATE TABLE IF NOT EXISTS sand_sizes (
+CREATE TABLE IF NOT EXISTS cod_sand_sizes (
   id_sand_size INTEGER PRIMARY KEY,
   cato_sand_size VARCHAR UNIQUE,
   txt_sand_size_name VARCHAR,
@@ -1800,12 +1802,12 @@ CREATE TABLE IF NOT EXISTS sand_sizes (
   );
   
 /* Table 15.4 */
-INSERT INTO sand_sizes VALUES
+INSERT INTO cod_sand_sizes VALUES
   (1, 'K', 'Coarse', 'Sand is dominantly 2.0 - 0.6 mm'),
   (2, 'M', 'Medium', 'Sand is dominantly 0.6 - 0.2 mm'),
   (3, 'F', 'Fine',   'Sand is dominantly 0.2 - 0.06 mm');
   
-CREATE TABLE IF NOT EXISTS organic_levels (
+CREATE TABLE IF NOT EXISTS cod_organic_levels (
   id_organic INTEGER PRIMARY KEY,
   cato_organic VARCHAR UNIQUE,
   txt_organic_name VARCHAR,
@@ -1813,11 +1815,11 @@ CREATE TABLE IF NOT EXISTS organic_levels (
   );
   
 /* Table 15.5 */
-INSERT INTO organic_levels VALUES  
+INSERT INTO cod_organic_levels VALUES  
    (1, 'T', 'Slightly organic', '17-30% organic matter'),
    (2, 'P', 'Moderately organic', '30-50% organic matter');
    
-CREATE TABLE IF NOT EXISTS organic_types (
+CREATE TABLE IF NOT EXISTS cod_organic_types (
   id_organic_type INTEGER PRIMARY KEY,
   cato_organic_type VARCHAR UNIQUE,
   txt_organic_type_name VARCHAR,
@@ -1825,13 +1827,13 @@ CREATE TABLE IF NOT EXISTS organic_types (
   );
   
 /* Table 15.6 */
-INSERT INTO organic_types VALUES  
+INSERT INTO cod_organic_types VALUES  
   (1, 'M', 'Moss', 'Organic materials dominantly derived from moss and/or herb species e.g. *Sphagnum spp.*'),
   (2, 'R', 'Reed', 'Organic materials dominantly derived from grasses, reeds, flaxes or similar e.g. *Phormium spp.*'),
   (3, 'T', 'Tree', 'Organic materials dominantly derived from woody shrubs and trees, e.g. Kānuka'),
   (4, 'U', 'Unknown', 'Origin of organic materials cannot be identified with confidence');
 
-CREATE TABLE IF NOT EXISTS organic_decomps (
+CREATE TABLE IF NOT EXISTS cod_organic_decomps (
   id_organic_decomp INTEGER PRIMARY KEY,
   cato_organic_decomp VARCHAR UNIQUE,
   txt_organic_decomp_name VARCHAR,
@@ -1839,12 +1841,12 @@ CREATE TABLE IF NOT EXISTS organic_decomps (
   );
 
 /* Table 15.7 */
-INSERT INTO organic_decomps VALUES 
+INSERT INTO cod_organic_decomps VALUES 
  (1, 'F', 'Fibric', 'Organic matter weakly decomposed and dominated by visible plant remains'),
  (2, 'M', 'Mesic', 'Organic matter moderately decomposed, some visible plant structures but mostly amorphous'),
  (3, 'H', 'Humic', 'Organic matter no longer identifiable, minimal fibre content');
 
-CREATE TABLE IF NOT EXISTS nzsc_mineralogies (
+CREATE TABLE IF NOT EXISTS cod_nzsc_mineralogies (
   id_nzsc_mineralogy INTEGER PRIMARY KEY,
   catu_nzsc_mineralogy VARCHAR UNIQUE,
   txt_nzsc_mineralogy_name VARCHAR,
@@ -1852,7 +1854,7 @@ CREATE TABLE IF NOT EXISTS nzsc_mineralogies (
   );
 
 /* Table 5.2 */
-INSERT INTO nzsc_mineralogies VALUES
+INSERT INTO cod_nzsc_mineralogies VALUES
   (1, 'Gy', 'Gypsic', '>15% by weight of gypsum in the < 20 mm fraction'),
   (2, 'Ca', 'Carbonatic', '>30% by weight carbonates in the < 20 mm fraction'),
   (3, 'Sf', 'Superferritic', '> 28% citrate-dithionite extractable Fe in the < 2 mm fraction'),
@@ -1878,26 +1880,26 @@ INSERT INTO nzsc_mineralogies VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_texture (
+CREATE TABLE IF NOT EXISTS dat_horizon_texture (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   PRIMARY KEY (id_site, id_horizon),
-  cato_texture_simple VARCHAR REFERENCES simple_textures(cato_simple_texture),
-  cato_texture VARCHAR REFERENCES mineral_textures(cato_mineral_texture),
-  cato_texture_sandmod VARCHAR REFERENCES sand_sizes(cato_sand_size),
-  cato_texture_orgmod VARCHAR REFERENCES organic_levels(cato_organic),
-  cato_organic_type VARCHAR REFERENCES organic_types(cato_organic_type),
-  catu_organic_decomp VARCHAR REFERENCES organic_decomps(cato_organic_decomp),
-  catu_organic_minmod VARCHAR REFERENCES simple_textures(cato_simple_texture),
+  cato_texture_simple VARCHAR REFERENCES cod_simple_textures(cato_simple_texture),
+  cato_texture VARCHAR REFERENCES cod_mineral_textures(cato_mineral_texture),
+  cato_texture_sandmod VARCHAR REFERENCES cod_sand_sizes(cato_sand_size),
+  cato_texture_orgmod VARCHAR REFERENCES cod_organic_levels(cato_organic),
+  cato_organic_type VARCHAR REFERENCES cod_organic_types(cato_organic_type),
+  catu_organic_decomp VARCHAR REFERENCES cod_organic_decomps(cato_organic_decomp),
+  catu_organic_minmod VARCHAR REFERENCES cod_simple_textures(cato_simple_texture),
   amt_sand_est_med_p DECIMAL (6, 2) CHECK (amt_sand_est_med_p BETWEEN 0 AND 100),
   amt_sand_est_min_p DECIMAL (6, 2) CHECK (amt_sand_est_min_p BETWEEN 0 AND 100),
   amt_sand_est_max_p DECIMAL (6, 2) CHECK (amt_sand_est_max_p BETWEEN 0 AND 100),
   amt_clay_est_med_p DECIMAL (6, 2) CHECK (amt_clay_est_med_p BETWEEN 0 AND 100),
   amt_clay_est_min_p DECIMAL (6, 2) CHECK (amt_clay_est_min_p BETWEEN 0 AND 100),
   amt_clay_est_max_p DECIMAL (6, 2) CHECK (amt_clay_est_max_p BETWEEN 0 AND 100),
-  catu_lithology VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
-  catu_mineralogy VARCHAR REFERENCES nzsc_mineralogies(catu_nzsc_mineralogy)
+  catu_lithology VARCHAR REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology),
+  catu_mineralogy VARCHAR REFERENCES cod_nzsc_mineralogies(catu_nzsc_mineralogy)
   );
   
 ```
@@ -1907,7 +1909,7 @@ CREATE TABLE IF NOT EXISTS horizon_texture (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS concentration_forms (
+CREATE TABLE IF NOT EXISTS cod_concentration_forms (
   id_conc_form INTEGER PRIMARY KEY,
   cato_conc_form VARCHAR UNIQUE,
   txt_conc_form_name VARCHAR,
@@ -1915,13 +1917,13 @@ CREATE TABLE IF NOT EXISTS concentration_forms (
   );
 
 /* Table 16.1 */
-INSERT INTO concentration_forms VALUES
+INSERT INTO cod_concentration_forms VALUES
   (1, 'CC', 'Concretion', 'hard concentrations with a layered internal structure, usually rounded'),
   (2, 'NO', 'Nodule', 'hard concentrations with no internal structure, usually irregular'),
   (3, 'CT', 'Crystal', 'A mineral arranged as interlocking or twinned macroscopic crystals or as a single macroscopic crystal, e.g., gypsum.'),
   (4, 'SS', 'Soft masses', 'A non-cemented concentration that can seldom be removed from the soil as a discrete unit');
   
-CREATE TABLE IF NOT EXISTS concentration_types (
+CREATE TABLE IF NOT EXISTS cod_concentration_types (
   id_conc INTEGER PRIMARY KEY,
   cato_conc VARCHAR UNIQUE,
   txt_conc_name VARCHAR,
@@ -1929,7 +1931,7 @@ CREATE TABLE IF NOT EXISTS concentration_types (
   );
 
 /* Table 16.2 */
-INSERT INTO concentration_types VALUES
+INSERT INTO cod_concentration_types VALUES
    (1,  'E',  'Earthy', 'Loamy or silty texture within a sandy or clayey matrix'),
    (2,  'A',  'Argillaceous', 'Clayey texture within a lower-clay matrix'),
    (3,  'F',  'Ferruginious', 'Iron-dominated'),
@@ -1942,7 +1944,7 @@ INSERT INTO concentration_types VALUES
    (10, 'O',  'Organic', 'Organic texture in a low-organics matrix'),
    (11, 'UK', 'Unknown', 'Composition cannot be reliably determined');
 
-CREATE TABLE IF NOT EXISTS coating_types (
+CREATE TABLE IF NOT EXISTS cod_coating_types (
   id_coating INTEGER PRIMARY KEY,
   catu_coating VARCHAR UNIQUE,
   txt_coating_name VARCHAR,
@@ -1950,7 +1952,7 @@ CREATE TABLE IF NOT EXISTS coating_types (
   );
 
 /* Table 16.3 */
-INSERT INTO coating_types VALUES 
+INSERT INTO cod_coating_types VALUES 
    (1, 'CC', 'Clay coats', 'Appear to have more clay than the soil matrix. They are often different in colour from the adjacent matrix and are usually recognisable in sandy or loamy soils, but can be difficult to recognise in clayey soils.'),
    (2, 'ZC', 'Silt coats', 'Silt grains concentrated at surfaces; they may be residual concentrations resulting from clay removal, or may have moved in from horizons above'),
    (3, 'SC', 'Sand coats', 'Sand grains concentrated at surfaces; they may be residual concentrations resulting from silt and/or clay removal, or may have moved in from horizons above'),
@@ -1960,7 +1962,7 @@ INSERT INTO coating_types VALUES
    (7, 'CB', 'Carbonate coats', 'Precipitated calcium carbonate (CaCO3). Usually pale-coloured, and reactive to HCl.'),
    (8, 'SI', 'Silica coats', 'Precipitated silica (SiO2). Usually pale-coloured, and non-reactive to HCl.');
 
-CREATE TABLE IF NOT EXISTS pan_types (
+CREATE TABLE IF NOT EXISTS cod_pan_types (
   id_pan INTEGER PRIMARY KEY,
   catu_pan VARCHAR UNIQUE,
   txt_pan_name VARCHAR,
@@ -1968,7 +1970,7 @@ CREATE TABLE IF NOT EXISTS pan_types (
   );
   
 /* Table 16.4 */
-INSERT INTO pan_types VALUES   
+INSERT INTO cod_pan_types VALUES   
    (1, 'C', 'Cultivation pan', 'Pan comprising compressed soil, induced by cultivation (e.g. use of heavy farm machinery)'),
    (2, 'D', 'Densipan', 'Silty layers with a very high bulk density and extremely slow permeability'),
    (3, 'H', 'Humus-pan', 'Cemented by aluminium and organic matter. Common in Podzols; sometimes known as coffee rock'),
@@ -1980,7 +1982,7 @@ INSERT INTO pan_types VALUES
    (9, 'X', 'Fragipan', 'An earthy, high density, erosion-resistant layer common to Pallic soils'),
    (10, 'UK', 'Unknown', 'Pan origin cannot be clearly determined');
    
-CREATE TABLE IF NOT EXISTS pan_continuities (
+CREATE TABLE IF NOT EXISTS cod_pan_continuities (
   id_pan_cont INTEGER PRIMARY KEY,
   catu_pan_cont VARCHAR UNIQUE,
   txt_pan_cont_name VARCHAR,
@@ -1988,12 +1990,12 @@ CREATE TABLE IF NOT EXISTS pan_continuities (
   );
 
 /* Table 16.5 */
-INSERT INTO pan_continuities VALUES 
+INSERT INTO cod_pan_continuities VALUES 
  (1, 'C', 'Continuous', 'Extends as a layer with little or no break across 1 m or more.'),
  (2, 'D', 'Discontinuous', 'Broken by cracks but original orientation of fragments is preserved.'),
  (3, 'B', 'Broken', 'Broken by cracks and fragments are disoriented');
 
-CREATE TABLE IF NOT EXISTS pan_structures (
+CREATE TABLE IF NOT EXISTS cod_pan_structures (
   id_pan_structure INTEGER PRIMARY KEY,
   catu_pan_structure VARCHAR UNIQUE,
   txt_pan_structure_name VARCHAR,
@@ -2001,14 +2003,14 @@ CREATE TABLE IF NOT EXISTS pan_structures (
   );
 
 /* Table 16.6 */
-INSERT INTO pan_structures VALUES 
+INSERT INTO cod_pan_structures VALUES 
   (1, 'V', 'Massive', 'No recognisable structure'),
   (2, 'S', 'Vesicular', 'Sponge-like structure having large pores, which may or may not be filled with softer material'),
   (3, 'C', 'Concretionary', 'Spheroidal concretions cemented together'),
   (4, 'N', 'Nodular', 'Irregular nodules cemented together'),
   (5, 'P', 'Platy', 'Plate-like units cemented together');
 
-CREATE TABLE IF NOT EXISTS stress_types (
+CREATE TABLE IF NOT EXISTS cod_stress_types (
   id_stress INTEGER PRIMARY KEY,
   catu_stress VARCHAR UNIQUE,
   txt_stress_name VARCHAR,
@@ -2016,11 +2018,11 @@ CREATE TABLE IF NOT EXISTS stress_types (
   );
 
 /* Table 16.7 */
-INSERT INTO stress_types VALUES 
+INSERT INTO cod_stress_types VALUES 
  (1, 'SL', 'Slickensides', 'Smooth faces with linear grooves, from peds sliding past each other.'),
  (2, 'PF', 'Pressure faces', 'Smooth planar faces from peds pressing against each other without sliding.');
 
-CREATE TABLE IF NOT EXISTS bio_feature_types (
+CREATE TABLE IF NOT EXISTS cod_bio_feature_types (
   id_bio_feature INTEGER PRIMARY KEY,
   catu_bio_feature VARCHAR UNIQUE,
   txt_bio_feature_name VARCHAR,
@@ -2028,7 +2030,7 @@ CREATE TABLE IF NOT EXISTS bio_feature_types (
   );
 
 /* Table 16.8 */
-INSERT INTO bio_feature_types VALUES 
+INSERT INTO cod_bio_feature_types VALUES 
    (1, 'T', 'Tunnel', 'Infilled earthworm or insect burrow, < 20 mm in diameter'),
    (2, 'B', 'Burrow', 'Infilled former macrofauna burrow, > 20 mm in diameter'),
    (3, 'C', 'Casts',  'Earthworm wastes forming balls of fine soil material');
@@ -2039,28 +2041,28 @@ INSERT INTO bio_feature_types VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_secondary_features (
+CREATE TABLE IF NOT EXISTS dat_horizon_secondary_features (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   PRIMARY KEY (id_site, id_horizon),
-  catu_concentration_form VARCHAR REFERENCES concentration_forms(cato_conc_form),
+  catu_concentration_form VARCHAR REFERENCES cod_concentration_forms(cato_conc_form),
   amt_concentration_p DECIMAL (6, 2) CHECK (amt_concentration_p BETWEEN 0 AND 100),
-  catu_pan_type VARCHAR REFERENCES pan_types(catu_pan),
-  cato_pan_continuity VARCHAR REFERENCES pan_continuities(catu_pan_cont),
-  catu_pan_structure VARCHAR REFERENCES pan_structures(catu_pan_structure),
-  catu_stress_type VARCHAR REFERENCES stress_types(catu_stress),
+  catu_pan_type VARCHAR REFERENCES cod_pan_types(catu_pan),
+  cato_pan_continuity VARCHAR REFERENCES cod_pan_continuities(catu_pan_cont),
+  catu_pan_structure VARCHAR REFERENCES cod_pan_structures(catu_pan_structure),
+  catu_stress_type VARCHAR REFERENCES cod_stress_types(catu_stress),
   amt_stress_p DECIMAL (6, 2) CHECK (amt_stress_p BETWEEN 0 AND 100)
   );
   
-CREATE TABLE IF NOT EXISTS horizon_concentrations (
+CREATE TABLE IF NOT EXISTS dat_horizon_concentrations (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_concentration INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_concentration),
-  catu_concentration_form VARCHAR REFERENCES concentration_forms(cato_conc_form),
-  catu_concentration_type VARCHAR REFERENCES concentration_types(cato_conc),
+  catu_concentration_form VARCHAR REFERENCES cod_concentration_forms(cato_conc_form),
+  catu_concentration_type VARCHAR REFERENCES cod_concentration_types(cato_conc),
   amt_concentration_size_med_mm DECIMAL (6, 2) CHECK (amt_concentration_size_med_mm > 0),
   amt_concentration_size_min_mm DECIMAL (6, 2) CHECK (amt_concentration_size_min_mm > 0),
   amt_concentration_size_max_mm DECIMAL (6, 2) CHECK (amt_concentration_size_max_mm > 0),
@@ -2069,23 +2071,23 @@ CREATE TABLE IF NOT EXISTS horizon_concentrations (
   amt_concentration_max_p DECIMAL (6, 2) CHECK (amt_concentration_max_p BETWEEN 0 AND 100)
   );
 
-CREATE TABLE IF NOT EXISTS horizon_coatings (
+CREATE TABLE IF NOT EXISTS dat_horizon_coatings (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_coating INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_coating),
-  catu_coating VARCHAR REFERENCES coating_types(catu_coating),
+  catu_coating VARCHAR REFERENCES cod_coating_types(catu_coating),
   amt_coating_p DECIMAL (6, 2) CHECK (amt_coating_p BETWEEN 0 AND 100)
   );
   
-CREATE TABLE IF NOT EXISTS horizon_bio_features (
+CREATE TABLE IF NOT EXISTS dat_horizon_bio_features (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_bio_features INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_bio_features),
-  catu_bio_feature VARCHAR REFERENCES bio_feature_types(catu_bio_feature),
+  catu_bio_feature VARCHAR REFERENCES cod_bio_feature_types(catu_bio_feature),
   amt_bio_feature_p DECIMAL (6, 2) CHECK (amt_bio_feature_p BETWEEN 0 AND 100)
   );
   
@@ -2096,7 +2098,7 @@ CREATE TABLE IF NOT EXISTS horizon_bio_features (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS strengths (
+CREATE TABLE IF NOT EXISTS cod_strengths (
   id_strength INTEGER PRIMARY KEY,
   cato_strength VARCHAR UNIQUE,
   txt_strength_name VARCHAR,
@@ -2104,7 +2106,7 @@ CREATE TABLE IF NOT EXISTS strengths (
   );
 
 /* Table 17.1 */
-INSERT INTO strengths VALUES
+INSERT INTO cod_strengths VALUES
   (1, '1', 'Very Weak', 'Very gentle force in hand'),
   (2, '2', 'Weak', 'Gentle force in hand'),
   (3, '3', 'Slightly firm', 'Moderate force in hand'),
@@ -2113,7 +2115,7 @@ INSERT INTO strengths VALUES
   (6, '6', 'Hard', 'Full body weight (~80 kg) applied slowly'),
   (7, '7', 'Very hard', 'Withstands full body weight');
 
-CREATE TABLE IF NOT EXISTS sensitivities (
+CREATE TABLE IF NOT EXISTS cod_sensitivities (
   id_sensitivity INTEGER PRIMARY KEY,
   cato_sensitivity VARCHAR UNIQUE,
   txt_sensitivity_name VARCHAR,
@@ -2121,13 +2123,13 @@ CREATE TABLE IF NOT EXISTS sensitivities (
   );
 
 /* Table 17.2 */
-INSERT INTO sensitivities VALUES
+INSERT INTO cod_sensitivities VALUES
   (1, '1', 'Non-sensitive', 'the sample does not smear under shear force, and may soften only slightly'),
   (2, '2', 'Weakly sensitive', 'the sample smears and skids under moderate shear force (20-40 kPa)'),
   (3, '3', 'Moderately sensitive', 'the sample suddenly turns fluid under moderate shear force (20-40 kPa) and the fingers skid. Some free water is evident on fingers after shearing'),
   (4, '4', 'Very sensitive', 'the soil suddenly turns fluid and slippery under only gentle shear force (<20 kPa). Free water is easily seen on the fingers after shearing');
 
-CREATE TABLE IF NOT EXISTS plasticities (
+CREATE TABLE IF NOT EXISTS cod_plasticities (
   id_plasticity INTEGER PRIMARY KEY,
   cato_plasticity VARCHAR UNIQUE,
   txt_plasticity_name VARCHAR,
@@ -2135,13 +2137,13 @@ CREATE TABLE IF NOT EXISTS plasticities (
   );
 
 /* Table 17.3 */
-INSERT INTO plasticities VALUES
+INSERT INTO cod_plasticities VALUES
   (1, '1', 'Non-plastic', 'A roll 40 mm long and 6 mm thick that supports its own weight cannot be formed.'),
   (2, '2', 'Slightly plastic', 'A roll 40 mm long and 6 mm thick can be formed and will support its own weight, but a roll 4 mm thick will not support its own weight.'),
   (3, '3', 'Moderately plastic', 'A roll 40 mm long and 4 mm diameter can be formed, and will support its own weight, but a roll 2 mm thick will not support its own weight.'),
   (4, '4', 'Very plastic', 'A roll 40 mm long and 2 mm thick can be formed and will support its own weight.');
 
-CREATE TABLE IF NOT EXISTS stickinesses (
+CREATE TABLE IF NOT EXISTS cod_stickinesses (
   id_stickiness INTEGER PRIMARY KEY,
   cato_stickiness VARCHAR UNIQUE,
   txt_stickiness_name VARCHAR,
@@ -2149,13 +2151,13 @@ CREATE TABLE IF NOT EXISTS stickinesses (
   );
 
 /* Table 17.4 */
-INSERT INTO stickinesses VALUES
+INSERT INTO cod_stickinesses VALUES
   (1, '1', 'Non-sticky', 'After release of pressure, practically no soil material adheres to the thumb or forefinger'),
   (2, '2', 'Slightly sticky', 'After release of pressure, soil material adheres perceptibly to both thumb and forefinger but, as the digits are separated, it tends to come off one or the other cleanly. The material is not stretched appreciably when the thumb and finger are separated'),
   (3, '3', 'Moderately sticky', 'After release of pressure, soil material adheres to both thumb and forefinger and tends to stretch somewhat and pull apart rather than pulling free from either digit'),
   (4, '4', 'Very sticky', 'After release of pressure, soil material adheres so strongly to both thumb and forefinger that it is decidedly stretched when they are separated, and finally pulls apart leaving part of the soil on thumb and part on the forefinger.');
 
-CREATE TABLE IF NOT EXISTS penrests (
+CREATE TABLE IF NOT EXISTS cod_penrests (
   id_penrest INTEGER PRIMARY KEY,
   cato_penrest VARCHAR UNIQUE,
   txt_penrest_name VARCHAR,
@@ -2163,7 +2165,7 @@ CREATE TABLE IF NOT EXISTS penrests (
   );
 
 /* Table 17.5 */
-INSERT INTO penrests VALUES
+INSERT INTO cod_penrests VALUES
  (1, '1', 'Extremely low', 'Easily penetrated by fist'),
  (2, '2', 'Very low', 'Easily penetrated by thumb'),
  (3, '3', 'Low', 'Readily indented by thumb but penetrated with considerable effort. Imprinted by finger with some effort.'),
@@ -2172,7 +2174,7 @@ INSERT INTO penrests VALUES
  (6, '6', 'Very high', 'Indented by thumbnail. No imprint by thumb or finger'),
  (7, '7', 'Extremely high', 'Barely indented by thumbnail');
 
-CREATE TABLE IF NOT EXISTS packings (
+CREATE TABLE IF NOT EXISTS cod_packings (
   id_packing INTEGER PRIMARY KEY,
   cato_packing VARCHAR UNIQUE,
   txt_packing_name VARCHAR,
@@ -2180,13 +2182,13 @@ CREATE TABLE IF NOT EXISTS packings (
   );
 
 /* Table 17.6 */
-INSERT INTO packings VALUES
+INSERT INTO cod_packings VALUES
   (1, '1', 'Loose', 'Easily dislodged by spade or pick; does not maintain a vertical face'),
   (2, '2', 'Compact', 'Intermediate between loose and dense'),
   (3, '3', 'Dense', 'Difficult to dislodge except with spade and by removing individual fragments; maintains a stable vertical face'),
   (4, '4', 'Very dense', 'Very difficult to dislodge except by pick and removing individual fragments; maintains a stable vertical face');
           
-CREATE TABLE IF NOT EXISTS failures (
+CREATE TABLE IF NOT EXISTS cod_failures (
   id_failure INTEGER PRIMARY KEY,
   catu_failure VARCHAR UNIQUE,
   txt_failure_name VARCHAR,
@@ -2194,7 +2196,7 @@ CREATE TABLE IF NOT EXISTS failures (
   );
 
 /* Table 17.7 */
-INSERT INTO failures VALUES     
+INSERT INTO cod_failures VALUES     
   (1, 'N', 'Not determinable', 'Soil is either too dry or too wet to reliably test'),
   (2, 'V', 'Very friable', 'Test specimen cannot be formed, or crumbles under very slight stress on crushing within the hand, into aggregates predominantly <2 mm in size. In most instances the test specimen is difficult to obtain.'),
   (3, 'F', 'Friable', 'Test sample cannot be formed, or crumbles under very slight stress on crushing within the hand, into aggregates predominantly >2 mm in size, or crumbles under slight stress on crushing within the hand into aggregates predominantly <2 mm in size.'),
@@ -2202,7 +2204,7 @@ INSERT INTO failures VALUES
   (5, 'S', 'Semi-deformable', 'Under increasing pressure between the extended thumb and forefinger the test specimen as a whole is perceptibly compressed in the direction along which pressure is exerted, but cracks develop and the specimen ruptures before it has been compressed to half its original thickness. Before rupture, parts crumble and fall away if the specimen is shaken while held between the thumb and forefinger.'),
   (6, 'D', 'Deformable', 'Under slowly increasing pressure between the extended thumb and forefinger, the test specimen can be compressed to at least half its original thickness without the appearance of cracks and without rupture.');
   
-CREATE TABLE IF NOT EXISTS fluidities (
+CREATE TABLE IF NOT EXISTS cod_fluidities (
   id_fluidity INTEGER PRIMARY KEY,
   catu_fluidity VARCHAR UNIQUE,
   txt_fluidity_name VARCHAR,
@@ -2210,12 +2212,12 @@ CREATE TABLE IF NOT EXISTS fluidities (
   );
 
 /* Table 17.8 */
-INSERT INTO fluidities VALUES   
+INSERT INTO cod_fluidities VALUES   
   (1, '1', 'Slightly fluid', 'Some material tends to flow into the spaces between the fingers, but after full pressure is exerted most of the residue is left in the hand'),
   (2, '2', 'Moderately fluid', 'Soil material flows easily between the fingers, but a small residue is left in the hand after full pressure is exerted'),
   (3, '3', 'Very fluid', 'Soil material flows like a slightly viscous liquid between the fingers, and very little or no residue is left in the hand after full pressure is exerted');
   
-CREATE TABLE IF NOT EXISTS indurations (
+CREATE TABLE IF NOT EXISTS cod_indurations (
   id_induration INTEGER PRIMARY KEY,
   cato_induration VARCHAR UNIQUE,
   txt_induration_name VARCHAR,
@@ -2223,7 +2225,7 @@ CREATE TABLE IF NOT EXISTS indurations (
   );
 
 /* Table 17.9 */
-INSERT INTO indurations VALUES   
+INSERT INTO cod_indurations VALUES   
   (1, '1', 'Non-indurated', 'A wet test specimen slakes within one hour when placed in water'),
   (2, '2', 'Very weakly indurated', 'A wet test specimen that has been immersed for one hour and has not slaked has strength class of 2-4'),
   (3, '3', 'Weakly indurated', 'A wet test specimen that has been immersed for one hour has a strength class of 6'),
@@ -2237,25 +2239,25 @@ INSERT INTO indurations VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS consistence_tests (
+CREATE TABLE IF NOT EXISTS dat_consistence_tests (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   PRIMARY KEY (id_site, id_horizon),
   ind_cohesive BOOLEAN,
-  cato_strength_unconfined VARCHAR REFERENCES strengths(cato_strength),
-  cato_strength_ped VARCHAR REFERENCES strengths(cato_strength),
-  cato_strength_remoulded VARCHAR REFERENCES strengths(cato_strength),
-  cato_strength_plastic VARCHAR REFERENCES strengths(cato_strength),
-  cato_strength_sensitivity VARCHAR REFERENCES sensitivities(cato_sensitivity),
-  cato_strength_plasticity VARCHAR REFERENCES plasticities(cato_plasticity),
-  cato_strength_stickiness VARCHAR REFERENCES stickinesses(cato_stickiness),
+  cato_strength_unconfined VARCHAR REFERENCES cod_strengths(cato_strength),
+  cato_strength_ped VARCHAR REFERENCES cod_strengths(cato_strength),
+  cato_strength_remoulded VARCHAR REFERENCES cod_strengths(cato_strength),
+  cato_strength_plastic VARCHAR REFERENCES cod_strengths(cato_strength),
+  cato_strength_sensitivity VARCHAR REFERENCES cod_sensitivities(cato_sensitivity),
+  cato_strength_plasticity VARCHAR REFERENCES cod_plasticities(cato_plasticity),
+  cato_strength_stickiness VARCHAR REFERENCES cod_stickinesses(cato_stickiness),
   ind_dilatent BOOLEAN,
-  cato_penetration_rest VARCHAR REFERENCES penrests(cato_penrest),
-  cato_packing VARCHAR REFERENCES packings(cato_packing),
-  catu_failure VARCHAR REFERENCES failures(catu_failure),
-  cato_fluidity VARCHAR REFERENCES fluidities(catu_fluidity),
-  cato_induration VARCHAR REFERENCES indurations(cato_induration)
+  cato_penetration_rest VARCHAR REFERENCES cod_penrests(cato_penrest),
+  cato_packing VARCHAR REFERENCES cod_packings(cato_packing),
+  catu_failure VARCHAR REFERENCES cod_failures(catu_failure),
+  cato_fluidity VARCHAR REFERENCES cod_fluidities(catu_fluidity),
+  cato_induration VARCHAR REFERENCES cod_indurations(cato_induration)
   );
 
 ```
@@ -2265,12 +2267,12 @@ CREATE TABLE IF NOT EXISTS consistence_tests (
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS pH_raupachs (
+CREATE TABLE IF NOT EXISTS cod_pH_raupachs (
   id_raupach INTEGER PRIMARY KEY,
   cato_raupach VARCHAR UNIQUE
   );
 
-INSERT INTO pH_raupachs VALUES
+INSERT INTO cod_pH_raupachs VALUES
   (1, '2.0'),
   (2, '2.5'),
   (3, '3.0'),
@@ -2290,7 +2292,7 @@ INSERT INTO pH_raupachs VALUES
   (17, '10.0'),
   (18, '10.5');
 
-CREATE TABLE IF NOT EXISTS h2o2_rxns (
+CREATE TABLE IF NOT EXISTS cod_h2o2_rxns (
   id_h2o2_rxn INTEGER PRIMARY KEY,
   cato_h2o2_rxn VARCHAR UNIQUE,
   txt_h2o2_rxn_name VARCHAR,
@@ -2298,14 +2300,14 @@ CREATE TABLE IF NOT EXISTS h2o2_rxns (
   );
 
 /* Table 18.1 */
-INSERT INTO h2o2_rxns VALUES
+INSERT INTO cod_h2o2_rxns VALUES
   (1, 'N', 'No reaction',  'No fizzing or bubbling after 15 minutes'),
   (2, 'L', 'Slight reaction', 'Sample fizzes or bubbles slightly but does not steam'),
   (3, 'M', 'Moderate reaction', 'Sample bubbles and steams slightly but does not completely boil. Unlikely to continue reacting if more peroxide is added'),
   (4, 'H', 'High reaction', 'Sample boils and steams but does not boil over. May continue to react when more peroxide is added'),
   (5, 'X', 'Explosive reaction', 'Sample rapidly boils over and puts off considerable steam; likely to continue to react when more peroxide is added');
 
-CREATE TABLE IF NOT EXISTS hcl_rxns (
+CREATE TABLE IF NOT EXISTS cod_hcl_rxns (
   id_hcl_rxn INTEGER PRIMARY KEY,
   cato_hcl_rxn VARCHAR UNIQUE,
   txt_hcl_rxn_name VARCHAR,
@@ -2313,13 +2315,13 @@ CREATE TABLE IF NOT EXISTS hcl_rxns (
   );
 
 /* Table 18.2 */
-INSERT INTO hcl_rxns VALUES
+INSERT INTO cod_hcl_rxns VALUES
  (1, 'N', 'No reaction',  'No audible or visible fizzing'),
  (2, 'L', 'Slight reaction', 'Fizzing faintly audible and barely visible'),
  (3, 'M', 'Moderate reaction', 'Fizzing audible and clearly visible, small bubbles ≤ 3 mm diameter'),
  (4, 'H', 'High reaction', 'Fizzing easily audible and visible, bubbles up to 7 mm diameter');
  
-CREATE TABLE IF NOT EXISTS naf_rxns (
+CREATE TABLE IF NOT EXISTS cod_naf_rxns (
   id_naf_rxn INTEGER PRIMARY KEY,
   cato_naf_rxn VARCHAR UNIQUE,
   txt_naf_rxn_name VARCHAR,
@@ -2327,13 +2329,13 @@ CREATE TABLE IF NOT EXISTS naf_rxns (
   );
 
 /* Table 18.3 */
-INSERT INTO naf_rxns VALUES
+INSERT INTO cod_naf_rxns VALUES
   (1, 'N', 'No reaction',  'No colour change'),
   (2, 'L', 'Slight reaction', 'Paper turns faint pink within two minutes'),
   (3, 'M', 'Moderate reaction', 'Paper turns moderate pink, usually within 30 seconds'),
   (4, 'H', 'Strong reaction', 'Paper turns dark pink, usually instantly');
   
-CREATE TABLE IF NOT EXISTS slaking_rxns (
+CREATE TABLE IF NOT EXISTS cod_slaking_rxns (
   id_slaking_rxn INTEGER PRIMARY KEY,
   cato_slaking_rxn VARCHAR UNIQUE,
   txt_slaking_rxn_name VARCHAR,
@@ -2341,12 +2343,12 @@ CREATE TABLE IF NOT EXISTS slaking_rxns (
   );
 
 /* Table 18.4 */
-INSERT INTO slaking_rxns VALUES
+INSERT INTO cod_slaking_rxns VALUES
   (1, 'N', 'No slaking',  'Peds remain intact. Some bubbles may develop on their surfaces'),
   (2, 'P', 'Partial slaking', 'Peds have broken open or partially collapsed, mostly into smaller peds'),
   (3, 'C', 'Complete slaking', 'Peds have collapsed into a pile of separated grains, little to no ped structure remains visible');
   
-CREATE TABLE IF NOT EXISTS dispersion_rxns (
+CREATE TABLE IF NOT EXISTS cod_dispersion_rxns (
   id_dispersion_rxn INTEGER PRIMARY KEY,
   cato_dispersion_rxn VARCHAR UNIQUE,
   txt_dispersion_rxn_name VARCHAR,
@@ -2354,7 +2356,7 @@ CREATE TABLE IF NOT EXISTS dispersion_rxns (
   );
 
 /* Table 18.5 */
-INSERT INTO dispersion_rxns VALUES  
+INSERT INTO cod_dispersion_rxns VALUES  
    (1, 'N', 'No dispersal',  'Peds remain intact and water remains clear'),
    (2, 'S', 'Slight dispersion', 'Peds remain largely intact but a faint milky halo of suspended clay particles can be seen around them'),
    (3, 'M', 'Moderate dispersion', 'Peds partly collapse and a milky halo is visible around the sample'),
@@ -2365,24 +2367,24 @@ INSERT INTO dispersion_rxns VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS field_tests (
+CREATE TABLE IF NOT EXISTS dat_field_tests (
   id_site VARCHAR,
-  FOREIGN KEY (id_site) REFERENCES sites(id_site),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
   PRIMARY KEY (id_site),
   
   amt_test_depth_cm DECIMAL (6, 2) CHECK (amt_test_depth_cm >= 0),
-  cato_pH_raupach VARCHAR REFERENCES pH_raupachs(cato_raupach),
+  cato_pH_raupach VARCHAR REFERENCES cod_pH_raupachs(cato_raupach),
   val_pH_water DECIMAL (6, 2) CHECK (val_pH_water BETWEEN 0 AND 14),
   val_pH_h2o2 DECIMAL (6, 2) CHECK (val_pH_h2o2 BETWEEN 0 AND 14),
-  cato_h2o2_rxn VARCHAR REFERENCES h2o2_rxns(cato_h2o2_rxn),
+  cato_h2o2_rxn VARCHAR REFERENCES cod_h2o2_rxns(cato_h2o2_rxn),
   amt_ec_dSm DECIMAL (6, 2) CHECK (amt_ec_dSm <= 0),
-  cato_hcl_rxn VARCHAR REFERENCES hcl_rxns(cato_hcl_rxn),
+  cato_hcl_rxn VARCHAR REFERENCES cod_hcl_rxns(cato_hcl_rxn),
   ind_mn_rxn BOOLEAN,
-  cato_naf_rxn VARCHAR REFERENCES naf_rxns(cato_naf_rxn),
+  cato_naf_rxn VARCHAR REFERENCES cod_naf_rxns(cato_naf_rxn),
   ind_22bip_rxn BOOLEAN,
   ind_water_repellent BOOLEAN,
-  cato_slaking VARCHAR REFERENCES slaking_rxns(cato_slaking_rxn),
-  cato_dispersion VARCHAR REFERENCES dispersion_rxns(cato_dispersion_rxn)
+  cato_slaking VARCHAR REFERENCES cod_slaking_rxns(cato_slaking_rxn),
+  cato_dispersion VARCHAR REFERENCES cod_dispersion_rxns(cato_dispersion_rxn)
   );
 
 ```
@@ -2396,7 +2398,7 @@ Including horizon drainage here
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_names_primary (
+CREATE TABLE IF NOT EXISTS cod_horizon_names_primary (
   id_horizon_primary INTEGER PRIMARY KEY,
   catu_horizon_primary VARCHAR UNIQUE,
   txt_horizon_primary_name VARCHAR,
@@ -2404,7 +2406,7 @@ CREATE TABLE IF NOT EXISTS horizon_names_primary (
   );
 
 /* Table 20.1 */
-INSERT INTO horizon_names_primary VALUES
+INSERT INTO cod_horizon_names_primary VALUES
   (1, 'F', 'Fibric', 'Partly decomposed litter deposited or accumulated at the surface and not saturated with water for more than ~1 month at a time.'),
   (2, 'H', 'Humic', 'Well-decomposed litter deposited or accumulated at the surface and not saturated with water for more than ~1 month at a time. Original plant structures cannot be seen.'),
   (3, 'O', 'Peat', 'Organic horizon accumulated under wet conditions. It is saturated with water for at least 30 consecutive days in most years, or has been artificially drained.'),
@@ -2414,7 +2416,7 @@ INSERT INTO horizon_names_primary VALUES
   (7, 'C', 'Regolith', 'Unconsolidated or weakly consolidated mineral horizon that is little affected by pedogenic processes and lacks properties of A, E or B horizons.'),
   (8, 'R', 'Rock', 'Hard or very hard bedrock that is impracticable to dig with a spade.');
   
-CREATE TABLE IF NOT EXISTS horizon_names_secondary (
+CREATE TABLE IF NOT EXISTS cod_horizon_names_secondary (
   id_horizon_secondary INTEGER PRIMARY KEY,
   catu_horizon_secondary VARCHAR UNIQUE,
   txt_horizon_secondary_name VARCHAR,
@@ -2422,7 +2424,7 @@ CREATE TABLE IF NOT EXISTS horizon_names_secondary (
   );
   
 /* Tables 20.2 - 20.7 */
-INSERT INTO horizon_names_secondary VALUES
+INSERT INTO cod_horizon_names_secondary VALUES
   (1, 'Of', 'Fibric peat' , 'Peat dominated by well-preserved plant remains, with at least 75% fibre content after rubbing (e.g. preserved timber)'),
   (2, 'Om', 'Mesic peat', 'Peat intermediate in composition between Of and Oh.'),
   (3, 'Oh', 'Humic peat', 'Peat dominated by strongly decomposed plant remains, with less than 15% fibre content after rubbing. Plant species cannot be directly identified.'),
@@ -2442,7 +2444,7 @@ INSERT INTO horizon_names_secondary VALUES
   (17, 'Cu', 'Unconsolidated', 'Unconsolidated C horizon without evidence of strong gleying, accumulation of carbonates or more soluble salts. It is normally apedal, may show stratification and has less than 2% redox segregations.'),
   (18, 'R', 'Rock' , 'Hard or very hard bedrock that is impracticable to dig with a spade. The rock may contain cracks, but these are generally too few and too small for significant root development.');
 
-CREATE TABLE IF NOT EXISTS horizon_suffix_redox (
+CREATE TABLE IF NOT EXISTS cod_horizon_suffix_redox (
   id_horizon_suffix_redox INTEGER PRIMARY KEY,
   catu_horizon_suffix_redox VARCHAR UNIQUE,
   txt_horizon_suffix_redox_name VARCHAR,
@@ -2450,13 +2452,13 @@ CREATE TABLE IF NOT EXISTS horizon_suffix_redox (
   );
   
 /* Table 20.8 */
-INSERT INTO horizon_suffix_redox VALUES
+INSERT INTO cod_horizon_suffix_redox VALUES
   (1, '(f)', 'Slightly reduced', '≥ 2% redox segregations, no low-chroma colours'),
   (2, '(g)', 'Reduced', '≥ 2% redox segregations, matrix and/or ped faces have < 50% low-chroma colours'),
   (3, 'g' , 'Very reduced', '≥ 2% redox segregations, matrix has 50-85% low chroma colours, and/or ped faces have > 50% low-chroma colours'),
   (4, 'r', 'Completely reduced', 'Matrix has > 85% low-chroma colours.');
   
-CREATE TABLE IF NOT EXISTS horizon_suffix_other (
+CREATE TABLE IF NOT EXISTS cod_horizon_suffix_other (
   id_horizon_suffix_other INTEGER PRIMARY KEY,
   catu_horizon_suffix_other VARCHAR UNIQUE,
   txt_horizon_suffix_other_name VARCHAR,
@@ -2464,7 +2466,7 @@ CREATE TABLE IF NOT EXISTS horizon_suffix_other (
   );
   
 /* Table 20.9 */
-INSERT INTO horizon_suffix_other VALUES
+INSERT INTO cod_horizon_suffix_other VALUES
   (1, 'c', 'Concretionary', '> 5% by volume of concretions'),
   (2, 'd', 'Densipan', 'To denote an E horizon with densipan properties'),
   (3, 'e', 'Unripe', 'To denote an unripe horizon'),
@@ -2482,20 +2484,20 @@ INSERT INTO horizon_suffix_other VALUES
   (15, 'y', 'Gypsic', 'To denote an accumulation of gypsum, CaSO4.'),
   (16, 'z', 'Salty', 'To denote an accumulation of salts more soluble than gypsum.');
   
- CREATE TABLE IF NOT EXISTS horizon_names_functional (
+ CREATE TABLE IF NOT EXISTS cod_horizon_names_functional (
   id_horizon_functional INTEGER PRIMARY KEY,
   catu_horizon_functional VARCHAR UNIQUE,
   txt_horizon_functional_name VARCHAR
   );
 
 /* Table 20.18 - just a few for demo */  
-INSERT INTO horizon_names_functional VALUES 
+INSERT INTO cod_horizon_names_functional VALUES 
   (1, 'Lw', 'Loamy weak'),
   (2, 'SLw', 'Stony loamy, weak'),
   (3, 'VLc', 'Very stony loamy compact'),
   (4, 'XL', 'Extremely stony loamy');
 
-CREATE TABLE IF NOT EXISTS horizon_permeabilities (
+CREATE TABLE IF NOT EXISTS cod_horizon_permeabilities (
   id_functional_perm INTEGER PRIMARY KEY,
   cato_functional_perm VARCHAR UNIQUE,
   txt_functional_perm_name VARCHAR,
@@ -2503,21 +2505,21 @@ CREATE TABLE IF NOT EXISTS horizon_permeabilities (
   );
 
 /* Table 20.17 */  
-INSERT INTO horizon_permeabilities VALUES 
+INSERT INTO cod_horizon_permeabilities VALUES 
   (1, 'xs', 'Extremely slow', '< 0.1 mm/h'),
   (2, 's', 'Slow', '0.1 - 4 mm/h'),
   (3, 'ms', 'Moderately slow', '4 - 18 mm/h'),
   (4, 'm', 'Moderate', '18 - 72 mm/h'),
   (5, 'r', 'Rapid', '> 72 mm/h');
 
-CREATE TABLE IF NOT EXISTS horizon_drainage_classes (
+CREATE TABLE IF NOT EXISTS cod_horizon_drainage_classes (
   id_horizon_drainage INTEGER PRIMARY KEY,
   cato_horizon_drainage VARCHAR UNIQUE,
   txt_horizon_drainage_name VARCHAR
   );
 
 /* Table 21.5 */
-INSERT INTO horizon_drainage_classes VALUES
+INSERT INTO cod_horizon_drainage_classes VALUES
   (1, 'VP', 'Very Poor'),
   (2, 'PO', 'Poor'),
   (3, 'IP', 'Imperfect'),
@@ -2530,36 +2532,36 @@ INSERT INTO horizon_drainage_classes VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS horizon_names (
+CREATE TABLE IF NOT EXISTS dat_horizon_names (
   id_site VARCHAR,
   id_horizon INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   PRIMARY KEY (id_site, id_horizon),
   /* conventional */
-  catu_horizon_primary VARCHAR REFERENCES horizon_names_primary(catu_horizon_primary),
-  catu_horizon_secondary VARCHAR REFERENCES horizon_names_secondary(catu_horizon_secondary),
-  catu_horizon_suffix_redox VARCHAR REFERENCES horizon_suffix_redox(catu_horizon_suffix_redox),
+  catu_horizon_primary VARCHAR REFERENCES cod_horizon_names_primary(catu_horizon_primary),
+  catu_horizon_secondary VARCHAR REFERENCES cod_horizon_names_secondary(catu_horizon_secondary),
+  catu_horizon_suffix_redox VARCHAR REFERENCES cod_horizon_suffix_redox(catu_horizon_suffix_redox),
   /* 'other' 1:n so in subtable see below */
   val_lith_discont INTEGER CHECK (val_lith_discont > 0) DEFAULT 1,
   val_duplicate INTEGER CHECK (val_duplicate > 0) DEFAULT 1,
   ind_buried BOOLEAN DEFAULT FALSE,
   txt_horizon_name_full VARCHAR, /* this is for the weird ones - most cases can be handled with the controlled fields */
   /* FH */
-  catu_functional_name VARCHAR REFERENCES horizon_names_functional(catu_horizon_functional),
-  cato_functional_perm VARCHAR REFERENCES horizon_permeabilities(cato_functional_perm),
+  catu_functional_name VARCHAR REFERENCES cod_horizon_names_functional(catu_horizon_functional),
+  cato_functional_perm VARCHAR REFERENCES cod_horizon_permeabilities(cato_functional_perm),
   ind_topsoil BOOLEAN DEFAULT FALSE,
   ind_tephra_acid BOOLEAN DEFAULT FALSE,
   ind_tephra_basic BOOLEAN DEFAULT FALSE,
-  cato_horizon_drainage VARCHAR REFERENCES horizon_drainage_classes(cato_horizon_drainage)
+  cato_horizon_drainage VARCHAR REFERENCES cod_horizon_drainage_classes(cato_horizon_drainage)
   );
 
-CREATE TABLE IF NOT EXISTS horizon_names_suffix_other (
+CREATE TABLE IF NOT EXISTS dat_horizon_names_suffix_other (
   id_site VARCHAR,
   id_horizon INTEGER,
   id_suffix INTEGER,
-  FOREIGN KEY (id_site, id_horizon) REFERENCES horizon_names(id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon_names(id_site, id_horizon),
   PRIMARY KEY (id_site, id_horizon, id_suffix),
-  catu_horizon_suffix VARCHAR REFERENCES horizon_suffix_other(catu_horizon_suffix_other)
+  catu_horizon_suffix VARCHAR REFERENCES cod_horizon_suffix_other(catu_horizon_suffix_other)
   );
   
 
@@ -2572,7 +2574,7 @@ These should only be used in database views e.g. to underpin report generation
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS size_classes_solids (
+CREATE TABLE IF NOT EXISTS cod_size_classes_solids (
   id_size_solid INTEGER PRIMARY KEY,
   catu_size_solid VARCHAR UNIQUE,
   txt_size_solid_name VARCHAR,
@@ -2580,7 +2582,7 @@ CREATE TABLE IF NOT EXISTS size_classes_solids (
   );
 
 /* Table 21.1 */
-INSERT INTO size_classes_solids VALUES
+INSERT INTO cod_size_classes_solids VALUES
    (1, '1', 'Microfine', '< 1 mm'),
    (2, '2', 'Extremely fine', '1 - 2 mm'),
    (3, '3', 'Very fine', '2 - 6 mm'),
@@ -2592,7 +2594,7 @@ INSERT INTO size_classes_solids VALUES
    (9, '9', 'Gross', '> 200 mm');
   
   
-CREATE TABLE IF NOT EXISTS size_classes_rocks (
+CREATE TABLE IF NOT EXISTS cod_size_classes_rocks (
   id_size_rock INTEGER PRIMARY KEY,
   catu_size_rock VARCHAR UNIQUE,
   txt_size_rock_name VARCHAR,
@@ -2600,7 +2602,7 @@ CREATE TABLE IF NOT EXISTS size_classes_rocks (
   );
 
 /* Table 21.2 */
-INSERT INTO size_classes_rocks VALUES
+INSERT INTO cod_size_classes_rocks VALUES
          (1, '1', 'Fine gravel',    '2 - 6 mm'),
          (2, '2', 'Medium gravel',  '6 - 20 mm'),
          (3, '3', 'Coarse gravel',  '20 - 60 mm'),
@@ -2609,7 +2611,7 @@ INSERT INTO size_classes_rocks VALUES
          (6, '6', 'Boulders',       '600 - 2000 mm'), 
          (7, '7', 'Large boulders', '>2000 mm');
   
-CREATE TABLE IF NOT EXISTS abundance_classes_roots (
+CREATE TABLE IF NOT EXISTS cod_abundance_classes_roots (
   id_abund_root INTEGER PRIMARY KEY,
   catu_abund_root VARCHAR UNIQUE,
   txt_abund_root_name VARCHAR,
@@ -2617,14 +2619,14 @@ CREATE TABLE IF NOT EXISTS abundance_classes_roots (
   );
 
 /* Table 21.3 */
-INSERT INTO abundance_classes_roots VALUES
+INSERT INTO cod_abundance_classes_roots VALUES
   (1, '0',     'None',          '0%'),
   (2, '1',      'Few',   '> 0 - 5%'),
   (3, '2',   'Common',  '> 5 - 25%'),
   (4, '3',     'Many',  '> 25 - 50%'),
   (5, '4', 'Abundant',       '> 50%');
   
-CREATE TABLE IF NOT EXISTS abundance_classes_solids (
+CREATE TABLE IF NOT EXISTS cod_abundance_classes_solids (
   id_abund_solid INTEGER PRIMARY KEY,
   catu_abund_solid VARCHAR UNIQUE,
   txt_abund_solid_name VARCHAR,
@@ -2632,7 +2634,7 @@ CREATE TABLE IF NOT EXISTS abundance_classes_solids (
   );
 
 /* Table 21.4 */
-INSERT INTO abundance_classes_solids VALUES
+INSERT INTO cod_abundance_classes_solids VALUES
  (1, '0',     'None',          '0%'),
  (2, '1', 'Very Few',    '> 0 - 2%'),
  (3, '2',      'Few',    '> 2 - 10'),
@@ -2650,12 +2652,12 @@ INSERT INTO abundance_classes_solids VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS nzsc_orders (
+CREATE TABLE IF NOT EXISTS cod_nzsc_orders (
   catu_nzsc_order VARCHAR PRIMARY KEY,
   txt_nzsc_order_name VARCHAR
   );
   
-INSERT INTO nzsc_orders VALUES
+INSERT INTO cod_nzsc_orders VALUES
   ('O', 'Organic'),
   ('G', 'Gley'),
   ('U', 'Ultic'),
@@ -2672,14 +2674,14 @@ INSERT INTO nzsc_orders VALUES
   ('R', 'Recent'),
   ('W', 'Raw');
 
-CREATE TABLE IF NOT EXISTS nzsc_groups (
-  catu_nzsc_order VARCHAR REFERENCES nzsc_orders(catu_nzsc_order),
+CREATE TABLE IF NOT EXISTS cod_nzsc_groups (
+  catu_nzsc_order VARCHAR REFERENCES cod_nzsc_orders(catu_nzsc_order),
   catu_nzsc_group VARCHAR,
   PRIMARY KEY (catu_nzsc_order, catu_nzsc_group),
   txt_nzsc_group_name VARCHAR 
   );
 
-INSERT INTO nzsc_groups VALUES
+INSERT INTO cod_nzsc_groups VALUES
   ('O', 'L', 'Litter'),
   ('O', 'M', 'Mesic'),
   ('O', 'F', 'Fibric'),
@@ -2755,16 +2757,16 @@ INSERT INTO nzsc_groups VALUES
   ('W', 'T', 'Tephric'),
   ('W', 'O', 'Orthic');
 
-CREATE TABLE IF NOT EXISTS nzsc_subgroups (
+CREATE TABLE IF NOT EXISTS cod_nzsc_subgroups (
   catu_nzsc_order VARCHAR,
   catu_nzsc_group VARCHAR, 
-  FOREIGN KEY (catu_nzsc_order, catu_nzsc_group) REFERENCES nzsc_groups(catu_nzsc_order, catu_nzsc_group),
+  FOREIGN KEY (catu_nzsc_order, catu_nzsc_group) REFERENCES cod_nzsc_groups(catu_nzsc_order, catu_nzsc_group),
   catu_nzsc_subgroup VARCHAR,
   PRIMARY KEY (catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup),
   txt_nzsc_subgroup_name VARCHAR
   );
 
-INSERT INTO nzsc_subgroups VALUES
+INSERT INTO cod_nzsc_subgroups VALUES
   ('O', 'L', 'BZ', 'Buried-podzol'),
   ('O', 'L', 'BG', 'Buried-gley'),
   ('O', 'L', 'O', 'Orthic-litter'),
@@ -3072,7 +3074,7 @@ INSERT INTO nzsc_subgroups VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS nzsc_fam_profile_materials (
+CREATE TABLE IF NOT EXISTS cod_nzsc_fam_profile_materials (
   id_nzsc_fam_pm INTEGER PRIMARY KEY,
   catu_nzsc_fam_pm VARCHAR UNIQUE,
   txt_nzsc_fam_pm_name VARCHAR,
@@ -3080,7 +3082,7 @@ CREATE TABLE IF NOT EXISTS nzsc_fam_profile_materials (
   );
 
 /* Table 24.1 */
-INSERT INTO nzsc_fam_profile_materials VALUES
+INSERT INTO cod_nzsc_fam_profile_materials VALUES
   (1,  'Mf', 'Fragmental', 'Rock fragments with minimal fine earth from within 20 cm to > 60 cm depth'),
   (2,  'Ml' ,'Lithic', 'Other soils with a coherent- or shattered lithic contact within 45 cm'),
   (3,  'Mp', 'Paralithic', 'Other soils with a paralithic contact within 45 cm'),
@@ -3101,7 +3103,7 @@ INSERT INTO nzsc_fam_profile_materials VALUES
 /* using simple textures in Table 15.3 for fam texture class - 
    same concept applied to a different control section */
    
-CREATE TABLE IF NOT EXISTS nzsc_fam_permeabilities (
+CREATE TABLE IF NOT EXISTS cod_nzsc_fam_permeabilities (
   id_nzsc_fam_perm INTEGER PRIMARY KEY,
   cato_nzsc_fam_perm VARCHAR UNIQUE,
   txt_nzsc_fam_perm_name VARCHAR,
@@ -3109,12 +3111,12 @@ CREATE TABLE IF NOT EXISTS nzsc_fam_permeabilities (
   );
 
 /* Table 24.4 */  
-INSERT INTO nzsc_fam_permeabilities VALUES 
+INSERT INTO cod_nzsc_fam_permeabilities VALUES 
   (1, 's', 'Slow', '< 4 mm/h'),
   (2, 'm', 'Moderate', '4 - 72 mm/h'),
   (3, 'r', 'Rapid', '> 72 mm/h');
 
-CREATE TABLE IF NOT EXISTS nzsc_sib_depths (
+CREATE TABLE IF NOT EXISTS cod_nzsc_sib_depths (
   id_nzsc_sib_depth INTEGER PRIMARY KEY,
   cato_nzsc_sib_depth VARCHAR UNIQUE,
   txt_nzsc_sib_depth_name VARCHAR,
@@ -3122,13 +3124,13 @@ CREATE TABLE IF NOT EXISTS nzsc_sib_depths (
   );
 
 /* Table 24.6 */  
-INSERT INTO nzsc_sib_depths VALUES 
+INSERT INTO cod_nzsc_sib_depths VALUES 
   (1, 'd', 'Deep', '> 100 cm'), 
   (2, 'md', 'Moderately deep', '≥ 45 - < 100 cm'),
   (3, 's', 'Shallow', '≥ 20 - < 45 cm'),
   (4, 'vs', 'Very Shallow' , '< 20 cm');
 
-CREATE TABLE IF NOT EXISTS nzsc_sib_tsstone (
+CREATE TABLE IF NOT EXISTS cod_nzsc_sib_tsstone (
   id_nzsc_sib_tsstone INTEGER PRIMARY KEY,
   cato_nzsc_sib_tsstone VARCHAR UNIQUE,
   txt_nzsc_sib_tsstone_name VARCHAR,
@@ -3136,21 +3138,21 @@ CREATE TABLE IF NOT EXISTS nzsc_sib_tsstone (
   );
 
 /* Table 24.7 */  
-INSERT INTO nzsc_sib_tsstone VALUES 
+INSERT INTO cod_nzsc_sib_tsstone VALUES 
  (1, '1', 'Stoneless', '< 1 %'),
  (2, '2', 'Slightly stony', '≥ 1 - < 5 %'),
  (3, '3', 'Moderately stony', '≥ 5 - < 35 %'),
  (4, '4', 'Very stony' , '≥ 35 % ');
  
  
-CREATE TABLE IF NOT EXISTS nzsc_sib_texture (
+CREATE TABLE IF NOT EXISTS cod_nzsc_sib_texture (
   id_nzsc_sib_texture INTEGER PRIMARY KEY,
   cato_nzsc_sib_texture VARCHAR UNIQUE,
   txt_nzsc_sib_texture_name VARCHAR
   );
 
 /* Table 24.8 */  
-INSERT INTO nzsc_sib_texture VALUES 
+INSERT INTO cod_nzsc_sib_texture VALUES 
   (1, 'k', 'Skeletal'),
   (2, 'Tp', 'Peat or litter'),
   (3, 'Tc', 'Clayey peat'),
@@ -3162,7 +3164,7 @@ INSERT INTO nzsc_sib_texture VALUES
   (9,  'z',  'Silty'); 
   
   
-CREATE TABLE IF NOT EXISTS nzsc_sib_drainage (
+CREATE TABLE IF NOT EXISTS cod_nzsc_sib_drainage (
   id_nzsc_sib_drainage INTEGER PRIMARY KEY,
   cato_nzsc_sib_drainage VARCHAR UNIQUE,
   txt_nzsc_sib_drainage_name VARCHAR,
@@ -3170,14 +3172,14 @@ CREATE TABLE IF NOT EXISTS nzsc_sib_drainage (
   );
 
 /* Table 24.9 */  
-INSERT INTO nzsc_sib_drainage VALUES  
+INSERT INTO cod_nzsc_sib_drainage VALUES  
   (1, 'VP', 'Very Poor', 'Profiles with very poorly drained horizons starting <10 cm from the land surface'),
   (2, 'PO', 'Poor', 'Profiles with poorly drained horizons starting <30 cm from the land surface'),
   (3, 'IP', 'Imperfect', 'Profiles with poorly drained horizons starting 30-60 cm from the land surface, or profiles with imperfectly drained horizons starting <30 cm from the land surface'),
   (4, 'MW', 'Moderately Well', 'Profiles with moderately well-drained horizons starting <90 cm from the surface, or profiles with poorly-drained horizons starting 60-90 cm from the surface, or profiles with imperfectly drained horizons starting 30-90 cm from the surface'), 
   (5, 'WE', 'Well', 'All horizons starting within 90 cm of the surface are well-drained.');
  
-CREATE TABLE IF NOT EXISTS nzsc_sib_drainage_mods (
+CREATE TABLE IF NOT EXISTS cod_nzsc_sib_drainage_mods (
   id_nzsc_sib_drainage_mod INTEGER PRIMARY KEY,
   cato_nzsc_sib_drainage_mod VARCHAR UNIQUE,
   txt_nzsc_sib_drainage_mod_name VARCHAR,
@@ -3185,19 +3187,19 @@ CREATE TABLE IF NOT EXISTS nzsc_sib_drainage_mods (
   );
 
 /* Table 24.10 */  
-INSERT INTO nzsc_sib_drainage_mods VALUES   
+INSERT INTO cod_nzsc_sib_drainage_mods VALUES   
  (1, 'N', 'Natural', 'No evidence of human impacts on the local drainage regime'),
  (2, 'M', 'Minor', 'Drainage regime passively altered by e.g. conversion to or from forest; or ambiguous evidence of any human impacts beyond clearing'),
  (3, 'A', 'Major', 'Clear evidence of directed human alteration to the drainage regime e.g. drain or dam construction adjacent to site, flow diversions, infill, levelling or contouring works');
 
-CREATE TABLE IF NOT EXISTS nzsc_bp_rootbarriers (
+CREATE TABLE IF NOT EXISTS cod_nzsc_bp_rootbarriers (
   id_nzsc_bp_rootbarrier INTEGER PRIMARY KEY,
   catu_nzsc_bp_rootbarrier VARCHAR UNIQUE,
   txt_nzsc_bp_rootbarrier_name VARCHAR
   );
 
 /* Table 24.11-12 */  
-INSERT INTO nzsc_bp_rootbarriers VALUES 
+INSERT INTO cod_nzsc_bp_rootbarriers VALUES 
   (1,  'C',  'Chemical'),
   (2,  'D',  'Densely packed gravels'),
   (3,  'G',  'Extremely gravelly'),
@@ -3217,57 +3219,53 @@ INSERT INTO nzsc_bp_rootbarriers VALUES
 ```{sql}
 --| connection: con
 
-CREATE TABLE IF NOT EXISTS nzsc (
-  id_site VARCHAR REFERENCES sites(id_site) PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS dat_nzsc (
+  id_site VARCHAR REFERENCES dat_sites(id_site) PRIMARY KEY,
   
   /* top levels */
   catu_nzsc_order VARCHAR,
   catu_nzsc_group VARCHAR,
   catu_nzsc_subgroup VARCHAR,
-  FOREIGN KEY (catu_nzsc_order) REFERENCES nzsc_orders(catu_nzsc_order),
-  FOREIGN KEY (catu_nzsc_order, catu_nzsc_group) REFERENCES nzsc_groups(catu_nzsc_order, catu_nzsc_group),
+  FOREIGN KEY (catu_nzsc_order) REFERENCES cod_nzsc_orders(catu_nzsc_order),
+  FOREIGN KEY (catu_nzsc_order, catu_nzsc_group) REFERENCES cod_nzsc_groups(catu_nzsc_order, catu_nzsc_group),
   FOREIGN KEY (catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup)
-     REFERENCES nzsc_subgroups(catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup),
+     REFERENCES cod_nzsc_subgroups(catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup),
   
   /* family */
-  catu_nzsc_fam_profile_material_1 VARCHAR REFERENCES nzsc_fam_profile_materials(catu_nzsc_fam_pm),
-  catu_nzsc_fam_profile_material_2 VARCHAR REFERENCES nzsc_fam_profile_materials(catu_nzsc_fam_pm),
+  catu_nzsc_fam_profile_material_1 VARCHAR REFERENCES cod_nzsc_fam_profile_materials(catu_nzsc_fam_pm),
+  catu_nzsc_fam_profile_material_2 VARCHAR REFERENCES cod_nzsc_fam_profile_materials(catu_nzsc_fam_pm),
   
-  catu_nzsc_fam_rock_1 VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
-  catu_nzsc_fam_rock_2 VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
+  catu_nzsc_fam_rock_1 VARCHAR REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology),
+  catu_nzsc_fam_rock_2 VARCHAR REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology),
   ind_nzsc_fam_rock_mixed BOOLEAN,
   
-  catu_nzsc_fam_rofines_1 VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
-  catu_nzsc_fam_rofines_2 VARCHAR REFERENCES nzsc_lithologies(catu_nzsc_lithology),
+  catu_nzsc_fam_rofines_1 VARCHAR REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology),
+  catu_nzsc_fam_rofines_2 VARCHAR REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology),
   ind_nzsc_fam_rofines_mixed BOOLEAN,
   
-  catu_nzsc_fam_texture VARCHAR REFERENCES simple_textures(cato_simple_texture),
+  catu_nzsc_fam_texture VARCHAR REFERENCES cod_simple_textures(cato_simple_texture),
   
-  catu_nzsc_fam_perm_1 VARCHAR REFERENCES nzsc_fam_permeabilities(cato_nzsc_fam_perm),
-  catu_nzsc_fam_perm_2 VARCHAR REFERENCES nzsc_fam_permeabilities(cato_nzsc_fam_perm),
+  catu_nzsc_fam_perm_1 VARCHAR REFERENCES cod_nzsc_fam_permeabilities(cato_nzsc_fam_perm),
+  catu_nzsc_fam_perm_2 VARCHAR REFERENCES cod_nzsc_fam_permeabilities(cato_nzsc_fam_perm),
   
-  catu_nzsc_fam_pmo_1 VARCHAR REFERENCES nzsc_pmo(catu_pmo),
-  catu_nzsc_fam_pmo_2 VARCHAR REFERENCES nzsc_pmo(catu_pmo),
+  catu_nzsc_fam_pmo_1 VARCHAR REFERENCES cod_nzsc_pmo(catu_pmo),
+  catu_nzsc_fam_pmo_2 VARCHAR REFERENCES cod_nzsc_pmo(catu_pmo),
   
   /* sibling */
-  cato_nzsc_sib_depth VARCHAR REFERENCES nzsc_sib_depths(cato_nzsc_sib_depth),
-  cato_nzsc_sib_tsstone VARCHAR REFERENCES nzsc_sib_tsstone(cato_nzsc_sib_tsstone),
-  cato_nzsc_sib_texture_1 VARCHAR REFERENCES nzsc_sib_texture(cato_nzsc_sib_texture),
-  cato_nzsc_sib_texture_2 VARCHAR REFERENCES nzsc_sib_texture(cato_nzsc_sib_texture),
-  cato_nzsc_sib_drainage VARCHAR REFERENCES nzsc_sib_drainage(cato_nzsc_sib_drainage),
+  cato_nzsc_sib_depth VARCHAR REFERENCES cod_nzsc_sib_depths(cato_nzsc_sib_depth),
+  cato_nzsc_sib_tsstone VARCHAR REFERENCES cod_nzsc_sib_tsstone(cato_nzsc_sib_tsstone),
+  cato_nzsc_sib_texture_1 VARCHAR REFERENCES cod_nzsc_sib_texture(cato_nzsc_sib_texture),
+  cato_nzsc_sib_texture_2 VARCHAR REFERENCES cod_nzsc_sib_texture(cato_nzsc_sib_texture),
+  cato_nzsc_sib_drainage VARCHAR REFERENCES cod_nzsc_sib_drainage(cato_nzsc_sib_drainage),
   
   /* not officially part of the sib definition 
      but doesn't make sense to store it elsewhere: */
-  cato_nzsc_sib_drainage_mod VARCHAR REFERENCES nzsc_sib_drainage_mods(cato_nzsc_sib_drainage_mod),
+  cato_nzsc_sib_drainage_mod VARCHAR REFERENCES cod_nzsc_sib_drainage_mods(cato_nzsc_sib_drainage_mod),
   
   /* bps */
-  catu_nzsc_bp_rootbarrier VARCHAR REFERENCES nzsc_bp_rootbarriers(catu_nzsc_bp_rootbarrier),
+  catu_nzsc_bp_rootbarrier VARCHAR REFERENCES cod_nzsc_bp_rootbarriers(catu_nzsc_bp_rootbarrier),
   val_nzsc_bp_rootbarrier_hzn INTEGER CHECK (val_nzsc_bp_rootbarrier_hzn > 0)
   
   );
   
 ```
-
-
-
-
