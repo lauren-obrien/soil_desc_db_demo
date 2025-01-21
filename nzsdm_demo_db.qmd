@@ -3,7 +3,9 @@ title: "New Zealand Soil Description Manual 2024 - Demonstration database"
 author: "Lauren O'Brien"
 date: "2024-12-05"
 date-modified: "today"
-format: html
+format: 
+  html:
+    embed-resources: true
 editor: visual
 ---
 
@@ -345,17 +347,18 @@ INSERT INTO cod_landscapes VALUES
 ```{sql}
 --| connection: con
 
+/* nb landscape is 1:1 with site but doing this makes 
+   handling the sub-tables easier */
 CREATE TABLE IF NOT EXISTS dat_landscape (
-  id_site VARCHAR,
-  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
+  id_site VARCHAR REFERENCES dat_sites(id_site),
   id_landscape INTEGER,
   PRIMARY KEY (id_site, id_landscape),
   catu_province VARCHAR REFERENCES cod_provinces(catu_province),
   catu_landscape VARCHAR REFERENCES cod_landscapes(catu_landscape),
   amt_lscape_relief_med_m DECIMAL(6, 2) CHECK (amt_lscape_relief_med_m >= 0),
-  amt_lscape_slope_med_m DECIMAL(6, 2) CHECK (amt_lscape_slope_med_m >= 0),
-  amt_lscape_slope_min_m DECIMAL(6, 2) CHECK (amt_lscape_slope_min_m >= 0),
-  amt_lscape_slope_max_m DECIMAL(6, 2) CHECK (amt_lscape_slope_max_m >= 0)
+  amt_lscape_slope_med_d DECIMAL(6, 2) CHECK (amt_lscape_slope_med_d BETWEEN 0 AND 90),
+  amt_lscape_slope_min_d DECIMAL(6, 2) CHECK (amt_lscape_slope_min_d BETWEEN 0 AND 90),
+  amt_lscape_slope_max_d DECIMAL(6, 2) CHECK (amt_lscape_slope_max_d BETWEEN 0 AND 90)
   );
 
 ```
@@ -605,22 +608,23 @@ INSERT INTO cod_landuse_tertiary VALUES
   (4,  4,  '1.4.1', 'Unused land'),
   (5,  5,  '2.1.1', 'Exotic plantation forestry'),
   (6,  6,  '2.2.1', 'Dairy'),
-  (7,  7,  '2.3.1', 'Arable cropping'),
-  (8,  8,  '2.4.1', 'Tree crops'),
-  (9,  9,  '2.5.1', 'Production nurseries'),
-  (10, 10, '2.6.1', 'Animal containment'),
-  (11, 11, '2.7.1', 'Stock water'),
-  (12, 12, '2.8.1', 'Unused degraded land'),
-  (13, 13, '3.1.1', 'High-density residential'),
-  (14, 14, '3.2.1', 'Outdoor recreation'),
-  (15, 15, '3.3.1', 'Retail'),
-  (16, 16, '3.4.1', 'General purpose factory'),
-  (17, 17, '3.5.1', 'Fuel powered electricity generation'),
-  (18, 18, '3.6.1', 'Airports/aerodromes'),
-  (19, 19, '3.7.1', 'Mines'),
-  (20, 20, '3.8.1', 'Landfills'),
-  (21, 21, '3.9.1', 'Vacant land');
-  
+  (7,  7,  '2.2.3', 'Extensive dry stock'),
+  (8,  8,  '2.3.1', 'Arable cropping'),
+  (9,  9,  '2.4.1', 'Tree crops'),
+  (10, 10, '2.5.1', 'Production nurseries'),
+  (11, 11, '2.6.1', 'Animal containment'),
+  (12, 12, '2.7.1', 'Stock water'),
+  (13, 13, '2.8.1', 'Unused degraded land'),
+  (14, 14, '3.1.1', 'High-density residential'),
+  (15, 15, '3.2.1', 'Outdoor recreation'),
+  (16, 16, '3.3.1', 'Retail'),
+  (17, 17, '3.4.1', 'General purpose factory'),
+  (18, 18, '3.5.1', 'Fuel powered electricity generation'),
+  (19, 19, '3.6.1', 'Airports/aerodromes'),
+  (20, 20, '3.7.1', 'Mines'),
+  (21, 21, '3.8.1', 'Landfills'),
+  (22, 22, '3.9.1', 'Vacant land');
+
 /* Table 8.2 */
 CREATE TABLE IF NOT EXISTS cod_landuse_impacts (
   id_landuse_impact INTEGER PRIMARY KEY,
@@ -828,7 +832,7 @@ CREATE TABLE IF NOT EXISTS dat_site_surface (
   catu_microrelief_ant VARCHAR REFERENCES cod_site_microrelief_ant(catu_microrelief_ant),
   amt_microrelief_ant_width_cm DECIMAL(6, 2) CHECK (amt_microrelief_ant_width_cm >= 0),
   amt_microrelief_ant_height_cm DECIMAL(6, 2) CHECK (amt_microrelief_ant_height_cm >= 0),
-  amt_depth_water DECIMAL(6, 2) CHECK (amt_depth_water >= 0),
+  amt_depth_water_cm DECIMAL(6, 2) CHECK (amt_depth_water >= 0),
   catu_depth_water VARCHAR REFERENCES cod_water_depths(catu_depth_water),
   catu_vegetation_luc VARCHAR REFERENCES cod_luc_vegetation_codes(catu_vegetation_luc)
   );
@@ -1135,16 +1139,14 @@ CREATE TABLE IF NOT EXISTS dat_horizon (
   FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
   id_horizon INTEGER,
   PRIMARY KEY (id_site, id_horizon),
-  amt_upper_depth_cm DECIMAL(6, 2) CHECK (amt_upper_depth_cm >= 0),
-  amt_upper_depth_med_cm DECIMAL(6, 2) CHECK (amt_upper_depth_med_cm >= 0),
-  amt_upper_depth_min_cm DECIMAL(6, 2) CHECK (amt_upper_depth_min_cm >= 0),
-  amt_upper_depth_max_cm DECIMAL(6, 2) CHECK (amt_upper_depth_max_cm >= 0),
+  /* redundant to record upper depths - first record starts at 0, the rest 
+     can be fetched with a lag function */
   amt_lower_depth_cm DECIMAL(6, 2) CHECK (amt_lower_depth_cm > 0),
   amt_lower_depth_med_cm DECIMAL(6, 2) CHECK (amt_lower_depth_med_cm > 0),
   amt_lower_depth_min_cm DECIMAL(6, 2) CHECK (amt_lower_depth_min_cm > 0),
   amt_lower_depth_max_cm DECIMAL(6, 2) CHECK (amt_lower_depth_max_cm > 0),
   catu_boundary_shape VARCHAR REFERENCES cod_boundary_shapes(catu_boundary_shape),
-  amt_boundary_cm DECIMAL(6, 2) CHECK (amt_boundary_cm >= 0),
+  amt_boundary_width_cm DECIMAL(6, 2) CHECK (amt_boundary_cm >= 0),
   cato_boundary_width VARCHAR REFERENCES cod_boundary_widths(cato_boundary_width),
   cato_soil_moisture VARCHAR REFERENCES cod_soil_moistures(cato_soil_moisture),
   catu_parent_material_origin VARCHAR REFERENCES cod_nzsc_pmo(catu_pmo),
@@ -1560,7 +1562,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_roots (
   FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   id_root INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_root),
-  catu_plastic VARCHAR REFERENCES cod_plastic_types(catu_plastic),
   cato_root_size VARCHAR REFERENCES cod_root_sizes_simple(cato_root_size),
   cato_root_pos VARCHAR REFERENCES cod_root_positions(catu_root_pos),
   amt_root_p DECIMAL(6, 2) CHECK (amt_root_p BETWEEN 0 and 100),
@@ -1735,7 +1736,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_matrix_colours (
   catu_colour_moisture VARCHAR REFERENCES cod_munsell_colours(cato_munsell)
   );
 
-CREATE TABLE IF NOT EXISTS dat_horizon_colour_patterns (
+CREATE TABLE IF NOT EXISTS dat_horizon_pattern_colours (
   id_site VARCHAR,
   id_horizon INTEGER,
   FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
@@ -1743,6 +1744,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_colour_patterns (
   PRIMARY KEY (id_site, id_horizon, id_colour_pattern),
   cato_pattern_munsell VARCHAR REFERENCES cod_munsell_colours(cato_munsell),
   catu_pattern_short_colour VARCHAR REFERENCES cod_short_colours(catu_colour),
+  catu_colour_moisture VARCHAR REFERENCES cod_munsell_colours(cato_munsell),
   catu_pattern_type VARCHAR REFERENCES cod_pattern_types(catu_pattern),
   amt_pattern_p DECIMAL(6, 2) CHECK (amt_pattern_p BETWEEN 0 AND 100),
   catu_pattern_shape VARCHAR REFERENCES cod_pattern_shapes(catu_pattern_shape),
@@ -1791,7 +1793,7 @@ INSERT INTO cod_mineral_textures VALUES
 (7, 'CL', 'Clay Loam'),
 (8, 'ZL', 'Silt Loam'),
 (9, 'LC', 'Loamy Clay'),
-(10, 'AC', 'Silty Clay'),
+(10, 'ZC', 'Silty Clay'),
 (11, 'C', 'Clay');
 
 CREATE TABLE IF NOT EXISTS cod_sand_sizes (
@@ -2085,8 +2087,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_bio_features (
   id_site VARCHAR,
   id_horizon INTEGER,
   FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
-  id_bio_features INTEGER,
-  PRIMARY KEY (id_site, id_horizon, id_bio_features),
+  id_bio_feature INTEGER,
+  PRIMARY KEY (id_site, id_horizon, id_bio_feature),
   catu_bio_feature VARCHAR REFERENCES cod_bio_feature_types(catu_bio_feature),
   amt_bio_feature_p DECIMAL (6, 2) CHECK (amt_bio_feature_p BETWEEN 0 AND 100)
   );
@@ -2249,9 +2251,9 @@ CREATE TABLE IF NOT EXISTS dat_consistence_tests (
   cato_strength_ped VARCHAR REFERENCES cod_strengths(cato_strength),
   cato_strength_remoulded VARCHAR REFERENCES cod_strengths(cato_strength),
   cato_strength_plastic VARCHAR REFERENCES cod_strengths(cato_strength),
-  cato_strength_sensitivity VARCHAR REFERENCES cod_sensitivities(cato_sensitivity),
-  cato_strength_plasticity VARCHAR REFERENCES cod_plasticities(cato_plasticity),
-  cato_strength_stickiness VARCHAR REFERENCES cod_stickinesses(cato_stickiness),
+  cato_sensitivity VARCHAR REFERENCES cod_sensitivities(cato_sensitivity),
+  cato_plasticity VARCHAR REFERENCES cod_plasticities(cato_plasticity),
+  cato_stickiness VARCHAR REFERENCES cod_stickinesses(cato_stickiness),
   ind_dilatent BOOLEAN,
   cato_penetration_rest VARCHAR REFERENCES cod_penrests(cato_penrest),
   cato_packing VARCHAR REFERENCES cod_packings(cato_packing),
@@ -2369,9 +2371,9 @@ INSERT INTO cod_dispersion_rxns VALUES
 
 CREATE TABLE IF NOT EXISTS dat_field_tests (
   id_site VARCHAR,
-  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
-  PRIMARY KEY (id_site),
-  
+  id_horizon INTEGER,
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
+  PRIMARY KEY (id_site, id_horizon),
   amt_test_depth_cm DECIMAL (6, 2) CHECK (amt_test_depth_cm >= 0),
   cato_pH_raupach VARCHAR REFERENCES cod_pH_raupachs(cato_raupach),
   val_pH_water DECIMAL (6, 2) CHECK (val_pH_water BETWEEN 0 AND 14),
@@ -3209,7 +3211,8 @@ INSERT INTO cod_nzsc_bp_rootbarriers VALUES
   (7,  'S',  'Clean sand'),
   (8,  'A',  'Anoxic'),
   (9,  'F',  'Fractured rock'),
-  (10, 'M',  'Massive rock');
+  (10, 'M',  'Massive rock')
+  (11, 'N',  'No barriers');
 
 ```
 
@@ -3232,8 +3235,7 @@ CREATE TABLE IF NOT EXISTS dat_nzsc (
      REFERENCES cod_nzsc_subgroups(catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup),
   
   /* family */
-  catu_nzsc_fam_profile_material_1 VARCHAR REFERENCES cod_nzsc_fam_profile_materials(catu_nzsc_fam_pm),
-  catu_nzsc_fam_profile_material_2 VARCHAR REFERENCES cod_nzsc_fam_profile_materials(catu_nzsc_fam_pm),
+  catu_nzsc_fam_profile_material VARCHAR REFERENCES cod_nzsc_fam_profile_materials(catu_nzsc_fam_pm),
   
   catu_nzsc_fam_rock_1 VARCHAR REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology),
   catu_nzsc_fam_rock_2 VARCHAR REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology),
@@ -3269,3 +3271,51 @@ CREATE TABLE IF NOT EXISTS dat_nzsc (
   );
   
 ```
+
+
+## Check outputs
+
+```{r}
+# returns a table describing all the tables in the database
+descr <- dbGetQuery(con, 'PRAGMA show_tables_expanded')
+```
+
+
+## Write blank
+
+Save this database definition as an on-disk \*.duckdb file.
+
+Can't be done in one step, so:
+
+```{r}
+#| eval: true
+
+if(!dir.exists('template')) { dir.create('template') }
+
+# export database to template folder
+dbExecute(con, paste0("EXPORT DATABASE '", 
+                      file.path(getwd(), 'template'), "'")) 
+
+# close out in-mem connection
+dbDisconnect(con)
+```
+
+```{r}
+#| eval: true
+
+# make and connect to a new blank ondisk file
+con2 <- dbConnect(duckdb(dbdir = file.path(getwd(), 'template_nzsd.duckdb')))
+
+# load the spatial extension into it
+dbExecute(con2, "INSTALL spatial;")
+dbExecute(con2, "LOAD spatial;")
+
+# import the schema
+dbExecute(con2, 
+          paste0("IMPORT DATABASE '", file.path(getwd(), 'template'), "'"))
+
+# close out
+dbDisconnect(con2)
+
+```
+
