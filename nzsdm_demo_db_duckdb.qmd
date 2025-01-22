@@ -29,30 +29,22 @@ con <- dbConnect(duckdb())
 
 ```
 
-### Load extensions
+### Extensions
 
-We will be using DuckDB's spatial extension to represent point locations.
-
-```{sql}
---| connection: con
-
-INSTALL spatial;
-LOAD spatial;
-
-```
+DuckDB has a Spatial extension but we will not be using it as its overkill for this application (and still under active development at the time of writing).
 
 ### Schemas
 
 Keeping the data and metadata tables separate is Nice, but at present DuckDB does not support creating foreign keys across different schemas. This step will be skipped unless that functionality is implemented.
 
-A naming convention is applied to the tables to clearly distingish data-storing tables ('dat_\*') from controlled code lists ('cod_\*').
+A naming convention is applied to the tables to clearly distingish data-storing tables ('dat_\*') from controlled code lists ('cod_\*') as duckDB doesn't support linking foreign keys across schemas.
 
 ## Sites
 
 After [Appendix D.3](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-siteover)
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_site_purposes (
   id_site_purpose INTEGER PRIMARY KEY,
@@ -149,12 +141,12 @@ INSERT INTO cod_recent_rainfall VALUES
 ```
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_sites (
   id_site VARCHAR PRIMARY KEY,
   usr_author VARCHAR,  /* should be FK in a full implementation */
-  dt_site TIMESTAMP, /* probably needs a 'future dates not allowed' check */ 
+  dt_site TIMESTAMP CHECK (dt_site <= current_date()), 
   catu_site_purpose VARCHAR REFERENCES cod_site_purposes(catu_site_purpose),
   catu_site_selection VARCHAR REFERENCES cod_site_selection_methods(catu_site_selection),
   catu_site_exposure VARCHAR REFERENCES cod_site_exposure_types(catu_site_exposure),
@@ -170,7 +162,7 @@ CREATE TABLE IF NOT EXISTS dat_sites (
 ### Site disturbances
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_disturbance_types (
   id_disturbance INTEGER PRIMARY KEY,
@@ -213,7 +205,7 @@ INSERT INTO cod_disturbance_ages VALUES
 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_disturbances (
   id_site VARCHAR REFERENCES dat_sites(id_site),
@@ -233,7 +225,7 @@ From [Appendix D.2](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_datab
 ### Locations
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_elevation_measurement_methods (
   id_elevation_method INTEGER PRIMARY KEY,
@@ -256,7 +248,7 @@ CREATE TABLE IF NOT EXISTS cod_gnss_types (
   txt_gnss_desc VARCHAR
   );
 
-/* Table 3.1 */
+/* Table 3.2 */
 INSERT INTO cod_gnss_types VALUES  
   (1, 'GS', 'Single-band GNSS',  'Satellite based location, single band'),
   (2, 'GM',	'Multi-band GNSS',   'Satellite based location, multiple band'),
@@ -268,15 +260,23 @@ INSERT INTO cod_gnss_types VALUES
 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_locations (
   id_site VARCHAR REFERENCES dat_sites(id_site) PRIMARY KEY,
-  /* NB can't yet enforce projection or geom type */
-  geo_point_site_xy GEOMETRY NOT NULL,  
+ /* The following assumes EPSG:2193 is in use */
+  val_site_coordinate_x DECIMAL(10, 2) NOT NULL 
+      CHECK(val_site_coordinate_x >= 1089350 
+        AND val_site_coordinate_x <= 4162860),
+  val_site_coordinate_y DECIMAL (10, 2) NOT NULL 
+      CHECK(val_site_coordinate_y >= 2490740 
+        AND val_site_coordinate_y <= 6731630),  
   amt_elevation_abs_m DECIMAL(6, 2) CHECK (amt_elevation_abs_m BETWEEN -5 AND 3724),
   amt_error_location_m DECIMAL(6, 2) CHECK (amt_error_location_m >= 0),
+  amt_error_elevation_m DECIMAL(6, 2) CHECK (amt_error_elevation_m >= 0),
   catu_elevation_method VARCHAR REFERENCES cod_elevation_measurement_methods(catu_elevation_method),
+  /* assumption is that the same gnss device would be used for xy and z so no
+    separate columns for gnss type */
   catu_gnss VARCHAR REFERENCES cod_gnss_types(catu_gnss),
   amt_elevation_rel_m DECIMAL(6, 2) CHECK (amt_elevation_rel_m BETWEEN -5 AND 3724), 
   txt_notes_triangulation VARCHAR,
@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS dat_locations (
 ### Landscape
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_provinces (
   id_province INTEGER PRIMARY KEY,
@@ -345,7 +345,7 @@ INSERT INTO cod_landscapes VALUES
 ```
 
 ```{sql}
---| connection: con
+#| connection: con
 
 /* nb landscape is 1:1 with site but doing this makes 
    handling the sub-tables easier */
@@ -366,7 +366,7 @@ CREATE TABLE IF NOT EXISTS dat_landscape (
 ### Landscape landuse
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_landuse_primary (
   id_landuse_primary INTEGER PRIMARY KEY,
@@ -413,7 +413,7 @@ INSERT INTO cod_landuse_secondary VALUES
 ```
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_lscape_landuse (
   id_site VARCHAR,
@@ -431,7 +431,7 @@ CREATE TABLE IF NOT EXISTS dat_lscape_landuse (
 ### Landform
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_landform_types (
   id_landform INTEGER PRIMARY KEY,
@@ -553,7 +553,7 @@ INSERT INTO cod_landform_element_hmods VALUES
 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_landform (
   id_site VARCHAR,
@@ -590,7 +590,7 @@ CREATE TABLE IF NOT EXISTS dat_landform (
 ### Landform landuse
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_landuse_tertiary (
   id_landuse_secondary INTEGER,
@@ -642,7 +642,7 @@ INSERT INTO cod_landuse_impacts VALUES
 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_lform_landuse (
   id_site VARCHAR,
@@ -663,7 +663,7 @@ CREATE TABLE IF NOT EXISTS dat_lform_landuse (
 ## Surface
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_slope_methods (
   id_slope_method INTEGER PRIMARY KEY,
@@ -804,13 +804,14 @@ INSERT INTO cod_luc_vegetation_codes VALUES
   (2, 'cC', 'Cereal crops', 'Principally wheat, oats and barley, but also including ryecorn and millet'),
   (3, 'sM', 'Mānuka, Kānuka', 'Scrub and shrubland dominated by manuka (Leptospermum scoparium) or kanuka (Kunzea ericoides)'),
   (4, 'fC', 'Coastal forest',  'Forest confined to coastal habitats and characterised by broadleaved species'),
-  (5, 'hW', 'Wetland vegetation', 'Herbaceous vegetation occurring in non-saline wetland habitats (swamps and bogs) in which the water table is at or near the surface for most of the year');
+  (5, 'fW', 'Lowland beech forest', 'Forest with a canopy dominated by beech (Nothofagus) species, principally black, hard or red beech, and occurring below approximately 1,050 m a.s.l. in the North Island'),
+  (6, 'hW', 'Wetland vegetation', 'Herbaceous vegetation occurring in non-saline wetland habitats (swamps and bogs) in which the water table is at or near the surface for most of the year');
 
 ```
  
  
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_site_surface (
   id_site VARCHAR,
@@ -832,7 +833,7 @@ CREATE TABLE IF NOT EXISTS dat_site_surface (
   catu_microrelief_ant VARCHAR REFERENCES cod_site_microrelief_ant(catu_microrelief_ant),
   amt_microrelief_ant_width_cm DECIMAL(6, 2) CHECK (amt_microrelief_ant_width_cm >= 0),
   amt_microrelief_ant_height_cm DECIMAL(6, 2) CHECK (amt_microrelief_ant_height_cm >= 0),
-  amt_depth_water_cm DECIMAL(6, 2) CHECK (amt_depth_water >= 0),
+  amt_depth_water_cm DECIMAL(6, 2) CHECK (amt_depth_water_cm >= 0),
   catu_depth_water VARCHAR REFERENCES cod_water_depths(catu_depth_water),
   catu_vegetation_luc VARCHAR REFERENCES cod_luc_vegetation_codes(catu_vegetation_luc)
   );
@@ -842,7 +843,7 @@ CREATE TABLE IF NOT EXISTS dat_site_surface (
 ### Surface cover
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_surface_cover_types (
   id_surface_cover INTEGER PRIMARY KEY,
@@ -866,12 +867,13 @@ INSERT INTO cod_surface_cover_types VALUES
 ```
   
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_surface_cover (
   id_site VARCHAR,
   FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
-  PRIMARY KEY (id_site),
+  id_surface_cover INTEGER,
+  PRIMARY KEY (id_site, id_surface_cover),
   catu_surface_cover VARCHAR REFERENCES cod_surface_cover_types(catu_surface_cover),
   amt_surface_cover DECIMAL(6, 2) CHECK (amt_surface_cover BETWEEN 0 AND 100)
   );
@@ -881,7 +883,7 @@ CREATE TABLE IF NOT EXISTS dat_surface_cover (
 ### Erosion
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_erosion_types (
   id_erosion INTEGER PRIMARY KEY,
@@ -938,12 +940,13 @@ INSERT INTO cod_erosion_activity VALUES
 ```
   
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_site_erosion (
   id_site VARCHAR,
   FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
-  PRIMARY KEY (id_site),
+  id_erosion INTEGER,
+  PRIMARY KEY (id_site, id_erosion),
   catu_erosion VARCHAR REFERENCES cod_erosion_types(catu_erosion),
   cato_erosion_severity VARCHAR REFERENCES cod_erosion_severity(catu_erosion_severity),
   cato_erosion_activity VARCHAR REFERENCES cod_erosion_activity(catu_erosion_activity)
@@ -954,7 +957,7 @@ CREATE TABLE IF NOT EXISTS dat_site_erosion (
 ### Deposition
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_deposition_types (
   id_deposition INTEGER PRIMARY KEY,
@@ -1011,12 +1014,13 @@ INSERT INTO cod_deposition_activity VALUES
 ```
   
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_site_deposition (
   id_site VARCHAR,
   FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
-  PRIMARY KEY (id_site),
+  id_deposition INTEGER,
+  PRIMARY KEY (id_site, id_deposition),
   catu_deposition VARCHAR REFERENCES cod_deposition_types(catu_deposition),
   cato_deposition_severity VARCHAR REFERENCES cod_deposition_severity(catu_deposition_severity),
   cato_deposition_activity VARCHAR REFERENCES cod_deposition_activity(catu_deposition_activity)
@@ -1027,7 +1031,7 @@ CREATE TABLE IF NOT EXISTS dat_site_deposition (
 ## Horizon overview
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_boundary_shapes (
   id_boundary_shape INTEGER PRIMARY KEY,
@@ -1132,7 +1136,7 @@ INSERT INTO cod_weathering VALUES
  
   
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon (
   id_site VARCHAR,
@@ -1146,12 +1150,12 @@ CREATE TABLE IF NOT EXISTS dat_horizon (
   amt_lower_depth_min_cm DECIMAL(6, 2) CHECK (amt_lower_depth_min_cm > 0),
   amt_lower_depth_max_cm DECIMAL(6, 2) CHECK (amt_lower_depth_max_cm > 0),
   catu_boundary_shape VARCHAR REFERENCES cod_boundary_shapes(catu_boundary_shape),
-  amt_boundary_width_cm DECIMAL(6, 2) CHECK (amt_boundary_cm >= 0),
+  amt_boundary_width_cm DECIMAL(6, 2) CHECK (amt_boundary_width_cm >= 0),
   cato_boundary_width VARCHAR REFERENCES cod_boundary_widths(cato_boundary_width),
   cato_soil_moisture VARCHAR REFERENCES cod_soil_moistures(cato_soil_moisture),
   catu_parent_material_origin VARCHAR REFERENCES cod_nzsc_pmo(catu_pmo),
   catu_anthropic_origin_modifier VARCHAR REFERENCES cod_nzsc_pmo_mod(catu_pmo_mod),
-  cato_horizon_weathering VARCHAR REFERENCES cod_weathering(cato_weathering),
+  cato_horizon_weathering VARCHAR REFERENCES cod_weathering(cato_weathering)
   );
 
 ```
@@ -1159,7 +1163,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon (
 ## Horizon architecture
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_structure_types (
   id_structure INTEGER PRIMARY KEY,
@@ -1238,17 +1242,13 @@ INSERT INTO cod_root_positions VALUES
 ```
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_arch (
   id_site VARCHAR,
   id_horizon INTEGER,
   FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon),
   PRIMARY KEY (id_site, id_horizon),
-  catu_structure_type VARCHAR REFERENCES cod_structure_types(catu_structure),
-  cato_structure_grade VARCHAR REFERENCES cod_structure_grades(cato_structure_grade),
-  catu_structure_shape VARCHAR REFERENCES cod_structure_shapes(catu_structure_shape),
-  cato_structure_size VARCHAR REFERENCES cod_structure_sizes_rapid(cato_structure_size_rapid),
   amt_total_frags_p DECIMAL(6, 2) CHECK (amt_total_frags_p BETWEEN 0 and 100),
   amt_otherfrags_p DECIMAL(6, 2) CHECK (amt_otherfrags_p BETWEEN 0 and 100),
   amt_artefacts_p DECIMAL(6, 2) CHECK (amt_artefacts_p BETWEEN 0 and 100),
@@ -1265,7 +1265,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_arch (
 ### Structure
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_structures (
   id_site VARCHAR,
@@ -1276,6 +1276,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_structures (
   catu_structure_type VARCHAR REFERENCES cod_structure_types(catu_structure),
   cato_structure_grade VARCHAR REFERENCES cod_structure_grades(cato_structure_grade),
   catu_structure_shape VARCHAR REFERENCES cod_structure_shapes(catu_structure_shape),
+  cato_structure_size VARCHAR REFERENCES cod_structure_sizes_rapid(cato_structure_size_rapid),
   amt_structure_size_med_mm DECIMAL(6, 2) CHECK (amt_structure_size_med_mm > 0),
   amt_structure_size_min_mm DECIMAL(6, 2) CHECK (amt_structure_size_min_mm > 0),
   amt_structure_size_max_mm DECIMAL(6, 2) CHECK (amt_structure_size_max_mm > 0)
@@ -1286,7 +1287,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_structures (
 ### Rock fragments
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_fragment_sizes_simple (
   id_fragment_size INTEGER PRIMARY KEY,
@@ -1348,7 +1349,7 @@ INSERT INTO cod_nzsc_lithologies VALUES
 ```
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_rock_fragments (
   id_site VARCHAR,
@@ -1367,7 +1368,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_rock_fragments (
 ### Other fragments
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_other_fragment_types (
   id_other_fragment INTEGER PRIMARY KEY,
@@ -1388,7 +1389,7 @@ INSERT INTO cod_other_fragment_types VALUES
 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_other_fragments (
   id_site VARCHAR,
@@ -1406,7 +1407,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_other_fragments (
 ### Artefacts
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_artefact_types (
   id_artefact INTEGER PRIMARY KEY,
@@ -1432,7 +1433,7 @@ INSERT INTO cod_artefact_types VALUES
 ```
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_artefacts (
   id_site VARCHAR,
@@ -1450,7 +1451,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_artefacts (
 ### Plastics
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_plastic_types (
   id_plastic INTEGER PRIMARY KEY,
@@ -1516,7 +1517,7 @@ INSERT INTO cod_plastic_degradations VALUES
 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_plastics (
   id_site VARCHAR,
@@ -1536,7 +1537,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_plastics (
 ### Roots
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_root_sizes_simple (
   id_root_size INTEGER PRIMARY KEY,
@@ -1554,7 +1555,7 @@ INSERT INTO cod_root_sizes_simple VALUES
 ```
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_roots (
   id_site VARCHAR,
@@ -1572,7 +1573,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_roots (
 ### Voids
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_void_types (
   id_void INTEGER PRIMARY KEY,
@@ -1606,7 +1607,7 @@ INSERT INTO cod_void_conns VALUES
 ```
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_voids (
   id_site VARCHAR,
@@ -1624,7 +1625,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_voids (
 ## Horizon colour
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_munsell_colours (
   id_munsell INTEGER PRIMARY KEY,
@@ -1633,11 +1634,32 @@ CREATE TABLE IF NOT EXISTS cod_munsell_colours (
   );
 
 /* Per charts - just a few for demo */
+/* using e.g.
+     x <- munsellinterpol::MunsellTosRGB('10YR 2/1')  
+     grDevices::rgb(x$RGB[1], x$RGB[2], x$RGB[3], maxColorValue = 255) 
+   to get the hex values
+   can check with colorspace::swatchplot('#111111') 
+*/
 INSERT INTO cod_munsell_colours VALUES
-  (1, '10YR 5/4', '#947650'),
-  (2, '7.5YR 3/2', '#584537'),
-  (3, '5R 3/8', '#822930'),
-  (4, 'N 4/0', '#616161');
+  (1, '10YR 2/1',    '#372F29'),
+  (2, '10YR 3/3',    '#58432B'),
+  (3, '10YR 5/4',    '#947650'),
+  (4, '10YR 5/6',    '#947136'),
+  (5, '10YR 6/2',    '#A1907C'),
+  (6, '2.5Y 5/4',    '#8D764A'),
+  (7, '2.5Y 7/4',    '#C2AA7B'),
+  (8, '2.5YR 2.5/2', '#4C3630'),
+  (9, '5R 3/8',      '#80282F'),
+  (10, '5YR 2.5/2',  '#4B372E'),
+  (11, '7.5YR 3/2',  '#564336'),
+  (12, '7.5YR 3/4',  '#604025'),
+  (13, '7.5YR 4/2',  '#705C4D'),
+  (14, '7.5YR 4/4',  '#7C583A'),
+  (15, '7.5YR 5/4',  '#957253'),
+  (16, '7.5YR 5/6',  '#A06F3E'),
+  (17, '7.5YR 5/8',  '#A86C27'),
+  (18, '7.5YR 7/1',  '#B6ABA3'),
+  (19, 'N 4/0',      '#606060');
   
 CREATE TABLE IF NOT EXISTS cod_short_colours (
   id_colour INTEGER PRIMARY KEY,
@@ -1724,7 +1746,7 @@ INSERT INTO cod_pattern_edges VALUES
   
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_matrix_colours (
   id_site VARCHAR,
@@ -1733,7 +1755,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_matrix_colours (
   id_colour_matrix INTEGER,
   PRIMARY KEY (id_site, id_horizon, id_colour_matrix),
   cato_matrix_munsell VARCHAR REFERENCES cod_munsell_colours(cato_munsell),
-  catu_colour_moisture VARCHAR REFERENCES cod_munsell_colours(cato_munsell)
+  catu_colour_moisture VARCHAR REFERENCES cod_colour_moistures(cato_colour_moisture)
   );
 
 CREATE TABLE IF NOT EXISTS dat_horizon_pattern_colours (
@@ -1744,7 +1766,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_pattern_colours (
   PRIMARY KEY (id_site, id_horizon, id_colour_pattern),
   cato_pattern_munsell VARCHAR REFERENCES cod_munsell_colours(cato_munsell),
   catu_pattern_short_colour VARCHAR REFERENCES cod_short_colours(catu_colour),
-  catu_colour_moisture VARCHAR REFERENCES cod_munsell_colours(cato_munsell),
+  catu_colour_moisture VARCHAR REFERENCES cod_colour_moistures(cato_colour_moisture),
   catu_pattern_type VARCHAR REFERENCES cod_pattern_types(catu_pattern),
   amt_pattern_p DECIMAL(6, 2) CHECK (amt_pattern_p BETWEEN 0 AND 100),
   catu_pattern_shape VARCHAR REFERENCES cod_pattern_shapes(catu_pattern_shape),
@@ -1758,7 +1780,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_pattern_colours (
 ## Horizon texture
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_simple_textures (
   id_simple_texture INTEGER PRIMARY KEY,
@@ -1880,7 +1902,7 @@ INSERT INTO cod_nzsc_mineralogies VALUES
 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_texture (
   id_site VARCHAR,
@@ -1909,7 +1931,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_texture (
 ## Horizon secondary features
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_concentration_forms (
   id_conc_form INTEGER PRIMARY KEY,
@@ -2041,7 +2063,7 @@ INSERT INTO cod_bio_feature_types VALUES
 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_secondary_features (
   id_site VARCHAR,
@@ -2098,7 +2120,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_bio_features (
 ## Horizon consistence tests
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_strengths (
   id_strength INTEGER PRIMARY KEY,
@@ -2239,7 +2261,7 @@ INSERT INTO cod_indurations VALUES
 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_consistence_tests (
   id_site VARCHAR,
@@ -2267,7 +2289,7 @@ CREATE TABLE IF NOT EXISTS dat_consistence_tests (
 ## Field tests
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_pH_raupachs (
   id_raupach INTEGER PRIMARY KEY,
@@ -2367,7 +2389,7 @@ INSERT INTO cod_dispersion_rxns VALUES
 ```
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_field_tests (
   id_site VARCHAR,
@@ -2398,7 +2420,7 @@ CREATE TABLE IF NOT EXISTS dat_field_tests (
 Including horizon drainage here
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_horizon_names_primary (
   id_horizon_primary INTEGER PRIMARY KEY,
@@ -2494,10 +2516,18 @@ INSERT INTO cod_horizon_suffix_other VALUES
 
 /* Table 20.18 - just a few for demo */  
 INSERT INTO cod_horizon_names_functional VALUES 
-  (1, 'Lw', 'Loamy weak'),
-  (2, 'SLw', 'Stony loamy, weak'),
-  (3, 'VLc', 'Very stony loamy compact'),
-  (4, 'XL', 'Extremely stony loamy');
+  (1, 'Al', 'Sandy loose'),
+  (2, 'LCf', 'Loamy, coarse firm'),
+  (3, 'LCs', 'Loamy, coarse slightly firm'),
+  (4, 'LFf', 'Loamy, fine firm'),
+  (5, 'LFs', 'Loamy, fine slightly firm'),
+  (6, 'Lw',  'Loamy weak'),
+  (7, 'Or',  'Organic fibric'),
+  (8, 'SAw', 'Stony sandy, weak'),
+  (9, 'SLw', 'Stony loamy, weak'),
+  (10, 'VAc', 'Very stony sandy compact'),
+  (11, 'VLc', 'Very stony loamy compact'),
+  (12, 'XL', 'Extremely stony loamy');
 
 CREATE TABLE IF NOT EXISTS cod_horizon_permeabilities (
   id_functional_perm INTEGER PRIMARY KEY,
@@ -2532,7 +2562,7 @@ INSERT INTO cod_horizon_drainage_classes VALUES
 ```
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_horizon_names (
   id_site VARCHAR,
@@ -2574,7 +2604,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_names_suffix_other (
 These should only be used in database views e.g. to underpin report generation 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_size_classes_solids (
   id_size_solid INTEGER PRIMARY KEY,
@@ -2652,7 +2682,7 @@ INSERT INTO cod_abundance_classes_solids VALUES
 ### Order, Group and Subgroup
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_nzsc_orders (
   catu_nzsc_order VARCHAR PRIMARY KEY,
@@ -3074,7 +3104,7 @@ INSERT INTO cod_nzsc_subgroups VALUES
 ### Family and sibling
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS cod_nzsc_fam_profile_materials (
   id_nzsc_fam_pm INTEGER PRIMARY KEY,
@@ -3211,7 +3241,7 @@ INSERT INTO cod_nzsc_bp_rootbarriers VALUES
   (7,  'S',  'Clean sand'),
   (8,  'A',  'Anoxic'),
   (9,  'F',  'Fractured rock'),
-  (10, 'M',  'Massive rock')
+  (10, 'M',  'Massive rock'),
   (11, 'N',  'No barriers');
 
 ```
@@ -3220,7 +3250,7 @@ INSERT INTO cod_nzsc_bp_rootbarriers VALUES
 
 
 ```{sql}
---| connection: con
+#| connection: con
 
 CREATE TABLE IF NOT EXISTS dat_nzsc (
   id_site VARCHAR REFERENCES dat_sites(id_site) PRIMARY KEY,
@@ -3272,14 +3302,14 @@ CREATE TABLE IF NOT EXISTS dat_nzsc (
   
 ```
 
-
-## Check outputs
-
 ```{r}
+#| eval: false
+#| echo: false
+
 # returns a table describing all the tables in the database
 descr <- dbGetQuery(con, 'PRAGMA show_tables_expanded')
-```
 
+```
 
 ## Write blank
 
