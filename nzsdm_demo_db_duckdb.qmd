@@ -37,14 +37,13 @@ DuckDB has a Spatial extension but we will not be using it as its overkill for t
 
 Keeping the data and metadata tables separate is Nice, but at present DuckDB does not support creating foreign keys across different schemas. This step will be skipped unless that functionality is implemented.
 
-A naming convention is applied to the tables to clearly distingish data-storing tables ('dat_\*') from controlled code lists ('cod_\*') as duckDB doesn't support linking foreign keys across schemas.
+A naming convention is applied to the tables to clearly distingish data-storing tables ('dat\_\*') from controlled code lists ('cod\_\*') as duckDB doesn't support linking foreign keys across schemas.
 
 ## Sites
 
 After [Appendix D.3](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-siteover)
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -141,7 +140,6 @@ INSERT INTO cod_recent_rainfall VALUES
   (7, 'UK', 'Unknown/uncertain');
   
 ```
-
 :::
 
 ```{sql}
@@ -166,7 +164,6 @@ CREATE TABLE IF NOT EXISTS dat_sites (
 ### Site disturbances
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -208,7 +205,6 @@ INSERT INTO cod_disturbance_ages VALUES
   (4,  'S', 'Within the past 6 months'),
   (5,  'Y', 'Within the past year');
 ```
-
 :::
 
 ```{sql}
@@ -232,7 +228,6 @@ From [Appendix D.2](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_datab
 ### Locations
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -266,7 +261,6 @@ INSERT INTO cod_gnss_types VALUES
   (5, 'NO', 'None',              'Location determined manually.');
 
 ```
-
 :::
 
 ```{sql}
@@ -300,7 +294,6 @@ CREATE TABLE IF NOT EXISTS dat_locations (
 ### Landscape
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -355,7 +348,6 @@ INSERT INTO cod_landscapes VALUES
   (8, 'Cs', 'Coast', 'On- and near-shore features created by the interaction of the ocean with the land, including beaches, deltas, lagoons and estuaries');
 
 ```
-
 :::
 
 ```{sql}
@@ -380,7 +372,6 @@ CREATE TABLE IF NOT EXISTS dat_landscape (
 ### Landscape landuse
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -391,9 +382,9 @@ CREATE TABLE IF NOT EXISTS cod_landuse_primary (
   );
   
 INSERT INTO cod_landuse_primary VALUES  
-  (1, '1', 'Conservation and minimal use of natural environments'),
-  (2, '2', 'Production agriculture and plantations'),
-  (3, '3', 'Built environment');
+  (1, '1.0.0', 'Conservation and minimal use of natural environments'),
+  (2, '2.0.0', 'Production agriculture and plantations'),
+  (3, '3.0.0', 'Built environment');
   
 CREATE TABLE IF NOT EXISTS cod_landuse_secondary (
   id_landuse_primary INTEGER,
@@ -427,7 +418,6 @@ INSERT INTO cod_landuse_secondary VALUES
   (21, '3', '3.9.0', 'Vacant and transitioning land');
 
 ```
-
 :::
 
 ```{sql}
@@ -449,7 +439,6 @@ CREATE TABLE IF NOT EXISTS dat_lscape_landuse (
 ### Landform
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -570,7 +559,6 @@ INSERT INTO cod_landform_element_hmods VALUES
    (3, 'O', 'Open',     'Adjacent slope elements face the same direction');
 
 ```
-
 :::
 
 ```{sql}
@@ -611,7 +599,6 @@ CREATE TABLE IF NOT EXISTS dat_landform (
 ### Landform landuse
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -662,7 +649,6 @@ INSERT INTO cod_landuse_impacts VALUES
   (3,  'E', 'Direct', 'The land use has caused physical disturbance to the soil profile (e.g. from tillage or excavation)');
 
 ```
-
 :::
 
 ```{sql}
@@ -687,7 +673,6 @@ CREATE TABLE IF NOT EXISTS dat_lform_landuse (
 ## Surface
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -834,7 +819,6 @@ INSERT INTO cod_luc_vegetation_codes VALUES
   (6, 'hW', 'Wetland vegetation', 'Herbaceous vegetation occurring in non-saline wetland habitats (swamps and bogs) in which the water table is at or near the surface for most of the year');
 
 ```
- 
 :::
 
 ```{sql}
@@ -865,12 +849,11 @@ CREATE TABLE IF NOT EXISTS dat_site_surface (
   catu_vegetation_luc VARCHAR REFERENCES cod_luc_vegetation_codes(catu_vegetation_luc)
   );
 
-``` 
-  
+```
+
 ### Surface cover
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -894,9 +877,8 @@ INSERT INTO cod_surface_cover_types VALUES
   (9, 'SL', 'Sealed', 'Building, concrete, asphalt and similar');
 
 ```
- 
 :::
- 
+
 ```{sql}
 #| connection: con
 
@@ -914,7 +896,6 @@ CREATE TABLE IF NOT EXISTS dat_surface_cover (
 ### Erosion
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -971,7 +952,6 @@ INSERT INTO cod_erosion_activity VALUES
   (4, 'UK', 'Unknown', 'Activity history cannot be reliably determined');
   
 ```
-
 :::
 
 ```{sql}
@@ -992,7 +972,6 @@ CREATE TABLE IF NOT EXISTS dat_site_erosion (
 ### Deposition
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1049,7 +1028,6 @@ INSERT INTO cod_deposition_activity VALUES
   (4, 'UK', 'Unknown', 'Activity history cannot be reliably determined');
   
 ```
-
 :::
 
 ```{sql}
@@ -1070,7 +1048,6 @@ CREATE TABLE IF NOT EXISTS dat_site_deposition (
 ## Horizon overview
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1174,7 +1151,6 @@ INSERT INTO cod_weathering VALUES
   (6, '6', 'Completely weathered',  'Rock is completely changed to soil material with the original fabric completely destroyed but the resulting soil is not significantly transported.', 'Sediments have completely changed to soil material');
 
 ```
- 
 :::
 
 ```{sql}
@@ -1205,7 +1181,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon (
 ## Horizon architecture
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1284,7 +1259,6 @@ INSERT INTO cod_root_positions VALUES
    (4, 'U',    'Unknown', 'Sampling method did not allow reliable observation.');
 
 ```
-
 :::
 
 ```{sql}
@@ -1333,7 +1307,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_structures (
 ### Rock fragments
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1395,7 +1368,6 @@ INSERT INTO cod_nzsc_lithologies VALUES
       
 
 ```
-
 :::
 
 ```{sql}
@@ -1418,7 +1390,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_rock_fragments (
 ### Other fragments
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1438,7 +1409,6 @@ INSERT INTO cod_other_fragment_types VALUES
    (5, 'G', 'Gum',      'Kauri gum');
 
 ```
-
 :::
 
 ```{sql}
@@ -1460,7 +1430,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_other_fragments (
 ### Artefacts
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1486,7 +1455,6 @@ INSERT INTO cod_artefact_types VALUES
   (11, 'Ws', 'Wastes', 'Other domestic or commercial rubbish');
 
 ```
-
 :::
 
 ```{sql}
@@ -1508,7 +1476,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_artefacts (
 ### Plastics
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1573,7 +1540,6 @@ INSERT INTO cod_plastic_degradations VALUES
   (5, 'S', 'Strongly degraded', 'Plastic pieces with strong degraded surfaces, faded colours, soft surface, frayed areas or edges');
 
 ```
-
 :::
 
 ```{sql}
@@ -1597,7 +1563,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_plastics (
 ### Roots
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1615,7 +1580,6 @@ INSERT INTO cod_root_sizes_simple VALUES
   (3, 'C', 'Coarse',        '> 10 mm');
   
 ```
-
 :::
 
 ```{sql}
@@ -1637,7 +1601,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_roots (
 ### Voids
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1671,7 +1634,6 @@ INSERT INTO cod_void_conns VALUES
   (3, 'C', 'Continuous',  'Void spaces are well connected and form a continuous network');
   
 ```
-
 :::
 
 ```{sql}
@@ -1693,7 +1655,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_voids (
 ## Horizon colour
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1812,8 +1773,7 @@ INSERT INTO cod_pattern_edges VALUES
   (2, 'C', 'Clear', 'Colour transition < 2 mm wide'),
   (3, 'D', 'Diffuse', 'Colour transition > 2 mm wide');
 
-```  
-  
+```
 :::
 
 ```{sql}
@@ -1847,11 +1807,10 @@ CREATE TABLE IF NOT EXISTS dat_horizon_pattern_colours (
   );
 
 ```
-  
+
 ## Horizon texture
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -1972,7 +1931,6 @@ INSERT INTO cod_nzsc_mineralogies VALUES
   (18, 'Ot', 'Other soils', '');
 
 ```
-
 :::
 
 ```{sql}
@@ -2005,7 +1963,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_texture (
 ## Horizon secondary features
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -2136,7 +2093,6 @@ INSERT INTO cod_bio_feature_types VALUES
    (3, 'C', 'Casts',  'Earthworm wastes forming balls of fine soil material');
 
 ```
-
 :::
 
 ```{sql}
@@ -2197,7 +2153,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_bio_features (
 ## Horizon consistence tests
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -2337,7 +2292,6 @@ INSERT INTO cod_indurations VALUES
 
 
 ```
-
 :::
 
 ```{sql}
@@ -2369,7 +2323,6 @@ CREATE TABLE IF NOT EXISTS dat_consistence_tests (
 ## Field tests
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -2469,7 +2422,6 @@ INSERT INTO cod_dispersion_rxns VALUES
    (4, 'C', 'Complete dispersion', 'Peds have collapsed into a pile of separate grains, and are surrounded by an extensive and dense halo.');
    
 ```
-
 :::
 
 ```{sql}
@@ -2645,7 +2597,6 @@ INSERT INTO cod_horizon_drainage_classes VALUES
   
 
 ```
-
 :::
 
 ```{sql}
@@ -2688,10 +2639,9 @@ CREATE TABLE IF NOT EXISTS dat_horizon_names_suffix_other (
 
 ### Horizon data classification
 
-These should only be used in database views e.g. to underpin report generation 
+These should only be used in database views e.g. to underpin report generation
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -2765,7 +2715,6 @@ INSERT INTO cod_abundance_classes_solids VALUES
  (7, '6',  'Dominant',      '> 75%' );
  
 ```
-
 :::
 
 ## NZSC
@@ -2773,7 +2722,6 @@ INSERT INTO cod_abundance_classes_solids VALUES
 ### Order, Group and Subgroup
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -3193,13 +3141,11 @@ INSERT INTO cod_nzsc_subgroups VALUES
   ('W', 'H', 'A', 'Active');
 
 ```
-
 :::
 
 ### Family and sibling
 
 ::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
-
 ```{sql}
 #| connection: con
 
@@ -3342,7 +3288,6 @@ INSERT INTO cod_nzsc_bp_rootbarriers VALUES
   (11, 'N',  'No barriers');
 
 ```
-
 :::
 
 ```{sql}
@@ -3440,4 +3385,3 @@ dbExecute(con2,
 dbDisconnect(con2)
 
 ```
-
