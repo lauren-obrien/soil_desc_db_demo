@@ -356,7 +356,10 @@ CREATE TABLE IF NOT EXISTS dat_locations (
         AND val_site_coordinate_y <= 6731630),
   amt_elevation_abs_m REAL CHECK (amt_elevation_abs_m BETWEEN -5 AND 3724),
   amt_error_location_m REAL CHECK (amt_error_location_m >= 0),
+  amt_error_elevation_m REAL CHECK (amt_error_elevation_m >= 0),
   catu_elevation_method TEXT,
+  /* assumption is that the same gnss device would be used for xy and z so no
+    separate columns for gnss type */
   catu_gnss TEXT,
   amt_elevation_rel_m REAL CHECK (amt_elevation_rel_m BETWEEN -5 AND 3724), 
   txt_notes_triangulation TEXT,
@@ -1680,10 +1683,6 @@ INSERT INTO cod_root_positions VALUES
 CREATE TABLE IF NOT EXISTS dat_horizon_arch (
   id_site TEXT,
   id_horizon INTEGER,
-  catu_structure_type TEXT,
-  cato_structure_grade TEXT,
-  catu_structure_shape TEXT,
-  cato_structure_size TEXT,
   amt_total_frags_p REAL CHECK (amt_total_frags_p BETWEEN 0 and 100),
   amt_otherfrags_p REAL CHECK (amt_otherfrags_p BETWEEN 0 and 100),
   amt_artefacts_p REAL CHECK (amt_artefacts_p BETWEEN 0 and 100),
@@ -1696,14 +1695,6 @@ CREATE TABLE IF NOT EXISTS dat_horizon_arch (
   
   PRIMARY KEY (id_site, id_horizon),
   FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
-    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
-  FOREIGN KEY (catu_structure_type) REFERENCES cod_structure_types(catu_structure)
-    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
-  FOREIGN KEY (cato_structure_grade) REFERENCES cod_structure_grades(cato_structure_grade)
-    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
-  FOREIGN KEY (catu_structure_shape) REFERENCES cod_structure_shapes(catu_structure_shape)
-    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
-  FOREIGN KEY (cato_structure_size) REFERENCES cod_structure_sizes_rapid(cato_structure_size_rapid)
     MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
   FOREIGN KEY (catu_total_roots_pos) REFERENCES cod_root_positions(catu_root_pos)
     MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
@@ -1723,7 +1714,11 @@ CREATE TABLE IF NOT EXISTS dat_horizon_structures (
   catu_structure_type TEXT ,
   cato_structure_grade TEXT,
   catu_structure_shape TEXT,
+  /* rapid */
+  cato_structure_size TEXT,
+  /* routine */
   amt_structure_size_med_mm REAL CHECK (amt_structure_size_med_mm > 0),
+  /* detailed */
   amt_structure_size_min_mm REAL CHECK (amt_structure_size_min_mm > 0),
   amt_structure_size_max_mm REAL CHECK (amt_structure_size_max_mm > 0),
   
@@ -1735,6 +1730,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_structures (
   FOREIGN KEY (cato_structure_grade) REFERENCES cod_structure_grades(cato_structure_grade)
     MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
   FOREIGN KEY (catu_structure_shape) REFERENCES cod_structure_shapes(catu_structure_shape)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_structure_size) REFERENCES cod_structure_sizes_rapid(cato_structure_size_rapid)
     MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
   ) STRICT;
 
