@@ -43,6 +43,8 @@ A naming convention is applied to the tables to clearly distingish data-storing 
 
 After [Appendix D.3](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-siteover)
 
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
 ```{sql}
 #| connection: con
 
@@ -140,6 +142,8 @@ INSERT INTO cod_recent_rainfall VALUES
   
 ```
 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -160,6 +164,8 @@ CREATE TABLE IF NOT EXISTS dat_sites (
 ```
 
 ### Site disturbances
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -203,6 +209,7 @@ INSERT INTO cod_disturbance_ages VALUES
   (5,  'Y', 'Within the past year');
 ```
 
+:::
 
 ```{sql}
 #| connection: con
@@ -223,6 +230,8 @@ CREATE TABLE IF NOT EXISTS dat_disturbances (
 From [Appendix D.2](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-setting)
 
 ### Locations
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -258,6 +267,7 @@ INSERT INTO cod_gnss_types VALUES
 
 ```
 
+:::
 
 ```{sql}
 #| connection: con
@@ -288,6 +298,8 @@ CREATE TABLE IF NOT EXISTS dat_locations (
 ```
 
 ### Landscape
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -344,6 +356,8 @@ INSERT INTO cod_landscapes VALUES
 
 ```
 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -364,6 +378,8 @@ CREATE TABLE IF NOT EXISTS dat_landscape (
 ```
 
 ### Landscape landuse
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -412,6 +428,8 @@ INSERT INTO cod_landuse_secondary VALUES
 
 ```
 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -429,6 +447,8 @@ CREATE TABLE IF NOT EXISTS dat_lscape_landuse (
 ```
 
 ### Landform
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -551,6 +571,7 @@ INSERT INTO cod_landform_element_hmods VALUES
 
 ```
 
+:::
 
 ```{sql}
 #| connection: con
@@ -588,6 +609,8 @@ CREATE TABLE IF NOT EXISTS dat_landform (
 ```
 
 ### Landform landuse
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -640,6 +663,7 @@ INSERT INTO cod_landuse_impacts VALUES
 
 ```
 
+:::
 
 ```{sql}
 #| connection: con
@@ -661,6 +685,8 @@ CREATE TABLE IF NOT EXISTS dat_lform_landuse (
 ```
 
 ## Surface
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -809,7 +835,8 @@ INSERT INTO cod_luc_vegetation_codes VALUES
 
 ```
  
- 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -842,6 +869,8 @@ CREATE TABLE IF NOT EXISTS dat_site_surface (
   
 ### Surface cover
 
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
 ```{sql}
 #| connection: con
 
@@ -865,7 +894,9 @@ INSERT INTO cod_surface_cover_types VALUES
   (9, 'SL', 'Sealed', 'Building, concrete, asphalt and similar');
 
 ```
-  
+ 
+:::
+ 
 ```{sql}
 #| connection: con
 
@@ -881,6 +912,8 @@ CREATE TABLE IF NOT EXISTS dat_surface_cover (
 ```
 
 ### Erosion
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -938,7 +971,9 @@ INSERT INTO cod_erosion_activity VALUES
   (4, 'UK', 'Unknown', 'Activity history cannot be reliably determined');
   
 ```
-  
+
+:::
+
 ```{sql}
 #| connection: con
 
@@ -955,6 +990,8 @@ CREATE TABLE IF NOT EXISTS dat_site_erosion (
 ```
 
 ### Deposition
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -1012,7 +1049,9 @@ INSERT INTO cod_deposition_activity VALUES
   (4, 'UK', 'Unknown', 'Activity history cannot be reliably determined');
   
 ```
-  
+
+:::
+
 ```{sql}
 #| connection: con
 
@@ -1029,6 +1068,8 @@ CREATE TABLE IF NOT EXISTS dat_site_deposition (
 ```
 
 ## Horizon overview
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -1134,7 +1175,8 @@ INSERT INTO cod_weathering VALUES
 
 ```
  
-  
+:::
+
 ```{sql}
 #| connection: con
 
@@ -1161,6 +1203,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon (
 ```
 
 ## Horizon architecture
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -1241,6 +1285,8 @@ INSERT INTO cod_root_positions VALUES
 
 ```
 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -1285,6 +1331,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_structures (
 ```
 
 ### Rock fragments
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -1348,6 +1396,8 @@ INSERT INTO cod_nzsc_lithologies VALUES
 
 ```
 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -1366,6 +1416,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_rock_fragments (
 ```
 
 ### Other fragments
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -1387,6 +1439,7 @@ INSERT INTO cod_other_fragment_types VALUES
 
 ```
 
+:::
 
 ```{sql}
 #| connection: con
@@ -1405,6 +1458,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_other_fragments (
 ```
 
 ### Artefacts
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -1432,6 +1487,8 @@ INSERT INTO cod_artefact_types VALUES
 
 ```
 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -1449,6 +1506,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_artefacts (
 ```
 
 ### Plastics
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -1515,6 +1574,7 @@ INSERT INTO cod_plastic_degradations VALUES
 
 ```
 
+:::
 
 ```{sql}
 #| connection: con
@@ -1536,6 +1596,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_plastics (
 
 ### Roots
 
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
 ```{sql}
 #| connection: con
 
@@ -1554,6 +1616,8 @@ INSERT INTO cod_root_sizes_simple VALUES
   
 ```
 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -1571,6 +1635,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_roots (
 ```
 
 ### Voids
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -1606,6 +1672,8 @@ INSERT INTO cod_void_conns VALUES
   
 ```
 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -1623,6 +1691,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_voids (
 ```
 
 ## Horizon colour
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -1744,6 +1814,7 @@ INSERT INTO cod_pattern_edges VALUES
 
 ```  
   
+:::
 
 ```{sql}
 #| connection: con
@@ -1778,6 +1849,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_pattern_colours (
 ```
   
 ## Horizon texture
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -1900,6 +1973,7 @@ INSERT INTO cod_nzsc_mineralogies VALUES
 
 ```
 
+:::
 
 ```{sql}
 #| connection: con
@@ -1929,6 +2003,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_texture (
 ```
 
 ## Horizon secondary features
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -2061,6 +2137,7 @@ INSERT INTO cod_bio_feature_types VALUES
 
 ```
 
+:::
 
 ```{sql}
 #| connection: con
@@ -2118,6 +2195,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_bio_features (
 ```
 
 ## Horizon consistence tests
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -2259,6 +2338,7 @@ INSERT INTO cod_indurations VALUES
 
 ```
 
+:::
 
 ```{sql}
 #| connection: con
@@ -2287,6 +2367,8 @@ CREATE TABLE IF NOT EXISTS dat_consistence_tests (
 ```
 
 ## Field tests
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -2388,6 +2470,8 @@ INSERT INTO cod_dispersion_rxns VALUES
    
 ```
 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -2417,6 +2501,7 @@ CREATE TABLE IF NOT EXISTS dat_field_tests (
 
 ### Horizon names
 
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 Including horizon drainage here
 
 ```{sql}
@@ -2561,6 +2646,8 @@ INSERT INTO cod_horizon_drainage_classes VALUES
 
 ```
 
+:::
+
 ```{sql}
 #| connection: con
 
@@ -2602,6 +2689,8 @@ CREATE TABLE IF NOT EXISTS dat_horizon_names_suffix_other (
 ### Horizon data classification
 
 These should only be used in database views e.g. to underpin report generation 
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -2677,9 +2766,13 @@ INSERT INTO cod_abundance_classes_solids VALUES
  
 ```
 
+:::
+
 ## NZSC
 
 ### Order, Group and Subgroup
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -3101,7 +3194,11 @@ INSERT INTO cod_nzsc_subgroups VALUES
 
 ```
 
+:::
+
 ### Family and sibling
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
 
 ```{sql}
 #| connection: con
@@ -3246,8 +3343,7 @@ INSERT INTO cod_nzsc_bp_rootbarriers VALUES
 
 ```
 
-
-
+:::
 
 ```{sql}
 #| connection: con
@@ -3335,10 +3431,6 @@ dbDisconnect(con)
 
 # make and connect to a new blank ondisk file
 con2 <- dbConnect(duckdb(dbdir = file.path(getwd(), 'template_nzsd.duckdb')))
-
-# load the spatial extension into it
-dbExecute(con2, "INSTALL spatial;")
-dbExecute(con2, "LOAD spatial;")
 
 # import the schema
 dbExecute(con2, 
