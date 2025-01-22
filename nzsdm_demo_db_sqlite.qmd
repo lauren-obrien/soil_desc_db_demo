@@ -1,0 +1,4426 @@
+---
+title: "New Zealand Soil Description Manual 2024 - Demonstration database"
+author: "Lauren O'Brien"
+date: "2025-01-22"
+date-modified: "today"
+format: 
+  html:
+    embed-resources: true
+editor: visual
+---
+
+## Background
+
+This document takes the information in Appendix D of the NZ Soil Description Manual and implements a relational database using [SQLite](https://www.sqlite.org/). The intent is to generate an interactive object to help developers understand how the data points in the manual are expected to be stored and used.
+
+As with Appendix D, this implementation contains no user management, change tracking, or security features and so should not be used as-is. It also has no ability to store photographs, sample information or laboratory results.
+
+## Setup
+
+### Establish connection
+
+We will be working in-memory:
+
+```{r}
+library(RSQLite) # DBI is also required
+
+# make an empty db in RAM, establish connection
+drv <- SQLite()
+con <- dbConnect(drv, dbname = ':memory:')
+
+# foreign key support is off by default for backwards compatibility, fix that:
+dbExecute(con, "PRAGMA foreign_keys = 1")
+
+```
+
+We are not using the Spatialite extension for spatial data types as its overkill for this application.
+
+A naming convention is applied to the tables to clearly distingish data-storing tables ('dat_\*') from controlled code lists ('cod_\*') as SQLite doesn't offer full schemas.
+
+## Sites
+
+After [Appendix D.3](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-siteover)
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_site_purposes (
+  id_site_purpose INTEGER PRIMARY KEY,
+  catu_site_purpose TEXT UNIQUE,
+  txt_site_purpose_name TEXT)
+  STRICT;
+```
+  
+```{sql}
+#| connection: con
+/* Table 10.1 */
+INSERT INTO cod_site_purposes VALUES
+  (1, 'E', 'Mapping exploration'),
+  (2, 'V', 'Mapping validation'),
+  (3, 'R', 'Research'),
+  (4, 'M', 'Monitoring'),
+  (5, 'T', 'Reference'),
+  (6, 'D', 'Development');
+```
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_site_selection_methods (
+  id_site_selection INTEGER PRIMARY KEY,
+  catu_site_selection TEXT UNIQUE,
+  txt_site_selection_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con
+/* Table 10.2*/
+INSERT INTO cod_site_selection_methods VALUES
+  (1, 'A', 'Arbitrary/opportunistic'),
+  (2, 'D', 'Data-driven'),
+  (3, 'M', 'Model-based'),
+  (4, 'R', 'Random'),
+  (5, 'T', 'Transect'),
+  (6, 'G', 'Grid');
+```
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_site_exposure_types (
+  id_site_exposure INTEGER PRIMARY KEY,
+  catu_site_exposure TEXT UNIQUE, 
+  txt_site_exposure_name TEXT,
+  txt_site_exposure_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con
+/* Table 10.3 */
+INSERT INTO cod_site_exposure_types VALUES
+  (1, 'P1', 'Quick pit', 'Pit up to 0.5 m wide and generally no deeper than 1m'),
+  (2, 'P2', 'Full pit', 'Pit or trench > 1 m wide, exposing the complete profile to regolith or bedrock'),
+  (3, 'E', 'Exposure', 'Road cutting or similar, chipped back and cleaned'),
+  (4, 'C1', 'Small core', 'Relatively undisturbed soil core, < 50 mm diameter'),
+  (5, 'C2', 'Large core', 'Relatively undisturbed soil core, ≥ 50 mm diameter'),
+  (6, 'A', 'Auger', 'Hand or mechanical auger, including e.g. post hole diggers');
+```
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_site_early_stop_types (
+  id_site_early_stop INTEGER PRIMARY KEY,
+  catu_site_early_stop TEXT UNIQUE,
+  txt_site_early_stop_name TEXT,
+  txt_site_early_stop_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con
+/* Table 10.4 */
+INSERT INTO cod_site_early_stop_types VALUES
+  (1, 'B', 'Bedrock', 'Underlying rock mass encountered, no more material to describe'),
+  (2, 'R', 'Resistance', 'Material too difficult to extract with available equipment'),
+  (3, 'C', 'Collapse', 'Excavation unstable or unsafe due to wetness or loose particle packing'),
+  (4, 'I', 'Identified', 'The depth required to confirm a key parameter was reached'),
+  (5, 'O', 'Other', 'Circumstances unrelated to the soil itself caused early stoppage');
+```
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_current_weather (
+  id_weather INTEGER PRIMARY KEY,
+  catu_weather TEXT UNIQUE, 
+  txt_weather_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con
+/* Table 6.3.1 */
+INSERT INTO cod_current_weather VALUES
+  (1, 'SU', 'Sunny'),
+  (2, 'PC', 'Partly cloudy'),
+  (3, 'OV', 'Overcast'),
+  (4, 'RA', 'Rain'),
+  (5, 'SL', 'Sleet'),
+  (6, 'SN', 'Snow');
+```
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_recent_rainfall (
+  id_rainfall INTEGER PRIMARY KEY,
+  cato_rainfall TEXT UNIQUE, 
+  txt_rainfall_name TEXT 
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con
+/* Table 6.3.2 */
+INSERT INTO cod_recent_rainfall VALUES 
+  (1, 'NM', 'No rain in the last month'),
+  (2, 'NW', 'No rain in the last week'),
+  (3, 'ND', 'No rain in the last 24 hours'),
+  (4, 'RD', 'Rain but no heavy rain in the last 24 hours'),
+  (5, 'RH', 'Heavy rain for some days or excessive rain in the last 24 hours'),
+  (6, 'RE', 'Extremely rainy or snow melting'),
+  (7, 'UK', 'Unknown/uncertain');
+  
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_sites (
+  id_site TEXT PRIMARY KEY,
+  usr_author TEXT,  /* should be FK in a full implementation */
+  dt_site TEXT NOT NULL DEFAULT CURRENT_DATE CHECK(dt_site <= CURRENT_DATE),
+  catu_site_purpose TEXT, 
+  catu_site_selection TEXT,
+  catu_site_exposure TEXT,
+  amt_site_depth_max_cm REAL CHECK (amt_site_depth_max_cm BETWEEN 0 AND 1000),
+  catu_early_stop TEXT,
+  catu_site_weather TEXT,
+  val_temperature_c REAL CHECK (val_temperature_c BETWEEN -50 AND 50),
+  cato_site_rainfall TEXT,
+  
+  FOREIGN KEY (catu_site_purpose) REFERENCES cod_site_purposes(catu_site_purpose)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_site_selection) REFERENCES cod_site_selection_methods(catu_site_selection)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_site_exposure) REFERENCES cod_site_exposure_types(catu_site_exposure)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_early_stop) REFERENCES cod_site_early_stop_types(catu_site_early_stop)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_site_weather) REFERENCES cod_current_weather(catu_weather)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_site_rainfall) REFERENCES cod_recent_rainfall(cato_rainfall)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+  
+```
+
+### Site disturbances
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_disturbance_types (
+  id_disturbance INTEGER PRIMARY KEY,
+  catu_disturbance TEXT UNIQUE,
+  txt_disturbance_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con
+/* Table 10.5 */
+INSERT INTO cod_disturbance_types VALUES
+  (1,  'MC', 'Mechanical disturbance (e.g. tillage, deep ripping, subsoiling)'),
+  (2,  'AN', 'Animal disturbance (e.g. pugging, rooting, tunnelling, excretion)'),
+  (3,  'CL', 'Complete vegetation clearance (e.g. clearfelling)'),
+  (4,  'CO', 'Selective vegetation clearance (e.g. tree removal or weed clearance)'),
+  (5,  'WI', 'Wind-induced treefall'),
+  (6,  'SL', 'Erosion event - material lost from site'),
+  (7,  'SD', 'Deposition event - material added to site'),
+  (8,  'FC', 'Fire - controlled burn'),
+  (9,  'FW', 'Fire - uncontrolled burn'),
+  (10, 'FL', 'Flooding - freshwater'),
+  (11, 'FS', 'Flooding - saline water (e.g. storm surge event)'),
+  (12, 'PO', 'Pollution event (e.g. petrol spill)'),
+  (13, 'NO', 'Fire - uncontrolled burn'),
+  (14, 'UK', 'Unknown');  
+```
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_disturbance_ages (
+  id_disturbance_age INTEGER PRIMARY KEY,
+  catu_disturbance_age TEXT UNIQUE, 
+  txt_disturbance_age_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con  
+/* Table 10.6 */
+INSERT INTO cod_disturbance_ages VALUES 
+  (1,  'D', 'Within the past day'),
+  (2,  'W', 'Within the past week'),
+  (3,  'M', 'Within the past month'),
+  (4,  'S', 'Within the past 6 months'),
+  (5,  'Y', 'Within the past year');
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_disturbances (
+  id_site TEXT,
+  id_disturbance INTEGER CHECK (id_disturbance > 0),
+  catu_disturbance TEXT,
+  catu_disturbance_age TEXT,
+  amt_disturbance_age_days INTEGER CHECK (amt_disturbance_age_days >= 0),
+  
+  PRIMARY KEY (id_site, id_disturbance),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_disturbance) REFERENCES cod_disturbance_types(catu_disturbance)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_disturbance_age) REFERENCES cod_disturbance_ages(catu_disturbance_age)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+```
+
+## Setting
+
+From [Appendix D.2](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-setting)
+
+### Locations
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_elevation_measurement_methods (
+  id_elevation_method INTEGER PRIMARY KEY,
+  catu_elevation_method TEXT UNIQUE,
+  txt_elevation_method_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 3.1 */
+INSERT INTO cod_elevation_measurement_methods VALUES  
+  (1, 'E', 'Estimate'),
+  (2, 'A', 'Measured by a calibrated altimeter'),
+  (3, 'M', 'Interpolated from contour map with interval of ≤ 20 m, or extracted from similar-quality Digital Elevation Model (DEM)'),
+  (4, 'G', 'Measured using a GNSS system with an adequate 3D fix'),
+  (5, 'D', 'Extracted from high-accuracy DEM (Lidar or similar)');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_gnss_types (
+  id_gnss INTEGER PRIMARY KEY,
+  catu_gnss TEXT UNIQUE,
+  txt_gnss_name TEXT,
+  txt_gnss_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 3.1 */
+INSERT INTO cod_gnss_types VALUES  
+  (1, 'GS', 'Single-band GNSS',  'Satellite based location, single band'),
+  (2, 'GM',	'Multi-band GNSS',   'Satellite based location, multiple band'),
+  (3, 'GR', 'Differential GNSS', 'Satellite based location, on-ground correction'),
+  (4, 'LM', 'Multi-sensor',      'Combined GNSS and other location data'),
+  (5, 'NO', 'None',              'Location determined manually.');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_locations (
+  id_site TEXT PRIMARY KEY,
+  /* The following assumes EPSG:2193 is in use */
+  val_site_coordinate_x REAL NOT NULL 
+      CHECK(val_site_coordinate_x >= 1089350 
+        AND val_site_coordinate_x <= 4162860),
+  val_site_coordinate_y REAL NOT NULL 
+      CHECK(val_site_coordinate_y >= 2490740 
+        AND val_site_coordinate_y <= 6731630),
+  amt_elevation_abs_m REAL CHECK (amt_elevation_abs_m BETWEEN -5 AND 3724),
+  amt_error_location_m REAL CHECK (amt_error_location_m >= 0),
+  catu_elevation_method TEXT,
+  catu_gnss TEXT,
+  amt_elevation_rel_m REAL CHECK (amt_elevation_rel_m BETWEEN -5 AND 3724), 
+  txt_notes_triangulation TEXT,
+  txt_location_desc TEXT,
+  catu_admin_rc TEXT, /* not implemented: REFERENCES regional_councils(catu_rc) */
+  catu_admin_dc TEXT, /* not implemented: REFERENCES district_councils(catu_dc) */
+  
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,    
+  FOREIGN KEY (catu_elevation_method) REFERENCES cod_elevation_measurement_methods(catu_elevation_method)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_gnss) REFERENCES cod_gnss_types(catu_gnss)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Landscape
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_provinces (
+  id_province INTEGER PRIMARY KEY,
+  catu_province TEXT UNIQUE,
+  txt_province_name TEXT
+  /* not implemented: txt_province_desc TEXT */ 
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 4.1 */
+INSERT INTO cod_provinces VALUES  
+  (1, 'NN', 'Northland'),
+  (2, 'NL', 'Northern Lowlands'),
+  (3, 'NW', 'North-western sedimentary hills'),
+  (4, 'NV', 'Central Volcanic Zone'),
+  (5, 'NT', 'Stratovolcanoes and ringplains'),
+  (6, 'NI', 'North Island Axial Mountains'),
+  (7, 'NS', 'Southern and Eastern Sedimentary Hills'),
+  (8, 'NM', 'Marine Terraces, Plains and Dunelands'),
+  (9, 'NA', 'Accretionary wedge and old sedimentary hills'),
+  (10, 'NC', 'Chatham Islands'),
+  (11, 'SI', 'South Island axial mountains'),
+  (12, 'SR', 'Front Ranges and inland basins'),
+  (13, 'SO', 'Otago basin and range'),
+  (14, 'SF', 'Fiordland'),
+  (15, 'SW', 'West coast piedmont, hills and mountains'),
+  (16, 'SN', 'Northwest Nelson'),
+  (17, 'SS', 'North Bank and the Marlborough Sounds'),
+  (18, 'SM', 'Marlborough Mountains'),
+  (19, 'SP', 'East Coast Peninsulas'),
+  (20, 'SE', 'East Coast Plains and Downs'),
+  (21, 'SL', 'Southland mountains, hills and plains'),
+  (22, 'ST', 'Stewart Island');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_landscapes (
+  id_landscape INTEGER PRIMARY KEY,
+  catu_landscape TEXT UNIQUE,
+  txt_landscape_name TEXT,
+  txt_landscape_desc TEXT 
+  ) STRICT; 
+```
+
+```{sql}
+#| connection: con 
+/* Table 4.2 */
+INSERT INTO cod_landscapes VALUES  
+  (1, 'Mt', 'Mountains', 'Steep to very steep, high relief (>300 m), fixed and well connected stream channels, often deep'),
+  (2, 'Hi', 'Hills', 'Gentle to very steep, moderately high to high relief (90-300 m), fixed and well connected stream channels, shallow to deep'),
+  (3, 'Up', 'Uplands', 'Gentle to very steep, low relief (30-90 m) but relatively high elevation, fixed and well connected stream channels, shallow valleys and plateaus, located among hills and mountains'),
+  (4, 'Ll', 'Lowlands', 'Gentle to very steep, low relief (30-90 m) and elevation, fixed and well connected stream channels, shallow to deep'),
+  (5, 'Te', 'Terraces', 'Former plains, uplifted and sometimes covered by loess. Flat to gently undulating upper surfaces bounded by distinctive drop-offs on their downhill end, often backing on to lowlands, hills or mountains at their uphill end.'),
+  (6, 'Pl', 'Plains', 'Level to very gentle surfaces created by fluvial and/or airfall tephra deposition.'),
+  (7, 'Sc', 'Sand country', 'Extensive dune and sandplain areas. Low relief and elevation, gentle to steep slopes, and active stream channels, often with interrupted connectivity'),
+  (8, 'Cs', 'Coast', 'On- and near-shore features created by the interaction of the ocean with the land, including beaches, deltas, lagoons and estuaries');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+/* NB: landscape is 1:1 with site but doing this makes 
+   handling the sub-tables easier */
+CREATE TABLE IF NOT EXISTS dat_landscape (
+  id_site TEXT,
+  id_landscape INTEGER,
+  catu_province TEXT,
+  catu_landscape TEXT,
+  amt_lscape_relief_med_m REAL CHECK (amt_lscape_relief_med_m >= 0),
+  amt_lscape_slope_med_d  REAL CHECK (amt_lscape_slope_med_d BETWEEN 0 AND 90),
+  amt_lscape_slope_min_d  REAL CHECK (amt_lscape_slope_min_d BETWEEN 0 AND 90),
+  amt_lscape_slope_max_d  REAL CHECK (amt_lscape_slope_max_d BETWEEN 0 AND 90),
+  
+  PRIMARY KEY (id_site, id_landscape),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT, 
+  FOREIGN KEY (catu_province) REFERENCES cod_provinces(catu_province)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_landscape) REFERENCES cod_landscapes(catu_landscape)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Landscape landuse
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_landuse_primary (
+  id_landuse_primary INTEGER PRIMARY KEY,
+  catu_landuse_primary TEXT UNIQUE,
+  txt_landuse_primary_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+INSERT INTO cod_landuse_primary VALUES  
+  (1, '1', 'Conservation and minimal use of natural environments'),
+  (2, '2', 'Production agriculture and plantations'),
+  (3, '3', 'Built environment');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_landuse_secondary (
+  id_landuse_primary INTEGER,
+  id_landuse_secondary INTEGER,
+  catu_landuse_secondary TEXT UNIQUE,
+  txt_landuse_secondary_name TEXT,
+  
+  PRIMARY KEY (id_landuse_primary, id_landuse_secondary)
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+INSERT INTO cod_landuse_secondary VALUES  
+  (1,  '1', '1.1.0', 'Biodiversity protection'),
+  (2,  '1', '1.2.0', 'Cultural and natural heritage'),
+  (3,  '1', '1.3.0', 'Minimal use from relatively natural environments'),
+  (4,  '1', '1.4.0', 'Unused land and land in transition'),
+  (5,  '2', '2.1.0', 'Plantation forests'),
+  (6,  '2', '2.2.0', 'Grazing modified pasture systems'),
+  (7,  '2', '2.3.0', 'Short-rotation and seasonal cropping'),
+  (8,  '2', '2.4.0', 'Perennial horticulture'),
+  (9,  '2', '2.5.0', 'Intensive horticulture'),
+  (10, '2', '2.6.0', 'Intensive animal production'),
+  (11, '2', '2.7.0', 'Water and wastewater'),
+  (12, '2', '2.8.0', 'Land in transition'),
+  (13, '3', '3.1.0', 'Residential'),
+  (14, '3', '3.2.0', 'Public recreation and services'),
+  (15, '3', '3.3.0', 'Commercial'),
+  (16, '3', '3.4.0', 'Manufacturing and industrial'),
+  (17, '3', '3.5.0', 'Utilities'),
+  (18, '3', '3.6.0', 'Transport and communication'),
+  (19, '3', '3.7.0', 'Mining'),
+  (20, '3', '3.8.0', 'Waste treatment and disposal'),
+  (21, '3', '3.9.0', 'Vacant and transitioning land');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_lscape_landuse (
+  id_site TEXT,
+  id_landscape INTEGER,
+  id_lscape_landuse INTEGER,
+  catu_lscape_landuse_primary TEXT,
+  catu_lscape_landuse_secondary TEXT,
+  amt_landuse_area_p real CHECK (amt_landuse_area_p BETWEEN 0 AND 100),
+  
+  PRIMARY KEY (id_site, id_landscape, id_lscape_landuse),
+  FOREIGN KEY (id_site, id_landscape) REFERENCES dat_landscape(id_site, id_landscape)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_lscape_landuse_primary) REFERENCES cod_landuse_primary(catu_landuse_primary)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_lscape_landuse_secondary) REFERENCES cod_landuse_secondary(catu_landuse_secondary)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Landform
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_landform_types (
+  id_landform INTEGER PRIMARY KEY,
+  catu_landform TEXT UNIQUE,
+  txt_landform_name TEXT,
+  txt_landform_desc TEXT 
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 4.3 */
+INSERT INTO cod_landform_types VALUES  
+  (1, 'Ba', 'Bar', 'A ridge-like accumulation of sand, gravel, or other alluvial material formed in the channels, along the banks, or at the mouth of a stream where a decrease in velocity induces deposition'),
+  (2, 'Bc', 'Beach', 'Low-slope, shorefront accumulation of unconsolidated sediment (usually sand to cobble sized)'),
+  (3, 'Bo', 'Bog', 'Rainfall-fed, peat-accumulating freshwater wetland with low pH and nutrient availability and restricted water flow'),
+  (4, 'Ca', 'Caldera', 'Large hollow in the top of a volcano'),
+  (5, 'Cl', 'Cliff', 'Steep to vertical slope with more than 10 m local relief'), 
+  (6, 'Cn', 'Cone',  'Moderate to steep, usually isolated hill built up by volcanic activity'), 
+  (7, 'Cr', 'Crest', 'A locally high area, from which the surface slopes downwards in opposite directions'),
+  (8, 'Dl', 'Delta', 'A fan-shaped accumulation of alluvial sediment, usually with several water channels, at a river or stream mouth.'),
+  (9, 'Du', 'Dune', 'Accumulation of windblown sand into an elongated ridge or crescent shape'),
+  (10, 'Ew', 'Ephemeral wetland', 'Wetland subject to pronounced seasonal drying. Non-peaty, with neutral pH and moderate nutrient status. Usually in a closed depression'),
+  (11, 'Fl', 'Flat', 'Level area created by deposition'),
+  (12, 'Fn', 'Fan', 'Gently sloping, flat to convex depositional slope, often at the foot of a steeper area and built up by a stream or by colluvial action'),
+  (13, 'Fe', 'Fen', 'Rainfall and groundwater-fed peaty freshwater wetland with low to moderate pH and nutrient availability, and slightly fluctuating water table'),
+  (14, 'Go', 'Gorge', 'A valley 10 m or more deep with over three-quarters of its sides sloping at more than 25°, and half or more of its sides formed by cliffs, and less than 5 times as wide as it is deep over half or more of its length, and everywhere less than 10 times as wide as it is deep'), 
+  (15, 'Lv', 'Levee', 'An embankment of flood alluvium built up alongside a river and typically with lower-lying land behind'),
+  (16, 'Ma', 'Marsh', 'Wetlands with large periodic water table fluctuations, relatively high pH and nutrient content, and mainly mineral substrate'),
+  (17, 'Mh', 'Hummocky moraine', 'Low, roughly undulating deposits of glacial till'),
+  (18, 'Mo', 'Mound', 'A small hill with moderate to steep sides, often somewhat isolated'),
+  (19, 'Mr', 'Moraine ridge', 'Low ridges comprising glacial till'), 
+  (20, 'Pk', 'Pakihi and gumland', 'Wetland in highly leached soils with low pH and nutrient availability. Sometimes periodically dry and usually without peat'),
+  (21, 'Pl', 'Plain', 'Level to gently undulating area built up by alluvial, aeolian, or volcanic deposition'),
+  (22, 'Pt', 'Plateau', 'Any comparatively flat extensive and elevated area, often dissected and with a steep dropoff on at least one side'),
+  (23, 'Ri', 'Riser', 'The vertical or steeply sloping surface of one of a series of natural, step-like landforms, as those of a glacial stairway or of successive stream terraces'),
+  (24, 'Rt', 'Tread', 'The flat or gently sloping broadly planar surface of one of a series of natural step-like landforms, as those of a glacial stairway or of successive stream terraces'),
+  (25, 'Sa', 'Saddle', 'A low point (dip) along a ridge or the lowest point between two adjacent elevated areas. In one axis along the ridge or between the elevated areas the land slopes up in both directions and in the other axis, typically at right angles to the first, the land slopes down in both directions'), 
+  (26, 'Se', 'Seepage', 'Sloped area carrying a slow but steady flow of groundwater'),
+  (27, 'Sm', 'Swamp', 'Rainfall and groundwater-fed, somewhat peaty freshwater wetland with high pH and nutrient availability, and seasonally fluctuating water table'),
+  (28, 'Sw', 'Swale', 'A low-lying depression between adjacent ridges'),
+  (29, 'Sl', 'Slope', 'Very gentle to very steep inclined surfaces'), 
+  (30, 'St', 'Saltmarsh', 'Wetlands with saline water supply, usually in tidally influenced areas'),
+  (31, 'Vl', 'Valley-bottom', 'Open depression between parallel facing slopes'),
+  (32, 'Cs', 'Cut-surface', 'Flat excavated by human activity'),
+  (33, 'Cf', 'Cut-face', 'Slope excavated by human activity'),
+  (34, 'Em', 'Embankment', 'Ridge or slope built up by human activity'),
+  (35, 'Fi', 'Fill-top', 'Flat built up by human activity');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_land_cover_types (
+  id_land_cover INTEGER PRIMARY KEY,
+  catu_land_cover TEXT UNIQUE,
+  txt_land_cover_name TEXT,
+  txt_land_cover_desc TEXT 
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con  
+/* Table 4.3 */
+/* just doing the first 6 for demo purposes */
+INSERT INTO cod_land_cover_types VALUES  
+  (1, '40', 'High producing Exotic Grassland', 'Exotic sward grassland of good pastoral quality and vigour reflecting relatively high soil fertility and intensive grazing management.'),
+  (2, '41', 'Low Producing Grassland', 'Exotic sward grassland and indigenous short tussock grassland of poor pastoral quality reflecting lower soil fertility and extensive grazing management or non-agricultural use.'),
+  (3, '43', 'Tall Tussock Grassland', 'Indigenous snow tussocks in mainly alpine mountain-lands and red tussock in the central North Island and locally in poorly-drained valley floors, terraces and basins of both islands.'),
+  (4, '52', 'Mānuka and/or Kānuka', 'Scrub dominated by mānuka and/or kānuka.'),
+  (5, '69', 'Indigenous Forest', 'Tall forest dominated by indigenous conifer, broadleaved or beech species.'),
+  (6, '71', 'Exotic Forest', 'Planted or naturalised forest.'); 
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_measurement_types (
+  id_mtype INTEGER PRIMARY KEY,
+  catu_mtype TEXT UNIQUE,
+  txt_mtype_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table D.1.1 */
+INSERT INTO cod_measurement_types VALUES   
+   (1, 'NM', 'Parameter was recorded normally'),
+   (2, 'ND', 'Parameter could not be reliably determined or does not apply'),
+   (3, 'NR', 'Parameter was not recorded');
+```
+
+```{sql}
+#| connection: con 
+/* Table 4.4 */
+CREATE TABLE IF NOT EXISTS cod_landform_elements (
+  id_landform_element INTEGER PRIMARY KEY,
+  catu_landform_element TEXT UNIQUE,
+  txt_landform_element_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+INSERT INTO cod_landform_elements VALUES   
+   (1, 'CR', 'Crest'),
+   (2, 'RI', 'Ridge'),
+   (3, 'SL', 'Slope'),
+   (4, 'FL', 'Flat'),
+   (5, 'DO', 'Open depression'),
+   (6, 'DC', 'Closed depression');
+```
+
+```{sql}
+#| connection: con 
+/* Table 4.5 */
+CREATE TABLE IF NOT EXISTS cod_landform_element_vmods (
+  id_landform_element_vmod INTEGER PRIMARY KEY,
+  catu_landform_element_vmod TEXT UNIQUE,
+  txt_landform_element_vmod_name TEXT,
+  txt_landform_element_vmod_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+INSERT INTO cod_landform_element_vmods VALUES   
+   (1, 'X', 'Waxing', 'Element upslope is gentler, element downslope is steeper.'),
+   (2, 'N', 'Waning', 'Element upslope is steeper, element downslope is gentler.'),
+   (3, 'A', 'Maximal', 'Element upslope is gentler, element downslope is gentler.'),
+   (4, 'I', 'Minimal', 'Element upslope is steeper, element downslope is steeper.');
+```
+
+```{sql}
+#| connection: con 
+/* Table 4.6 */
+CREATE TABLE IF NOT EXISTS cod_landform_element_hmods (
+  id_landform_element_hmod INTEGER PRIMARY KEY,
+  catu_landform_element_hmod TEXT UNIQUE,
+  txt_landform_element_hmod_name TEXT,
+  txt_landform_element_hmod_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+INSERT INTO cod_landform_element_hmods VALUES   
+   (1, 'L', 'Enclosed', 'Adjacent slope elements face towards each other'),
+   (2, 'E', 'Exposed',  'Adjacent slope elements face away from each other'),
+   (3, 'O', 'Open',     'Adjacent slope elements face the same direction');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_landform (
+  id_site TEXT,
+  id_landscape INTEGER,
+  id_landform INTEGER,
+  /* basics: */
+  catu_landform TEXT,
+  amt_landform_p real CHECK (amt_landform_p BETWEEN 0 AND 100),
+  /* can only be true for one landform per site/landscape: */
+  /* NB no real bools in SQLite */
+  ind_landform_contains_site INTEGER CHECK (ind_landform_contains_site IN (0, 1)),
+  catu_land_cover TEXT,
+  /* detailed optional stuff: */
+  amt_landform_relief_m     REAL CHECK (amt_landform_relief_m >= 0),
+  amt_landform_slope_med_d  REAL CHECK (amt_landform_slope_med_d BETWEEN 0 AND 90),
+  amt_landform_slope_min_d  REAL CHECK (amt_landform_slope_min_d BETWEEN 0 AND 90),
+  amt_landform_slope_max_d  REAL CHECK (amt_landform_slope_max_d BETWEEN 0 AND 90),
+  val_landform_aspect_med_d REAL CHECK (val_landform_aspect_med_d BETWEEN 0 AND 359),
+  val_landform_aspect_min_d REAL CHECK (val_landform_aspect_min_d BETWEEN 0 AND 359),
+  val_landform_aspect_max_d REAL CHECK (val_landform_aspect_max_d BETWEEN 0 AND 359),
+  catu_landform_aspect_rec TEXT NOT NULL DEFAULT 'NR',
+  catu_landform_element TEXT,
+  catu_landform_element_vmod TEXT,
+  catu_landform_element_hmod TEXT,
+  /* extremely optional stuff: */
+  amt_slope_length_m REAL CHECK (amt_slope_length_m >= 0),
+  amt_mesoscale_topo_index REAL CHECK (amt_mesoscale_topo_index BETWEEN -90 AND 90),
+  amt_terrain_shape_index REAL CHECK (amt_terrain_shape_index BETWEEN -90 AND 90),
+  
+  PRIMARY KEY (id_site, id_landscape, id_landform),
+  FOREIGN KEY (id_site, id_landscape) REFERENCES dat_landscape(id_site, id_landscape)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_landform) REFERENCES cod_landform_types(catu_landform)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_land_cover) REFERENCES cod_land_cover_types(catu_land_cover)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_landform_aspect_rec) REFERENCES cod_measurement_types(catu_mtype)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_landform_element) REFERENCES cod_landform_elements(catu_landform_element)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_landform_element_vmod) REFERENCES cod_landform_element_vmods(catu_landform_element_vmod)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_landform_element_hmod) REFERENCES cod_landform_element_hmods(catu_landform_element_hmod)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) strict;
+
+```
+
+### Landform landuse
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_landuse_tertiary (
+  id_landuse_secondary INTEGER,
+  id_landuse_tertiary INTEGER,
+  catu_landuse_tertiary TEXT UNIQUE,
+  txt_landuse_tertiary_name TEXT,
+  
+  PRIMARY KEY (id_landuse_secondary, id_landuse_tertiary)
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Fig 8.1 - just including one of each tertiary code for demo */
+INSERT INTO cod_landuse_tertiary VALUES  
+  (1,  1,  '1.1.1', 'High degree of biodivserity protection'),
+  (2,  2,  '1.2.1', 'Indigenous cultural heritage'),
+  (3,  3,  '1.3.1', 'Surface water supply'),
+  (4,  4,  '1.4.1', 'Unused land'),
+  (5,  5,  '2.1.1', 'Exotic plantation forestry'),
+  (6,  6,  '2.2.1', 'Dairy'),
+  (7,  7,  '2.2.3', 'Extensive dry stock'),
+  (8,  8,  '2.3.1', 'Arable cropping'),
+  (9,  9,  '2.4.1', 'Tree crops'),
+  (10, 10, '2.5.1', 'Production nurseries'),
+  (11, 11, '2.6.1', 'Animal containment'),
+  (12, 12, '2.7.1', 'Stock water'),
+  (13, 13, '2.8.1', 'Unused degraded land'),
+  (14, 14, '3.1.1', 'High-density residential'),
+  (15, 15, '3.2.1', 'Outdoor recreation'),
+  (16, 16, '3.3.1', 'Retail'),
+  (17, 17, '3.4.1', 'General purpose factory'),
+  (18, 18, '3.5.1', 'Fuel powered electricity generation'),
+  (19, 19, '3.6.1', 'Airports/aerodromes'),
+  (20, 20, '3.7.1', 'Mines'),
+  (21, 21, '3.8.1', 'Landfills'),
+  (22, 22, '3.9.1', 'Vacant land');
+```
+
+```{sql}
+#| connection: con 
+/* Table 8.2 */
+CREATE TABLE IF NOT EXISTS cod_landuse_impacts (
+  id_landuse_impact INTEGER PRIMARY KEY,
+  catu_landuse_impact TEXT UNIQUE,
+  txt_landuse_impact_name TEXT,
+  txt_landuse_impact_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+INSERT INTO cod_landuse_impacts VALUES  
+  (1,  'N', 'None', 'The land use has not significantly impacted the soil profile'),
+  (2,  'M', 'Indirect', 'The land use has impacted flows of energy/matter into/out of the profile but not physically disturbed it (e.g. by fertiliser application or drainage alteration)'),
+  (3,  'E', 'Direct', 'The land use has caused physical disturbance to the soil profile (e.g. from tillage or excavation)');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_lform_landuse (
+  id_site TEXT,
+  id_landscape INTEGER,
+  id_landform INTEGER,
+  id_lform_landuse INTEGER,
+  catu_lform_landuse_primary TEXT,
+  catu_lform_landuse_secondary TEXT,
+  catu_lform_landuse_tertiary TEXT,
+  amt_landuse_area_p real CHECK (amt_landuse_area_p BETWEEN 0 AND 100),
+  catu_landuse_impact TEXT,
+  
+  PRIMARY KEY (id_site, id_landscape, id_landform, id_lform_landuse),
+  FOREIGN KEY (id_site, id_landscape, id_landform) 
+    REFERENCES dat_landform(id_site, id_landscape, id_landform)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_lform_landuse_primary) REFERENCES cod_landuse_primary(catu_landuse_primary)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_lform_landuse_secondary) REFERENCES cod_landuse_secondary(catu_landuse_secondary)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_lform_landuse_tertiary) REFERENCES cod_landuse_tertiary(catu_landuse_tertiary)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_landuse_impact) REFERENCES cod_landuse_impacts(catu_landuse_impact)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+## Surface
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_slope_methods (
+  id_slope_method INTEGER PRIMARY KEY,
+  catu_slope_method TEXT UNIQUE,
+  txt_slope_method_name TEXT,
+  txt_slope_method_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.1 */
+INSERT INTO cod_slope_methods VALUES  
+  (1, 'E', 'Estimate',   'Estimated by eye'),
+  (2, 'C', 'Clinometer', 'Handheld clinometer'),
+  (3, 'T', 'Tripod',     'Survey-grade equipment mounted on a tripod'),
+  (4, 'D', 'DEM',        'Calculated from a DEM with suitable resolution and vertical accuracy');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_aspect_methods (
+  id_aspect_method INTEGER PRIMARY KEY,
+  catu_aspect_method TEXT UNIQUE,
+  txt_aspect_method_name TEXT,
+  txt_aspect_method_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con  
+/* Table 11.2 */
+INSERT INTO cod_aspect_methods VALUES  
+  (1, 'E', 'Estimate', 'Estimated by eye'),
+  (2, 'C', 'Compass', 'Handheld magnestic compass'),
+  (3, 'D', 'DEM', 'Calculated from a DEM with suitable resolution and vertical accuracy');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_surface_water_types (
+  id_surface_water INTEGER PRIMARY KEY,
+  catu_surface_water TEXT UNIQUE,
+  txt_surface_water_name TEXT,
+  txt_surface_water_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.4 */
+INSERT INTO cod_surface_water_types VALUES  
+  (1, 'S', 'Seawater', 'Saline ocean or brackish tidal waters'),
+  (2, 'I', 'Surface water', 'Waters flowing over the surface from further inland'),
+  (3, 'G', 'Groundwater', 'Waters rising from adjacent springs or an elevated natural water table'),
+  (4, 'R', 'Rainfall', 'Rain falling on or near the site and perching on the surface'),
+  (5, 'A', 'Anthropic', 'Water from a manmade discharge location or backing up behind a dam');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_surface_water_persts (
+  id_surface_water_perst INTEGER PRIMARY KEY,
+  catu_surface_water_perst TEXT UNIQUE,
+  txt_surface_water_perst_name TEXT,
+  txt_surface_water_perst_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.5 */
+INSERT INTO cod_surface_water_persts VALUES  
+  (1, 'P', 'Permanent', 'Surface water persists year-round'),
+  (2, 'S', 'Seasonal', 'Surface water is present during wet seasons'),
+  (3, 'T', 'Temporary', 'Surface water is present due to a specific event');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_surface_crack_types (
+  id_surface_crack INTEGER PRIMARY KEY,
+  catu_surface_crack TEXT UNIQUE,
+  txt_surface_crack_name TEXT,
+  txt_surface_crack_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 11.6 */
+INSERT INTO cod_surface_crack_types VALUES  
+  (1, 'NO', 'None',         'No surface cracks'),
+  (2, 'RT', 'Reversible',   'Cracks that open and close with changing soil moisture'),
+  (3, 'IT', 'Irreversible', 'Cracks that persist year-round');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_surface_crack_shapes (
+  id_surface_crack_shp INTEGER PRIMARY KEY,
+  catu_surface_crack_shp TEXT UNIQUE,
+  txt_surface_crack_shp_name TEXT,
+  txt_surface_crack_shp_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 11.7 */
+INSERT INTO cod_surface_crack_shapes VALUES  
+  (1, 'P', 'Polygonal', 'Surface cracks forming closed shapes on the land surface'),
+  (2, 'L', 'Linear',    'Surface cracks running roughly parallel to each other'),
+  (3, 'I', 'Irregular', 'Surface cracks with no discernible pattern');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_site_microrelief_nat (
+  id_microrelief_nat INTEGER PRIMARY KEY,
+  catu_microrelief_nat TEXT UNIQUE,
+  txt_microrelief_nat_name TEXT,
+  txt_microrelief_nat_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 11.8 */
+INSERT INTO cod_site_microrelief_nat VALUES  
+  (1, 'N', 'None',   'Site surface is naturally smooth or level'),
+  (2, 'G', 'Gilgai', 'Induced by shrink-swell clay activity'),
+  (3, 'S', 'Swamp',  'Hummocky surfaces common in wetland areas, derived by biotic activity'),
+  (4, 'K', 'Karst',  'Induced by subsurface collapse in limestone-dominated landscapes'),
+  (5, 'A', 'Animal', 'Trampling or pugging induced by larger animals standing on low-slope ground (cows, pigs, ungulates)'),
+  (6, 'T', 'Terracettes', 'Small terraces on moderate to steep slopes, generally induced by larger animals navigating the terrain'),
+  (7, 'F', 'Frost', 'Induced by freeze-thaw activity');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_site_microrelief_ant (
+  id_microrelief_ant INTEGER PRIMARY KEY,
+  catu_microrelief_ant TEXT UNIQUE,
+  txt_microrelief_ant_name TEXT,
+  txt_microrelief_ant_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.9 */
+INSERT INTO cod_site_microrelief_ant VALUES  
+  (1, 'N', 'None',   'Site surface is not significantly altered by humans'),
+  (2, 'C', 'Smoothed', 'Site surface has been smoothed, contoured, rock-picked, infilled or levelled, beyond normal tillage effects'),
+  (3, 'B', 'Raised Beds',  'Elevated areas have been created and maintained for specific crops, e.g. raised rows or puke for kūmara'),
+  (4, 'R', 'Terraces and tracks',  'Hillsides have been cut/filled into terraces, or tracks cut in across the slope'),
+  (5, 'D', 'Drained', 'Open drainage ditches have been installed');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_water_depths (
+  id_depth_water INTEGER PRIMARY KEY,
+  catu_depth_water TEXT UNIQUE,
+  txt_depth_water_name TEXT,
+  txt_depth_water_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 12.4 */
+INSERT INTO cod_water_depths VALUES  
+  (1, 'NA', 'Not applicable',   'Water table not encountered'),
+  (2, 'B', 'Below', 'Water table observed at or below the soil surface'),
+  (3, 'A', 'Above',  'Water table observed above the soil surface');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_luc_vegetation_codes (
+  id_vegetation_luc INTEGER PRIMARY KEY,
+  catu_vegetation_luc TEXT UNIQUE,
+  txt_vegetation_luc_name TEXT,
+  txt_vegetation_luc_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Just grabbing a few from the full list for demo purposes */
+INSERT INTO cod_luc_vegetation_codes VALUES  
+  (1, 'gI', 'Improved pasture', 'Sown legume-based pastures maintaining high levels of pasture production'),
+  (2, 'cC', 'Cereal crops', 'Principally wheat, oats and barley, but also including ryecorn and millet'),
+  (3, 'sM', 'Mānuka, Kānuka', 'Scrub and shrubland dominated by manuka (Leptospermum scoparium) or kanuka (Kunzea ericoides)'),
+  (4, 'fC', 'Coastal forest',  'Forest confined to coastal habitats and characterised by broadleaved species'),
+  (5, 'fW', 'Lowland beech forest', 'Forest with a canopy dominated by beech (Nothofagus) species, principally black, hard or red beech, and occurring below approximately 1,050 m a.s.l. in the North Island'),
+  (6, 'hW', 'Wetland vegetation', 'Herbaceous vegetation occurring in non-saline wetland habitats (swamps and bogs) in which the water table is at or near the surface for most of the year');
+
+```
+ 
+:::
+ 
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_site_surface (
+  id_site TEXT,
+  amt_slope_d REAL CHECK (amt_slope_d BETWEEN 0 AND 90),
+  catu_slope_rec TEXT NOT NULL DEFAULT 'NR',
+  catu_slope_method TEXT,
+  amt_aspect_d REAL CHECK (amt_aspect_d BETWEEN 0 AND 359),
+  catu_aspect_rec TEXT NOT NULL DEFAULT 'NR',
+  catu_aspect_method TEXT,
+  catu_surface_water TEXT,
+  catu_surface_water_perst TEXT,
+  catu_surface_cracks TEXT,
+  catu_surface_crack_shp TEXT,
+  catu_microrelief_nat TEXT,
+  amt_microrelief_nat_width_cm REAL CHECK (amt_microrelief_nat_width_cm >= 0),
+  amt_microrelief_nat_height_cm REAL CHECK (amt_microrelief_nat_height_cm >= 0),
+  catu_microrelief_ant TEXT,
+  amt_microrelief_ant_width_cm REAL CHECK (amt_microrelief_ant_width_cm >= 0),
+  amt_microrelief_ant_height_cm REAL CHECK (amt_microrelief_ant_height_cm >= 0),
+  amt_depth_water_cm REAL CHECK (amt_depth_water_cm >= 0),
+  catu_depth_water TEXT,
+  catu_vegetation_luc TEXT,
+  
+  PRIMARY KEY (id_site),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site),
+  FOREIGN KEY (catu_slope_rec) REFERENCES cod_measurement_types(catu_mtype)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_slope_method) REFERENCES cod_slope_methods(catu_slope_method)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_aspect_rec) REFERENCES cod_measurement_types(catu_mtype)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_aspect_method) REFERENCES cod_aspect_methods(catu_aspect_method)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_surface_water) REFERENCES cod_surface_water_types(catu_surface_water)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_surface_water_perst) REFERENCES cod_surface_water_persts(catu_surface_water_perst)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_surface_cracks) REFERENCES cod_surface_crack_types(catu_surface_crack)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_surface_crack_shp) REFERENCES cod_surface_crack_shapes(catu_surface_crack_shp)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_microrelief_nat) REFERENCES cod_site_microrelief_nat(catu_microrelief_nat)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_microrelief_ant) REFERENCES cod_site_microrelief_ant(catu_microrelief_ant)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_depth_water) REFERENCES cod_water_depths(catu_depth_water)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_vegetation_luc) REFERENCES cod_luc_vegetation_codes(catu_vegetation_luc)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+``` 
+  
+### Surface cover
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_surface_cover_types (
+  id_surface_cover INTEGER PRIMARY KEY,
+  catu_surface_cover TEXT UNIQUE,
+  txt_surface_cover_name TEXT,
+  txt_surface_cover_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.3 */
+INSERT INTO cod_surface_cover_types VALUES  
+  (1, 'BE', 'Earth', 'Bare sediment or soil, < 2 mm'),
+  (2, 'BR', 'Fragments', 'Small rock fragments, shells, or bones, 2 - 60 mm'),
+  (3, 'BO', 'Rock', 'Bare rock outcrop or rock fragments > 60 mm'),
+  (4, 'WT', 'Water', 'Open water, ice or snow'),
+  (5, 'PT', 'Peat', 'Plant material decomposing under persistently saturated conditions'),
+  (6, 'LI', 'Litter', 'Plant material decomposing under intermittently wet to dry conditions'),
+  (7, 'GR', 'Small plants', 'Grasses, ferns, herbs, moss, sedges, annual crops'),
+  (8, 'TR', 'Large plants', 'Shrubs, trees and treeferns, (stems and roots), perennial crops'),
+  (9, 'SL', 'Sealed', 'Building, concrete, asphalt and similar');
+
+```
+ 
+::: 
+  
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_surface_cover (
+  id_site TEXT,
+  id_surface_cover INTEGER,
+  catu_surface_cover TEXT,
+  amt_surface_cover REAL CHECK (amt_surface_cover BETWEEN 0 AND 100),
+  
+  PRIMARY KEY (id_site, id_surface_cover),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_surface_cover) REFERENCES cod_surface_cover_types(catu_surface_cover)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Erosion
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_erosion_types (
+  id_erosion INTEGER PRIMARY KEY,
+  catu_erosion TEXT UNIQUE,
+  txt_erosion_name TEXT,
+  txt_erosion_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.10 */
+INSERT INTO cod_erosion_types VALUES  
+  (1, 'SH', 'Sheet', 'Thin layers of surface material are gradually removed more or less evenly from an extensive area of sloping land'),
+  (2, 'RI', 'Rill', 'Formation of predominantly steep-sided erosion channel(s) ≤0.5 m deep.'),
+  (3, 'GU', 'Gully', 'Formation of predominantly steep-sided erosion channel >0.5 m deep, not capable of being safely crossed by a wheeled tractor or obliterated by ploughing or deep cultivation'),
+  (4, 'TN', 'Tunnel', 'Erosion by percolating water in a layer of subsoil, resulting in caving and the formation of narrow tunnels through which soluble or spheroidal soil material is removed.'),
+  (5, 'CH', 'Channel', 'Erosion by water flowing in stream and river channels, including stream bank erosion'),
+  (6, 'FA', 'Fall', 'A very rapid downward movement of a mass of rock or earth that travels mostly through the air by free fall, leaping, bounding or rolling, with little or no interaction between one moving unit and another, e.g., rock-fall, debris fall.'),
+  (7, 'TO', 'Topple', 'Large blocks of earth material falling forward off very steep to precipitous slope'),
+  (8, 'SL', 'Slide', 'Lateral displacement of earth materials moving as a block along a deep-seated slip face'),
+  (9, 'SP', 'Spread', 'rapid displacement of wet, plastic materials that liquefy, often bringing along intact blocks or beds'),
+  (10, 'FW', 'Flow', 'slow to rapid movement of earth materials that behave as a viscous fluid'),
+  (11, 'WI', 'Wind', 'Detachment, transport, and deposition of loose materials by wind action, especially in dust storms and in arid or semi-arid regions or where a protective mat of vegetation has been removed. Erosion forms are characteristically ovate in plan, and concave in contour and profile.'),
+  (12, 'UK', 'Unknown', 'Mode of erosion cannot be clearly determined'),
+  (13, 'NR', 'Not recorded', 'Mode of erosion not recorded'),
+  (14, 'NO', 'No erosion', 'No evidence of erosion');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_erosion_severity (
+  id_erosion_severity INTEGER PRIMARY KEY,
+  catu_erosion_severity TEXT UNIQUE,
+  txt_erosion_severity_name TEXT,
+  txt_erosion_severity_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.11 */
+INSERT INTO cod_erosion_severity VALUES  
+  (1, 'S', 'Slight', 'Some evidence of damage to surface layers, original ecological functions largely intact'), 
+  (2, 'M', 'Moderate', 'Clear evidence of removal of surface layers, original ecological functions partly destroyed'),
+  (3, 'V', 'Severe', 'Surface layers completely removed and subsurface layers exposed, original ecological functions largely destroyed'),
+  (4, 'E', 'Extreme', 'Substantial removal of deeper subsurface layers, original ecological functions fully destroyed');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_erosion_activity (
+  id_erosion_activity INTEGER PRIMARY KEY,
+  catu_erosion_activity TEXT UNIQUE,
+  txt_erosion_activity_name TEXT,
+  txt_erosion_activity_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.12 */
+INSERT INTO cod_erosion_activity VALUES  
+  (1, 'PR', 'Active', 'Active at present'),
+  (2, 'RE', 'Recent', 'Active within the past 100 years'),
+  (3, 'HI', 'Historical', 'Active in historical times (>100 years ago)'),
+  (4, 'UK', 'Unknown', 'Activity history cannot be reliably determined');
+  
+```
+  
+:::   
+  
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_site_erosion (
+  id_site TEXT,
+  id_erosion INTEGER,
+  catu_erosion TEXT,
+  cato_erosion_severity TEXT,
+  cato_erosion_activity TEXT,
+  
+  PRIMARY KEY (id_site, id_erosion),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_erosion) REFERENCES cod_erosion_types(catu_erosion)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_erosion_severity) REFERENCES cod_erosion_severity(catu_erosion_severity)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_erosion_activity) REFERENCES cod_erosion_activity(catu_erosion_activity)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Deposition
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_deposition_types (
+  id_deposition INTEGER PRIMARY KEY,
+  catu_deposition TEXT UNIQUE,
+  txt_deposition_name TEXT,
+  txt_deposition_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.13 */
+INSERT INTO cod_deposition_types VALUES  
+  (1,  'FL', 'Flood', 'Deposition driven by inundation events along streams'),
+  (2,  'SS', 'Surge', 'Deposition driven by storm surge'),
+  (3,  'TI', 'Till',  'Glacial deposition'),
+  (4,  'FA', 'Fall', 'Rapid, freefall collapse of earth material on precipitous slopes'),
+  (5,  'TO', 'Topple', 'Large blocks of earth material falling forward off very steep to precipitous slope'),
+  (6,  'SL', 'Slide', 'Lateral displacement of earth materials moving as a block along a deep-seated slip face'),
+  (7,  'SP', 'Spread', 'rapid displacement of wet, plastic materials that liquefy, often bringing along intact blocks or beds'),
+  (8,  'FW', 'Flow', 'slow to rapid movement of earth materials that behave as a viscous fluid'),
+  (9,  'VR', 'Volcanic eruption', 'Airfall deposition from pyroclastic eruptions'),
+  (10, 'SA', 'Sand movement', 'Wind-driven deposition of sand from beaches, banks, or remobilised dunes'),
+  (11, 'SI', 'Silt movement', 'Wind-driven deposition of silt and finer material from banks or bare earth'),
+  (12, 'UK', 'Unknown', 'Mode of deposition cannot be clearly determined'),
+  (13, 'NR', 'Not recorded', 'Mode of deposition not recorded'),
+  (14, 'NO', 'No deposition', 'No evidence of deposition');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_deposition_severity (
+  id_deposition_severity INTEGER PRIMARY KEY,
+  catu_deposition_severity TEXT UNIQUE,
+  txt_deposition_severity_name TEXT,
+  txt_deposition_severity_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.14 */
+INSERT INTO cod_deposition_severity VALUES  
+  (1, 'S', 'Slight', 'Patchy or thin cover over previous surface layers, original ecological functions largely intact'),
+  (2, 'M', 'Moderate', 'Cover mostly complete but < 10cm thick, original ecological functions partly destroyed'),
+  (3, 'V', 'Severe', 'Cover complete and > 10cm thick, original ecological functions largely destroyed'),
+  (4, 'E', 'Extreme', 'Cover complete and permanent, original ecological functions fully destroyed');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_deposition_activity (
+  id_deposition_activity INTEGER PRIMARY KEY,
+  catu_deposition_activity TEXT UNIQUE,
+  txt_deposition_activity_name TEXT,
+  txt_deposition_activity_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 11.15 */
+INSERT INTO cod_deposition_activity VALUES  
+  (1, 'FR', 'Fresh', 'Active within the past year'),
+  (2, 'RE', 'Recent', 'Active within the past 10 years'),
+  (3, 'HI', 'Historical', 'Active within the past 100 years'),
+  (4, 'UK', 'Unknown', 'Activity history cannot be reliably determined');
+  
+```
+  
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_site_deposition (
+  id_site TEXT,
+  id_deposition INTEGER,
+  catu_deposition TEXT,
+  cato_deposition_severity TEXT,
+  cato_deposition_activity TEXT,
+  
+  PRIMARY KEY (id_site, id_deposition),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_deposition) REFERENCES cod_deposition_types(catu_deposition)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_deposition_severity) REFERENCES cod_deposition_severity(catu_deposition_severity)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_deposition_activity) REFERENCES cod_deposition_activity(catu_deposition_activity)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+## Horizon overview
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_boundary_shapes (
+  id_boundary_shape INTEGER PRIMARY KEY,
+  catu_boundary_shape TEXT UNIQUE,
+  txt_boundary_shape_name TEXT,
+  txt_boundary_shape_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 12.1 */
+INSERT INTO cod_boundary_shapes VALUES  
+  (1, 'S', 'Smooth', 'the boundary surface is a plane with few or no irregularities and usually occurs at the same depth across the profile face'), 
+  (2, 'W', 'Wavy', 'the boundary surface has broad, shallow, relatively regular pockets and none deeper than they are wide'),
+  (3, 'I', 'Irregular', 'the boundary surface has pockets which are deeper than they are wide but not recurved'),
+  (4, 'C', 'Convolute', 'the boundary surface has pockets which are deeper than they are wide and, in parts, recurved'),
+  (5, 'D', 'Discontinuous', 'the boundary is discontinuous, usually due to external disturbance');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_boundary_widths (
+  id_boundary_width INTEGER PRIMARY KEY,
+  cato_boundary_width TEXT UNIQUE,
+  txt_boundary_width_name TEXT,
+  txt_boundary_width_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 12.2 */
+INSERT INTO cod_boundary_widths VALUES
+  (1, 'S', 'Sharp', '< 0.5 cm'),
+  (2, 'A', 'Abrupt', '0.5 - 2.0 cm'),
+  (3, 'C', 'Clear', '2.0 - 5.0 cm'),
+  (4, 'G', 'Gradual', '5.0 - 10.0 cm'),
+  (5, 'D', 'Diffuse', '10 - 30.0 cm'); 
+```
+
+```{sql}
+#| connection: con  
+CREATE TABLE IF NOT EXISTS cod_soil_moistures (
+  id_soil_moisture INTEGER PRIMARY KEY,
+  cato_soil_moisture TEXT UNIQUE,
+  txt_soil_moisture_name TEXT
+  ) STRICT;  
+```
+
+```{sql}
+#| connection: con   
+/* Table 12.3 */
+INSERT INTO cod_soil_moistures VALUES  
+  (1, 'D', 'Dry'),
+  (2, 'T', 'Moderately moist'),
+  (3, 'M', 'Moist'),
+  (4, 'W', 'Wet'),
+  (5, 'S', 'Saturated');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_nzsc_pmo (
+  id_pmo INTEGER PRIMARY KEY,
+  catu_pmo TEXT UNIQUE,
+  txt_pmo_name TEXT,
+  txt_pmo_desc TEXT
+  ) STRICT; 
+```
+
+```{sql}
+#| connection: con 
+/* Table 24.5 */
+INSERT INTO cod_nzsc_pmo VALUES 
+  (1, 'An', 'Anthropic', 'Deposits made by the direct actions of humans, including truncation, mixing, or deposition.'),
+  (2, 'Cl', 'Colluvium', 'Weathered soil and rock material mantling slopes that has been transported primarily by gravity and sheet wash.'),
+  (3, 'Fl', 'Alluvium', 'Sediments that have been deposited by streams, rivers and other running water.'),
+  (4, 'Gl', 'Glacial till', 'Poorly stratified, poorly sorted rock fragments, sand and mud, surface or near-surface deposits resulting from the transportation by and deposition from ice or meltwater from beneath or in close proximity to glacial ice.'),
+  (5, 'Lc', 'Lacustrine', 'Formed in and around lake beds; comprising extremely fine sediment deposited under very low-flow freshwater conditions.'),
+  (6, 'Mr', 'Marine' , 'Unconsolidated sediments saturated by brackish or saline water.'),
+  (7, 'Lh', 'Lahar', 'A flow of volcanic material, both ash and coarser products, mixed with water; often caused by the spilling over of a crater lake. Also used to describe the mounds formed on volcanic ring-plains where lahars stop.'),
+  (8, 'Tp', 'Tephra', 'A general term for all solid (rather than molten) materials ejected from a volcano during an eruption: includes boulders, lapilli and ash.'),
+  (9, 'Li', 'Litter', 'Partly or fully decomposed forest litter, equal to or greater than 30 cm depth that is **not** almost continually saturated in the natural state (**F** and **H** horizons).'),
+  (10, 'Pt', 'Peat', 'Partly decomposed plant remains in a water-saturated environment, such as a bog'),
+  (11, 'Lo', 'Loess', 'A blanket deposit of silt-sized particles (0.002--0.06 mm diameter); usually carried by wind from dry riverbeds or outwash plains during glacial and post-glacial periods.'),
+  (12, 'Sa', 'Aeolian sand', 'Wind-deposited sand-sized particles (0.05--2.0 mm diameter), i.e. dune sand.'),
+  (13, 'Rw', 'Highly Weathered Rock', 'Highly to completely weathered rock, formed in place by chemical weathering.'),
+  (14, 'Rx', 'Rock', '*In situ* unweathered to moderately weathered lithified geologic material comprising one or more minerals showing rock structure.'),
+  (15, 'Uk', 'Unknown', 'Origin cannot be determined with certainty.');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_nzsc_pmo_mod (
+  id_pmo_mod INTEGER PRIMARY KEY,
+  catu_pmo_mod TEXT UNIQUE,
+  txt_pmo_mod_name TEXT,
+  txt_pmo_mod_desc TEXT
+  ) STRICT; 
+```
+
+```{sql}
+#| connection: con   
+/* Table 12.5 */
+INSERT INTO cod_nzsc_pmo_mod VALUES 
+  (1, 'm', 'Māori', 'Soil modifications dating from Māori arrival in New Zealand, particularly pre-modern soil management practices'),
+  (2, 'p', 'Pakeha', 'Soil modifications dating from Pakeha (non-Māori) arrival in New Zealand up to modern times (e.g. European agricultural practices)'),
+  (3, 'n', 'Modern', 'Anthropic modifications resulting from modern techniques or addition of modern materials to the soil (e.g. plastics)');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_weathering (
+  id_weathering INTEGER PRIMARY KEY,
+  cato_weathering TEXT UNIQUE,
+  txt_weathering_name TEXT,
+  txt_weathering_desc_rock TEXT,
+  txt_weathering_desc_seds TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 12.6 */
+INSERT INTO cod_weathering VALUES 
+  (1, '1', 'Unweathered', 'Material shows no discolouration, loss of strength, or any other effects due to weathering', 'Particles are uncoated and their physical arrangement has not been disturbed (e.g. visible cross-bedding, absence of burrows). Secondary minerals and precipitates are absent'),
+  (2, '2', 'Slightly weathered', 'Material may be slightly discoloured. Discontinuities have discoloured surfaces. The rock material is not significantly weaker than fresh rock material', 'Particle physical arrangement is undisturbed, but some evidence of secondary mineral formation may be evident (e.g. pyrite formation in anoxic marine sediments)'),
+  (3, '3', 'Moderately weathered', 'Rock material is discoloured and discontinuity surfaces will have a greater discolouration which also penetrates slightly into the rock material. The rock material is significantly weaker than the fresh rock and part of the rock mass may have been changed to soil material.', 'Sediments may be largely discoloured by secondary mineral precipitation or illuviation; some clay minerals may have weathered from the material, some physical disturbance by meso- or macrofauna may be apparent'),
+  (4, '4', 'Highly weathered', 'Rock material is discoloured and more than half the rock mass is changed to soil material. Weathering adjacent to discontinuities penetrates deeply into the rock material but lithorelicts or core stones of fresh or slightly weathered rock may still be present.', 'Sediments show substantial alteration by weathering processes as evidenced by e.g. clay mineral production, presence of secondary materials and perhaps some structural development. Evidence of bedding may be absent or difficult to identify'),
+  (5, '5', 'Very highly weathered', 'All the rock mass is decomposed and externally changed to soil material, but the original rock fabric is mainly preserved.', 'Sediments have largely changed to soil material, but the expression of features like structure may be weak relative to adjacent layers'),
+  (6, '6', 'Completely weathered',  'Rock is completely changed to soil material with the original fabric completely destroyed but the resulting soil is not significantly transported.', 'Sediments have completely changed to soil material');
+
+```
+ 
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon (
+  id_site TEXT,
+  id_horizon INTEGER,
+  /* redundant to record upper depths - first record starts at 0, the rest 
+     can be fetched with a lag function */
+  amt_lower_depth_cm REAL CHECK (amt_lower_depth_cm > 0),
+  amt_lower_depth_med_cm REAL CHECK (amt_lower_depth_med_cm > 0),
+  amt_lower_depth_min_cm REAL CHECK (amt_lower_depth_min_cm > 0),
+  amt_lower_depth_max_cm REAL CHECK (amt_lower_depth_max_cm > 0),
+  catu_boundary_shape TEXT,
+  amt_boundary_width_cm REAL CHECK (amt_boundary_width_cm >= 0),
+  cato_boundary_width TEXT ,
+  cato_soil_moisture TEXT,
+  catu_parent_material_origin TEXT,
+  catu_anthropic_origin_modifier TEXT,
+  cato_horizon_weathering TEXT,
+  
+  PRIMARY KEY (id_site, id_horizon),
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_boundary_shape) REFERENCES cod_boundary_shapes(catu_boundary_shape)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_boundary_width) REFERENCES cod_boundary_widths(cato_boundary_width)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_soil_moisture) REFERENCES cod_soil_moistures(cato_soil_moisture)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_parent_material_origin) REFERENCES cod_nzsc_pmo(catu_pmo)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_anthropic_origin_modifier) REFERENCES cod_nzsc_pmo_mod(catu_pmo_mod)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_horizon_weathering) REFERENCES cod_weathering(cato_weathering)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+## Horizon architecture
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_structure_types (
+  id_structure INTEGER PRIMARY KEY,
+  catu_structure TEXT UNIQUE,
+  txt_structure_name TEXT,
+  txt_structure_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 13.1 */
+INSERT INTO cod_structure_types VALUES
+  (1, 'P', 'Pedogenic', 'Structural units meet the definition of natural soil peds and occur largely within the solum'),
+  (2, 'G', 'Geogenic', 'Structural units are inherited from parent materials that have undergone limited weathering e.g. bedding planes, and occur largely below the solum'),
+  (3, 'A', 'Anthrogenic', 'Structural units have been induced by human activity, usually within the solum and most commonly in surface horizons'),
+  (4, 'U', 'Unknown', 'Type of structural development could not be determined with confidence');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_structure_grades (
+  id_structure_grade INTEGER PRIMARY KEY,
+  cato_structure_grade TEXT UNIQUE,
+  txt_structure_grade_name TEXT,
+  txt_structure_grade_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 13.2 */
+INSERT INTO cod_structure_grades VALUES
+  (1, 'G', 'Single grain', 'Material is structureless and incoherent, with more than 85% by weight of discrete primary particles ranging in size from sand to very coarse gravel.'),
+  (2, 'V', 'Massive', 'Material is structureless but coherent, with no fissures at spacings of less than 200 mm'),
+  (3, 'W', 'Weak', 'Material where 15-25% of the material comprises coherent structural units'),
+  (4, 'M', 'Moderate', 'Material where 25-75% of the material comprises coherent structural units'),
+  (5, 'S', 'Strong', 'Material where >75% of the material comprises coherent structural units');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_structure_sizes_rapid (
+  id_structure_size_rapid INTEGER PRIMARY KEY,
+  cato_structure_size_rapid TEXT UNIQUE,
+  txt_structure_size_rapid_name TEXT,
+  txt_structure_size_rapid_desc TEXT
+  ) STRICT;  
+```
+
+```{sql}
+#| connection: con 
+/* Section 13.1.4 and part Table 20.15 */
+INSERT INTO cod_structure_sizes_rapid VALUES
+  (1, 'C', 'Coarse', 'At least 50% peds of size > 20 mm (‘coarse’), or apedal massive structure'),
+  (2, 'F', 'Fine', 'At least 50% peds of size < 20 mm (‘coarse’), including horizons where coarse structure breaks to finer nested peds');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_structure_shapes (
+  id_structure_shape INTEGER PRIMARY KEY,
+  catu_structure_shape TEXT UNIQUE,
+  txt_structure_shape_name TEXT
+  ) STRICT; 
+```
+
+```{sql}
+#| connection: con 
+/* Table 13.3 */
+INSERT INTO cod_structure_shapes VALUES
+(1, 'AB', 'Angular blocky'),
+(2, 'BL', 'Blocky'),
+(3, 'PH', 'Polyhedral'),
+(4, 'SR', 'Spheroidal'),
+(5, 'LT', 'Lenticular'),
+(6, 'PM', 'Prismatic'),
+(7, 'CO', 'Columnar'),
+(8, 'PL', 'Platy'),
+(9, 'LF', 'Lentiform'),
+(10, 'WL', 'Wedge-like');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_root_positions (
+  id_root_pos INTEGER PRIMARY KEY,
+  catu_root_pos TEXT UNIQUE,
+  txt_root_pos_name TEXT,
+  txt_root_pos_desc TEXT
+  ) STRICT; 
+```
+
+```{sql}
+#| connection: con 
+/* Table 13.13 */
+INSERT INTO cod_root_positions VALUES
+   (1, 'W',     'Within', 'Roots are primarily located within peds.'),
+   (2, 'B',    'Between', 'Roots are primarily located between peds, within fissures or along bedding planes'),
+   (3, 'T', 'Throughout', 'Roots are spread throughout the soil mass.'),
+   (4, 'U',    'Unknown', 'Sampling method did not allow reliable observation.');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_arch (
+  id_site TEXT,
+  id_horizon INTEGER,
+  catu_structure_type TEXT,
+  cato_structure_grade TEXT,
+  catu_structure_shape TEXT,
+  cato_structure_size TEXT,
+  amt_total_frags_p REAL CHECK (amt_total_frags_p BETWEEN 0 and 100),
+  amt_otherfrags_p REAL CHECK (amt_otherfrags_p BETWEEN 0 and 100),
+  amt_artefacts_p REAL CHECK (amt_artefacts_p BETWEEN 0 and 100),
+  amt_total_roots_p REAL CHECK (amt_total_roots_p BETWEEN 0 and 100),
+  catu_total_roots_pos TEXT,
+  amt_total_voids_p REAL CHECK (amt_total_voids_p BETWEEN 0 and 100),
+  amt_total_pores_p REAL CHECK (amt_total_pores_p BETWEEN 0 and 100),
+  amt_macropores_p REAL CHECK (amt_macropores_p BETWEEN 0 and 100),
+  amt_micropores_p REAL CHECK (amt_micropores_p BETWEEN 0 and 100),
+  
+  PRIMARY KEY (id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_structure_type) REFERENCES cod_structure_types(catu_structure)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_structure_grade) REFERENCES cod_structure_grades(cato_structure_grade)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_structure_shape) REFERENCES cod_structure_shapes(catu_structure_shape)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_structure_size) REFERENCES cod_structure_sizes_rapid(cato_structure_size_rapid)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_total_roots_pos) REFERENCES cod_root_positions(catu_root_pos)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Structure
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_structures (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_structure INTEGER,
+  catu_structure_type TEXT ,
+  cato_structure_grade TEXT,
+  catu_structure_shape TEXT,
+  amt_structure_size_med_mm REAL CHECK (amt_structure_size_med_mm > 0),
+  amt_structure_size_min_mm REAL CHECK (amt_structure_size_min_mm > 0),
+  amt_structure_size_max_mm REAL CHECK (amt_structure_size_max_mm > 0),
+  
+  PRIMARY KEY (id_site, id_horizon, id_structure),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_structure_type) REFERENCES cod_structure_types(catu_structure)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_structure_grade) REFERENCES cod_structure_grades(cato_structure_grade)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_structure_shape) REFERENCES cod_structure_shapes(catu_structure_shape)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Rock fragments
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_fragment_sizes_simple (
+  id_fragment_size INTEGER PRIMARY KEY,
+  cato_fragment_size TEXT UNIQUE,
+  txt_fragment_size_name TEXT,
+  txt_fragment_size_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 13.4 */
+INSERT INTO cod_fragment_sizes_simple VALUES
+  (1, 'S', 'Small',   '2 - 60 mm'),
+  (2, 'M', 'Medium', '60 - 200 mm'),
+  (3, 'L', 'Large', '> 200 mm');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_rock_fragment_shapes (
+  id_rockfrag_shape INTEGER PRIMARY KEY,
+  catu_rockfrag_shape TEXT UNIQUE,
+  txt_rockfrag_shape_name TEXT,
+  txt_rockfrag_shape_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 13.5 */
+INSERT INTO cod_rock_fragment_shapes VALUES
+  (1, 'R', 'Rounded',   'Rock fragments considerably smoothed by transport processes'),
+  (2, 'A', 'Angular', 'Rock fragments with little smoothing by transport processes'),
+  (3, 'M', 'Mixed', 'Both rounded and angular fragments mixed together');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_nzsc_lithologies (
+  id_nzsc_lithology INTEGER PRIMARY KEY,
+  catu_nzsc_lithology TEXT UNIQUE,
+  txt_nzsc_lithology_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 24.2 */
+INSERT INTO cod_nzsc_lithologies VALUES
+    (1, 'Cb', 'Carbonaceous Rock (Coal)'),
+    (2, 'Sq', 'Soft Quartzitic Sediments'),
+    (3, 'Hq', 'Hard Quartzitic Sediments'),
+    (4, 'Sm', 'Soft mudstone'),
+    (5, 'Ss', 'Soft sandstone'),
+    (6, 'Hm', 'Hard mudstone'),
+    (7, 'Hs', 'Hard sandstone'),
+    (8, 'Tm', 'Tuffaceous mudstone'),
+    (9, 'Ts', 'Tuffaceous sandstone'),
+    (10, 'Sc', 'Schist'),
+    (11, 'Ls', 'Soft calcareous'),
+    (12, 'Li', 'Hard calcareous'),
+    (13, 'Ma', 'Marble'),
+    (14, 'Rh', 'Rhyolite'),
+    (15, 'Ig', 'Ignimbrite'),
+    (16, 'An', 'Andesite'),
+    (17, 'Ba', 'Basalt'),
+    (18, 'Gr', 'Granite and Gneiss'),
+    (19, 'Di', 'Diorite'),
+    (20, 'Ga', 'Gabbro'),
+    (21, 'Fe', 'Iron Sands');
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_rock_fragments (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_rock_fragment INTEGER,
+  cato_rock_fragment_size TEXT,
+  catu_rock_fragment_shape TEXT,
+  amt_rock_fragment_p REAL CHECK (amt_rock_fragment_p BETWEEN 0 and 100),
+  catu_rock_fragment_lithology TEXT,
+  
+  PRIMARY KEY (id_site, id_horizon, id_rock_fragment),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_rock_fragment_size) REFERENCES cod_fragment_sizes_simple(cato_fragment_size)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_rock_fragment_shape) REFERENCES cod_rock_fragment_shapes(catu_rockfrag_shape)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_rock_fragment_lithology) REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Other fragments
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_other_fragment_types (
+  id_other_fragment INTEGER PRIMARY KEY,
+  catu_other_fragment TEXT UNIQUE,
+  txt_other_fragment_name TEXT,
+  txt_other_fragment_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 13.6 */
+INSERT INTO cod_other_fragment_types VALUES
+   (1, 'S', 'Shell',    'Seashells or chitinous material'),
+   (2, 'B', 'Bone',     'Skeletal fragments'),
+   (3, 'T', 'Timber',   'Dead wood from trees and shrubs, coarse roots'),
+   (4, 'C', 'Charcoal', 'Burnt organic materials'),
+   (5, 'G', 'Gum',      'Kauri gum');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_other_fragments (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_other_fragment INTEGER,
+  cato_other_fragment_size TEXT,
+  catu_other_fragment TEXT,
+  amt_other_fragment_p REAL CHECK (amt_other_fragment_p BETWEEN 0 and 100),
+  
+  PRIMARY KEY (id_site, id_horizon, id_other_fragment),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_other_fragment_size) REFERENCES cod_fragment_sizes_simple(cato_fragment_size)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_other_fragment) REFERENCES cod_other_fragment_types(catu_other_fragment)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Artefacts
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_artefact_types (
+  id_artefact INTEGER PRIMARY KEY,
+  catu_artefact TEXT UNIQUE,
+  txt_artefact_name TEXT,
+  txt_artefact_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 13.7 */
+INSERT INTO cod_artefact_types VALUES
+  (1,  'As', 'Asphalt',  'Asphalt and other bitumen-containing materials'),
+  (2,  'Br', 'Brick',    'Fired clay building materials, usually unglazed'),
+  (3,  'Cr', 'Ceramic',  'Fired clay objects, usually glazed'),
+  (4,  'Ce', 'Concrete', 'Concrete materials, cements'),
+  (5,  'Gl', 'Glass',    'Fragments from windows, containers, etc'),
+  (6,  'Pl', 'Plastics', 'Artificial polymers (non-textile)'),
+  (7,  'Tn', 'Textiles - natural', 'Fabrics and carpets made from e.g. wool'),
+  (8,  'Tx', 'Textiles - artificial', 'Fabrics derived from or dominated by plastics'),
+  (9,  'Mt', 'Metals', 'Refined ore products'),
+  (10, 'Ms', 'Mine Spoil', 'Materials leftover from ore processing activities'),
+  (11, 'Ws', 'Wastes', 'Other domestic or commercial rubbish');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_artefacts (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_artefact INTEGER,
+  cato_artefact_size TEXT,
+  catu_artefact TEXT,
+  amt_artefact_p REAL CHECK (amt_artefact_p BETWEEN 0 and 100),
+  
+  PRIMARY KEY (id_site, id_horizon, id_artefact),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_artefact_size) REFERENCES cod_fragment_sizes_simple(cato_fragment_size)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_artefact) REFERENCES cod_artefact_types(catu_artefact)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Plastics
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_plastic_types (
+  id_plastic INTEGER PRIMARY KEY,
+  catu_plastic TEXT UNIQUE,
+  txt_plastic_name TEXT,
+  txt_plastic_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 13.8 */
+INSERT INTO cod_plastic_types VALUES
+  (1, 'N', 'Not verifiable', 'Designation not possible / uncertain'),
+  (2, 'C', 'Consumer', 'Consumer-products (everyday-products) like PET-bottles, SUP bags, packages, signs etc.'),  
+  (3, 'A', 'Agricultural', 'Agricultural products like mulch film, silage film, straw bale nets, tire wear etc.'),
+  (4, 'I', 'Industrial', 'Industrial products like broken pieces of industrial equipment, industrial waste'),
+  (5, 'B', 'Construction', 'All plastic materials which were placed in soil for construction and supply purposes (e.g., power cables, geomembranes)');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_plastic_fixations (
+  id_plastic_fixation INTEGER PRIMARY KEY,
+  cato_plastic_fixation TEXT UNIQUE,
+  txt_plastic_fixation_name TEXT,
+  txt_plastic_fixation_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 13.9 */
+INSERT INTO cod_plastic_fixations VALUES
+  (1, 'NF', 'None',    'Plastic pieces are not included in soil aggregates (no soil aggregates or loose plastic)'),
+  (2, 'SF', 'Solely',   'Single plastic pieces are in cooperated into soil aggregates, but others are loose'),
+  (3, 'MF', 'Moderate', 'The majority of plastic pieces is in cooperated into soil aggregates, but single are loose'),
+  (4, 'CF', 'Complete', 'All plastic pieces are in cooperated into soil aggregates');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_plastic_shapes (
+  id_plastic_shape INTEGER PRIMARY KEY,
+  catu_plastic_shape TEXT UNIQUE,
+  txt_plastic_shape_name TEXT,
+  txt_plastic_shape_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 13.10 */
+INSERT INTO cod_plastic_shapes VALUES
+ (1, 'P', 'Preserved', 'The original manufactured shape of the object is recognisable'),
+ (2, 'B', 'Broken',  'The fragment is recognisable as having been part of a larger object'),
+ (3, 'F', 'Flat', 'Tabular or sheet-like'),
+ (4, 'A', 'Angular', 'Sharp-edged'),
+ (5, 'R', 'Rounded', 'Has edges that are not sharp'),
+ (6, 'S', 'Spherical', 'Ball shaped or ovoid');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_plastic_degradations (
+  id_plastic_degradation INTEGER PRIMARY KEY,
+  catu_plastic_degradation TEXT UNIQUE,
+  txt_plastic_degradation_name TEXT,
+  txt_plastic_degradation_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 13.11 */
+INSERT INTO cod_plastic_degradations VALUES
+  (1, 'N', 'Not verifiable', 'Designation not possible / uncertain'),
+  (2, 'F', 'Fresh', 'Fresh plastic pieces with bright colours, unaffected shape, without signs of deterioration (cracks, broken edges, rough surfaces)'), 
+  (3, 'I', 'Incipient alteration', 'Plastic pieces with incipient deterioration surface such as first cracks, broken edges or roughened/grooved surfaces'),
+  (4, 'D', 'Degraded', 'Plastic pieces with clear indications of ageing such as pale colours or yellowing (UV light), strong fragmentation, frayed edges'),
+  (5, 'S', 'Strongly degraded', 'Plastic pieces with strong degraded surfaces, faded colours, soft surface, frayed areas or edges');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_plastics (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_plastic INTEGER,
+  catu_plastic TEXT,
+  cato_plastic_fixation TEXT,
+  catu_plastic_shape TEXT,
+  catu_plastic_degradation TEXT,
+  amt_plastic_p REAL CHECK (amt_plastic_p BETWEEN 0 and 100),
+  
+  PRIMARY KEY (id_site, id_horizon, id_plastic),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_plastic) REFERENCES cod_plastic_types(catu_plastic)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_plastic_fixation) REFERENCES cod_plastic_fixations(cato_plastic_fixation)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_plastic_shape) REFERENCES cod_plastic_shapes(catu_plastic_shape)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_plastic_degradation) REFERENCES cod_plastic_degradations(catu_plastic_degradation)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Roots
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_root_sizes_simple (
+  id_root_size INTEGER PRIMARY KEY,
+  cato_root_size TEXT UNIQUE,
+  txt_root_size_name TEXT,
+  txt_root_size_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 13.12 */
+INSERT INTO cod_root_sizes_simple VALUES
+  (1, 'F',   'Fine',         '< 2 mm'),
+  (2, 'M', 'Medium',      '2 - 10 mm'),
+  (3, 'C', 'Coarse',        '> 10 mm');
+  
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_roots (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_root INTEGER,
+  cato_root_size TEXT,
+  cato_root_pos TEXT,
+  amt_root_p REAL CHECK (amt_root_p BETWEEN 0 and 100),
+  
+  PRIMARY KEY (id_site, id_horizon, id_root),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_root_size) REFERENCES cod_root_sizes_simple(cato_root_size)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_root_pos) REFERENCES cod_root_positions(catu_root_pos)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Voids
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_void_types (
+  id_void INTEGER PRIMARY KEY,
+  catu_void TEXT UNIQUE,
+  txt_void_name TEXT,
+  txt_void_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 13.14 */
+INSERT INTO cod_void_types VALUES
+  (1, 'BP', 'Bedding plane', 'A parting or discontinuity due to stratification during deposition of sedimentary particles.'), 
+  (2, 'CH', 'Channel', 'Tubular void of biological origin that is less than 20 mm in diameter (e.g. insect burrow)'),
+  (3, 'TU', 'Tunnel',  'Tubular void of biological origin that is 20 mm or more in diameter (e.g. rabbit burrow) '),
+  (4, 'FS', 'Fissure', 'Planar void with a width much smaller than length and depth. Fissures represent the release of strain caused by drying and usually bound individual structural units and form repetitively.'),
+  (5, 'IT', 'Interstitial', 'Irregular voids occupying space between aggregates that do not fit together');
+```
+
+```{sql}
+#| connection: con 
+
+CREATE TABLE IF NOT EXISTS cod_void_conns (
+  id_void_conn INTEGER PRIMARY KEY,
+  cato_void_conn TEXT UNIQUE,
+  txt_void_conn_name TEXT,
+  txt_void_conn_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 13.15 */
+INSERT INTO cod_void_conns VALUES
+  (1, 'I', 'Isolated', 'Voids are not connected to each other, and may only reach up to the soil surface'),
+  (2, 'P', 'Partly connected', 'Voids are sometimes connected to each other within the horizon, or continue into neighbouring horizons'),
+  (3, 'C', 'Continuous',  'Void spaces are well connected and form a continuous network');
+  
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_voids (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_void INTEGER,
+  catu_void TEXT,
+  cato_void_conn TEXT,
+  amt_void_p REAL CHECK (amt_void_p BETWEEN 0 and 100),
+  
+  PRIMARY KEY (id_site, id_horizon, id_void),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_void) REFERENCES cod_void_types(catu_void)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_void_conn) REFERENCES cod_void_conns(cato_void_conn)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+## Horizon colour
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_munsell_colours (
+  id_munsell INTEGER PRIMARY KEY,
+  cato_munsell TEXT UNIQUE,
+  txt_colour_hex TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Per charts - just a few for demo */
+/* using e.g.
+     x <- munsellinterpol::MunsellTosRGB('10YR 2/1')  
+     grDevices::rgb(x$RGB[1], x$RGB[2], x$RGB[3], maxColorValue = 255) 
+   to get the hex values
+   can check with colorspace::swatchplot('#111111') 
+*/
+INSERT INTO cod_munsell_colours VALUES
+  (1, '10YR 2/1',    '#372F29'),
+  (2, '10YR 3/3',    '#58432B'),
+  (3, '10YR 5/4',    '#947650'),
+  (4, '10YR 5/6',    '#947136'),
+  (5, '10YR 6/2',    '#A1907C'),
+  (6, '2.5Y 5/4',    '#8D764A'),
+  (7, '2.5Y 7/4',    '#C2AA7B'),
+  (8, '2.5YR 2.5/2', '#4C3630'),
+  (9, '5R 3/8',      '#80282F'),
+  (10, '5YR 2.5/2',  '#4B372E'),
+  (11, '7.5YR 3/2',  '#564336'),
+  (12, '7.5YR 3/4',  '#604025'),
+  (13, '7.5YR 4/2',  '#705C4D'),
+  (14, '7.5YR 4/4',  '#7C583A'),
+  (15, '7.5YR 5/4',  '#957253'),
+  (16, '7.5YR 5/6',  '#A06F3E'),
+  (17, '7.5YR 5/8',  '#A86C27'),
+  (18, '7.5YR 7/1',  '#B6ABA3'),
+  (19, 'N 4/0',      '#606060');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_short_colours (
+  id_colour INTEGER PRIMARY KEY,
+  catu_colour TEXT UNIQUE,
+  txt_colour_name TEXT,
+  txt_colour_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 14.2 */
+INSERT INTO cod_short_colours VALUES
+  (1, 'R', 'Red', '2.5YR or redder, with value < 7 and chroma > 2'),
+  (2, 'O', 'Orange', '5YR or 7.5YR, with value < 7 and chroma > 2'),
+  (3, 'B', 'Brown', '7.5YR or 10YR, with value > 4 and chroma > 2'),
+  (4, 'Y', 'Yellow', '2.5Y or 5Y, with value > 4 and chroma > 2'),
+  (5, 'G', 'Grey', 'Any non-gley hue, value 4--7, chroma 1'),
+  (6, 'D', 'Dark', 'Any non-gley hue, values ≤ 3 and chromas ≤ 2'),
+  (7, 'P', 'Pale', 'Any non-gley hue, values ≥ 7 and chromas ≤ 2'),
+  (8, 'L', 'Gley', 'Gley charts');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_colour_moistures (
+  id_colour_moisture INTEGER PRIMARY KEY,
+  cato_colour_moisture TEXT UNIQUE,
+  txt_colour_moisture_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+ 
+INSERT INTO cod_colour_moistures VALUES
+  (1, 'M', 'Moist'),
+  (2, 'D', 'Dry');
+```
+
+```{sql}
+#| connection: con  
+CREATE TABLE IF NOT EXISTS cod_pattern_types (
+  id_pattern INTEGER PRIMARY KEY,
+  catu_pattern TEXT UNIQUE,
+  txt_pattern_name TEXT,
+  txt_pattern_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con  
+/* Table 14.3 */
+INSERT INTO cod_pattern_types VALUES
+  (1, 'M', 'Mottles', 'Colour patterns induced by redox processes'),
+  (2, 'R', 'Reticulate', 'Colour patterns induced by preferential flow (e.g. gammate patterns in pallic soils)'),
+  (3, 'W', 'Weathering', 'Colour patterns induced by parent material weathering, most commonly seen in BC horizons and below (e.g. rock ghost patterns)'),
+  (4, 'X', 'Mixing', 'Colour patterns created by biological (e.g. worm tunnels) or mechanical (e.g. landslide) means');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_pattern_shapes (
+  id_pattern_shape INTEGER PRIMARY KEY,
+  catu_pattern_shape TEXT UNIQUE,
+  txt_pattern_shape_name TEXT,
+  txt_pattern_shape_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con  
+/* Table 14.4 */
+INSERT INTO cod_pattern_shapes VALUES
+  (1, 'B', 'Blotches', 'Rounded shapes, blobs, where colour patterns penetrate the soil mass'),
+  (2, 'S', 'Stripes', 'Linear colour patterns e.g. root linings'),
+  (3, 'C', 'Coatings', 'Patterns caused by ped surface features e.g. cutans');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_pattern_contrasts (
+  id_pattern_contrast INTEGER PRIMARY KEY,
+  catu_pattern_contrast TEXT UNIQUE,
+  txt_pattern_contrast_name TEXT,
+  txt_pattern_contrast_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 14.5 */
+INSERT INTO cod_pattern_contrasts VALUES
+  (1, 'F', 'Faint', 'Indistinct colour variation evident only on close examination'),
+  (2, 'D', 'Distinct', 'Although not striking, the colour variation is readily seen'),
+  (3, 'P', 'Prominent', 'The colour variation is conspicuous');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_pattern_edges (
+  id_pattern_edge INTEGER PRIMARY KEY,
+  catu_pattern_edge TEXT UNIQUE,
+  txt_pattern_edge_name TEXT,
+  txt_pattern_edge_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con  
+/* Table 14.6 */
+INSERT INTO cod_pattern_edges VALUES 
+  (1, 'S', 'Sharp', 'Knife-edge boundaries between colours'),
+  (2, 'C', 'Clear', 'Colour transition < 2 mm wide'),
+  (3, 'D', 'Diffuse', 'Colour transition > 2 mm wide');
+
+```  
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_matrix_colours (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_colour_matrix INTEGER,
+  cato_matrix_munsell TEXT,
+  catu_colour_moisture TEXT,
+  
+  PRIMARY KEY (id_site, id_horizon, id_colour_matrix),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_matrix_munsell) REFERENCES cod_munsell_colours(cato_munsell)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_colour_moisture) REFERENCES cod_colour_moistures(cato_colour_moisture)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS dat_horizon_pattern_colours (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_colour_pattern INTEGER,
+  cato_pattern_munsell TEXT,
+  catu_pattern_short_colour TEXT,
+  catu_colour_moisture TEXT,
+  catu_pattern_type TEXT,
+  amt_pattern_p REAL CHECK (amt_pattern_p BETWEEN 0 AND 100),
+  catu_pattern_shape TEXT,
+  amt_pattern_size_mm REAL CHECK (amt_pattern_p > 0),
+  cato_pattern_contrast TEXT,
+  cato_pattern_edge TEXT,
+  
+  PRIMARY KEY (id_site, id_horizon, id_colour_pattern),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_pattern_munsell) REFERENCES cod_munsell_colours(cato_munsell)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_pattern_short_colour) REFERENCES cod_short_colours(catu_colour)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_colour_moisture) REFERENCES cod_colour_moistures(cato_colour_moisture)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_pattern_type) REFERENCES cod_pattern_types(catu_pattern)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_pattern_shape) REFERENCES cod_pattern_shapes(catu_pattern_shape)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_pattern_contrast) REFERENCES cod_pattern_contrasts(catu_pattern_contrast)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_pattern_edge) REFERENCES cod_pattern_edges(catu_pattern_edge)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+  
+## Horizon texture
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_simple_textures (
+  id_simple_texture INTEGER PRIMARY KEY,
+  cato_simple_texture TEXT UNIQUE,
+  txt_simple_texture_name TEXT,
+  txt_simple_texture_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 15.3 */
+INSERT INTO cod_simple_textures VALUES
+ (1, 'C', 'Clayey', 'Clay content ≥ 35%, texture class C, LC or ZC'),
+ (2, 'Z', 'Silty', 'Clay content < 35%, silt content ≥ 40%; texture class Z, LZ, ZL'),
+ (3, 'L', 'Loamy', 'Clay content 8 - 35%, silt content < 40%; texture class SL, SC, CL'),
+ (4, 'S', 'Sandy', 'Clay content < 8, silt content, < 40%, texture class S, LS'),
+ (5, 'R', 'Rocky', 'Fine earth fraction < 15%, dominated by rock fragments > 2 mm'),
+ (6, 'O', 'Organic', 'Organic matter fraction > 18%');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_mineral_textures (
+  id_mineral_texture INTEGER PRIMARY KEY,
+  cato_mineral_texture TEXT UNIQUE,
+  txt_mineral_texture_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 15.2 */
+INSERT INTO cod_mineral_textures VALUES
+(1, 'S', 'Sand'),
+(2, 'LS', 'Loamy Sand'),
+(3, 'SL', 'Sandy Loam'),
+(4, 'LZ', 'Loamy Silt'),
+(5, 'Z', 'Silt'),
+(6, 'SC', 'Sandy Clay Loam'),
+(7, 'CL', 'Clay Loam'),
+(8, 'ZL', 'Silt Loam'),
+(9, 'LC', 'Loamy Clay'),
+(10, 'ZC', 'Silty Clay'),
+(11, 'C', 'Clay');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_sand_sizes (
+  id_sand_size INTEGER PRIMARY KEY,
+  cato_sand_size TEXT UNIQUE,
+  txt_sand_size_name TEXT,
+  txt_sand_size_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 15.4 */
+INSERT INTO cod_sand_sizes VALUES
+  (1, 'K', 'Coarse', 'Sand is dominantly 2.0 - 0.6 mm'),
+  (2, 'M', 'Medium', 'Sand is dominantly 0.6 - 0.2 mm'),
+  (3, 'F', 'Fine',   'Sand is dominantly 0.2 - 0.06 mm');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_organic_levels (
+  id_organic INTEGER PRIMARY KEY,
+  cato_organic TEXT UNIQUE,
+  txt_organic_name TEXT,
+  txt_organic_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 15.5 */
+INSERT INTO cod_organic_levels VALUES  
+   (1, 'T', 'Slightly organic', '17-30% organic matter'),
+   (2, 'P', 'Moderately organic', '30-50% organic matter');
+```
+
+```{sql}
+#| connection: con    
+CREATE TABLE IF NOT EXISTS cod_organic_types (
+  id_organic_type INTEGER PRIMARY KEY,
+  cato_organic_type TEXT UNIQUE,
+  txt_organic_type_name TEXT,
+  txt_organic_type_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 15.6 */
+INSERT INTO cod_organic_types VALUES  
+  (1, 'M', 'Moss', 'Organic materials dominantly derived from moss and/or herb species e.g. *Sphagnum spp.*'),
+  (2, 'R', 'Reed', 'Organic materials dominantly derived from grasses, reeds, flaxes or similar e.g. *Phormium spp.*'),
+  (3, 'T', 'Tree', 'Organic materials dominantly derived from woody shrubs and trees, e.g. Kānuka'),
+  (4, 'U', 'Unknown', 'Origin of organic materials cannot be identified with confidence');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_organic_decomps (
+  id_organic_decomp INTEGER PRIMARY KEY,
+  cato_organic_decomp TEXT UNIQUE,
+  txt_organic_decomp_name TEXT,
+  txt_organic_decomp_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 15.7 */
+INSERT INTO cod_organic_decomps VALUES 
+ (1, 'F', 'Fibric', 'Organic matter weakly decomposed and dominated by visible plant remains'),
+ (2, 'M', 'Mesic', 'Organic matter moderately decomposed, some visible plant structures but mostly amorphous'),
+ (3, 'H', 'Humic', 'Organic matter no longer identifiable, minimal fibre content');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_nzsc_mineralogies (
+  id_nzsc_mineralogy INTEGER PRIMARY KEY,
+  catu_nzsc_mineralogy TEXT UNIQUE,
+  txt_nzsc_mineralogy_name TEXT,
+  txt_nzsc_mineralogy_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 5.2 */
+INSERT INTO cod_nzsc_mineralogies VALUES
+  (1, 'Gy', 'Gypsic', '>15% by weight of gypsum in the < 20 mm fraction'),
+  (2, 'Ca', 'Carbonatic', '>30% by weight carbonates in the < 20 mm fraction'),
+  (3, 'Sf', 'Superferritic', '> 28% citrate-dithionite extractable Fe in the < 2 mm fraction'),
+  (4, 'Fe', 'Ferritic', '> 7.0% citrate-dithionite extractable Fe in the < 2 mm fraction'),
+  (5, 'Al', 'Aluminitic', '> 40% by weight aluminium hydroxides and oxyhydroxides in the < 2 mm fraction'),
+  (6, 'Si', 'Siliceous', '> 90% by weight silica minerals (quartz, chalcedony, or opal) and other durable minerals that are resistant to weathering, provided that the silica minerals are > 60% by weight in the < 2 mm fraction'),
+  (7, 'Am', 'Amorphous', '> 5% by weight of minerals with short-range group (principally allophane, imogolite, and ferrihydrite) in the < 2 mm fraction'),
+  (8, 'Mi', 'Micaceous', '> 40% by weight of mica minerals in the < 2 mm fraction'),
+  (9, 'Cl', 'Chloritic', '> 40% by weight of chlorite in the < 2 mm fraction'),
+  (10, 'Sp', 'Serpentinitic', '> 40% by weight of serpentine minerals (antigorite, chrysotile, fibrolite, and talc) in the < 2 mm fraction'),
+  (11, 'Sm', 'Smectitic', 'More smectites than any other mineral group or single mineral (if mineral group not applicable, e.g. crandallite, chlorite in the < 0.002 mm fraction'),
+  (12, 'Vm', 'Vermiculitic', 'More vermiculites than any other mineral group or single mineral in the < 0.002 mm fraction'),
+  (13, 'Il', 'Illitic', 'More illites than any other mineral group or single mineral in the < 0.002 mm fraction'),
+  (14, 'Ka', 'Kandic', '> 50% by weight Kaolin-group minerals (kaolinite, halloysite, dickite, and nacrite) *and* < 10% by weight smectites in the < 0.002 mm fraction'),
+  (15, 'Cm', 'Clay-mineralic', 'Other soils with > 10% clay. The dominant mineral or mineral group in the clay fraction is named (e.g. clay-mineralic (crandallite)) in the < 0.002 mm fraction'),
+  (16, 'Gl', 'Glassy', '> 40% by weight volcanic glass in the < 2 mm fraction'),
+  (17, 'Wh', 'Whole-soil-mineralic', '> 40% by weight of any mineral or mineral group, other than silica minerals or feldspars in the < 2 mm fraction'),
+  (18, 'Ot', 'Other soils', '');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_texture (
+  id_site TEXT,
+  id_horizon INTEGER,
+  cato_texture_simple TEXT,
+  cato_texture TEXT,
+  cato_texture_sandmod TEXT,
+  cato_texture_orgmod TEXT,
+  cato_organic_type TEXT,
+  catu_organic_decomp TEXT,
+  catu_organic_minmod TEXT,
+  amt_sand_est_med_p REAL CHECK (amt_sand_est_med_p BETWEEN 0 AND 100),
+  amt_sand_est_min_p REAL CHECK (amt_sand_est_min_p BETWEEN 0 AND 100),
+  amt_sand_est_max_p REAL CHECK (amt_sand_est_max_p BETWEEN 0 AND 100),
+  amt_clay_est_med_p REAL CHECK (amt_clay_est_med_p BETWEEN 0 AND 100),
+  amt_clay_est_min_p REAL CHECK (amt_clay_est_min_p BETWEEN 0 AND 100),
+  amt_clay_est_max_p REAL CHECK (amt_clay_est_max_p BETWEEN 0 AND 100),
+  catu_lithology TEXT,
+  catu_mineralogy TEXT,
+  
+  PRIMARY KEY (id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_texture_simple) REFERENCES cod_simple_textures(cato_simple_texture)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_texture) REFERENCES cod_mineral_textures(cato_mineral_texture)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_texture_sandmod) REFERENCES cod_sand_sizes(cato_sand_size)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_texture_orgmod) REFERENCES cod_organic_levels(cato_organic)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_organic_type) REFERENCES cod_organic_types(cato_organic_type)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_organic_decomp) REFERENCES cod_organic_decomps(cato_organic_decomp)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_organic_minmod) REFERENCES cod_simple_textures(cato_simple_texture)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_lithology) REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_mineralogy) REFERENCES cod_nzsc_mineralogies(catu_nzsc_mineralogy)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+  
+```
+
+## Horizon secondary features
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_concentration_forms (
+  id_conc_form INTEGER PRIMARY KEY,
+  cato_conc_form TEXT UNIQUE,
+  txt_conc_form_name TEXT,
+  txt_conc_form_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 16.1 */
+INSERT INTO cod_concentration_forms VALUES
+  (1, 'CC', 'Concretion', 'hard concentrations with a layered internal structure, usually rounded'),
+  (2, 'NO', 'Nodule', 'hard concentrations with no internal structure, usually irregular'),
+  (3, 'CT', 'Crystal', 'A mineral arranged as interlocking or twinned macroscopic crystals or as a single macroscopic crystal, e.g., gypsum.'),
+  (4, 'SS', 'Soft masses', 'A non-cemented concentration that can seldom be removed from the soil as a discrete unit');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_concentration_types (
+  id_conc INTEGER PRIMARY KEY,
+  cato_conc TEXT UNIQUE,
+  txt_conc_name TEXT,
+  txt_conc_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 16.2 */
+INSERT INTO cod_concentration_types VALUES
+   (1,  'E',  'Earthy', 'Loamy or silty texture within a sandy or clayey matrix'),
+   (2,  'A',  'Argillaceous', 'Clayey texture within a lower-clay matrix'),
+   (3,  'F',  'Ferruginious', 'Iron-dominated'),
+   (4,  'M',  'Manganiferous', 'Manganese-dominated'),
+   (5,  'N',  'Ferromanganiferous', 'Dominated by a mix of iron and manganese'),
+   (6,  'K',  'Calcareous', 'Dominated by calcium carbonate (CaCO3)'),
+   (7,  'Y',  'Gypseous', 'Dominated by calcium sulfate (gypsum, CaSO4)'),
+   (8,  'Z',  'Salty', 'Dominated by salts more soluble than Calcium carbonate or calcium sulfate'),
+   (9,  'S',  'Sulfurous', 'Dominated by sulfur, e.g. jarosite in acid sulfate soils'),
+   (10, 'O',  'Organic', 'Organic texture in a low-organics matrix'),
+   (11, 'UK', 'Unknown', 'Composition cannot be reliably determined');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_coating_types (
+  id_coating INTEGER PRIMARY KEY,
+  catu_coating TEXT UNIQUE,
+  txt_coating_name TEXT,
+  txt_coating_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 16.3 */
+INSERT INTO cod_coating_types VALUES 
+   (1, 'CC', 'Clay coats', 'Appear to have more clay than the soil matrix. They are often different in colour from the adjacent matrix and are usually recognisable in sandy or loamy soils, but can be difficult to recognise in clayey soils.'),
+   (2, 'ZC', 'Silt coats', 'Silt grains concentrated at surfaces; they may be residual concentrations resulting from clay removal, or may have moved in from horizons above'),
+   (3, 'SC', 'Sand coats', 'Sand grains concentrated at surfaces; they may be residual concentrations resulting from silt and/or clay removal, or may have moved in from horizons above'),
+   (4, 'OG', 'Organic coats', 'Surface features that have a moist colour value of 4 or less and are rich in organic matter compared to the interior of the solid.'),
+   (5, 'SQ', 'Sesquioxide coats', 'Films of sesquioxides on interfaces or impregnating interfaces. They vary in colour depending on the composition and degree of oxidation and hydration. They are difficult to identify chemically, and the different kinds cannot normally be distinguished in the field. Ferri-manganiferous coats, however, are normally very dark brown or black and effervesce vigorously with hydrogen peroxide'),
+   (6, 'MN', 'Manganese coats', 'Dark coatings of precipitated manganese oxides, reactive to H2O2.'),
+   (7, 'CB', 'Carbonate coats', 'Precipitated calcium carbonate (CaCO3). Usually pale-coloured, and reactive to HCl.'),
+   (8, 'SI', 'Silica coats', 'Precipitated silica (SiO2). Usually pale-coloured, and non-reactive to HCl.');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_pan_types (
+  id_pan INTEGER PRIMARY KEY,
+  catu_pan TEXT UNIQUE,
+  txt_pan_name TEXT,
+  txt_pan_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 16.4 */
+INSERT INTO cod_pan_types VALUES   
+   (1, 'C', 'Cultivation pan', 'Pan comprising compressed soil, induced by cultivation (e.g. use of heavy farm machinery)'),
+   (2, 'D', 'Densipan', 'Silty layers with a very high bulk density and extremely slow permeability'),
+   (3, 'H', 'Humus-pan', 'Cemented by aluminium and organic matter. Common in Podzols; sometimes known as coffee rock'),
+   (4, 'F', 'Iron pan', 'Interlocking nodules of Fe(/Mn) precipitates (bog iron), often at a texture contrast boundary'),
+   (5, 'K', 'Calcareous pan', 'Created by the precipitation of calcium carbonate (CaCO~3~)'),
+   (6, 'O', 'Ortstein pan', 'Pan cemented by iron and organic matter. Common in Podzols'),
+   (7, 'P', 'Placic', 'A very thin (< 10 mm), dark, iron-dominated pan with sharp boundaries'),
+   (8, 'Q', 'Silica pan', 'Created by the precipitation of silica (SiO~2~)'),
+   (9, 'X', 'Fragipan', 'An earthy, high density, erosion-resistant layer common to Pallic soils'),
+   (10, 'UK', 'Unknown', 'Pan origin cannot be clearly determined');
+```
+
+```{sql}
+#| connection: con    
+CREATE TABLE IF NOT EXISTS cod_pan_continuities (
+  id_pan_cont INTEGER PRIMARY KEY,
+  catu_pan_cont TEXT UNIQUE,
+  txt_pan_cont_name TEXT,
+  txt_pan_cont_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 16.5 */
+INSERT INTO cod_pan_continuities VALUES 
+ (1, 'C', 'Continuous', 'Extends as a layer with little or no break across 1 m or more.'),
+ (2, 'D', 'Discontinuous', 'Broken by cracks but original orientation of fragments is preserved.'),
+ (3, 'B', 'Broken', 'Broken by cracks and fragments are disoriented');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_pan_structures (
+  id_pan_structure INTEGER PRIMARY KEY,
+  catu_pan_structure TEXT UNIQUE,
+  txt_pan_structure_name TEXT,
+  txt_pan_structure_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 16.6 */
+INSERT INTO cod_pan_structures VALUES 
+  (1, 'V', 'Massive', 'No recognisable structure'),
+  (2, 'S', 'Vesicular', 'Sponge-like structure having large pores, which may or may not be filled with softer material'),
+  (3, 'C', 'Concretionary', 'Spheroidal concretions cemented together'),
+  (4, 'N', 'Nodular', 'Irregular nodules cemented together'),
+  (5, 'P', 'Platy', 'Plate-like units cemented together');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_stress_types (
+  id_stress INTEGER PRIMARY KEY,
+  catu_stress TEXT UNIQUE,
+  txt_stress_name TEXT,
+  txt_stress_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 16.7 */
+INSERT INTO cod_stress_types VALUES 
+ (1, 'SL', 'Slickensides', 'Smooth faces with linear grooves, from peds sliding past each other.'),
+ (2, 'PF', 'Pressure faces', 'Smooth planar faces from peds pressing against each other without sliding.');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_bio_feature_types (
+  id_bio_feature INTEGER PRIMARY KEY,
+  catu_bio_feature TEXT UNIQUE,
+  txt_bio_feature_name TEXT,
+  txt_bio_feature_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 16.8 */
+INSERT INTO cod_bio_feature_types VALUES 
+   (1, 'T', 'Tunnel', 'Infilled earthworm or insect burrow, < 20 mm in diameter'),
+   (2, 'B', 'Burrow', 'Infilled former macrofauna burrow, > 20 mm in diameter'),
+   (3, 'C', 'Casts',  'Earthworm wastes forming balls of fine soil material');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_secondary_features (
+  id_site TEXT,
+  id_horizon INTEGER,
+  catu_concentration_form TEXT,
+  amt_concentration_p REAL CHECK (amt_concentration_p BETWEEN 0 AND 100),
+  catu_pan_type TEXT,
+  cato_pan_continuity TEXT,
+  catu_pan_structure TEXT,
+  catu_stress_type TEXT,
+  amt_stress_p REAL CHECK (amt_stress_p BETWEEN 0 AND 100),
+  
+  PRIMARY KEY (id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_concentration_form) REFERENCES cod_concentration_forms(cato_conc_form)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_pan_type) REFERENCES cod_pan_types(catu_pan)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_pan_continuity) REFERENCES cod_pan_continuities(catu_pan_cont)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_pan_structure) REFERENCES cod_pan_structures(catu_pan_structure)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_stress_type) REFERENCES cod_stress_types(catu_stress)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS dat_horizon_concentrations (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_concentration INTEGER,
+  catu_concentration_form TEXT,
+  catu_concentration_type TEXT,
+  amt_concentration_size_med_mm REAL CHECK (amt_concentration_size_med_mm > 0),
+  amt_concentration_size_min_mm REAL CHECK (amt_concentration_size_min_mm > 0),
+  amt_concentration_size_max_mm REAL CHECK (amt_concentration_size_max_mm > 0),
+  amt_concentration_med_p REAL CHECK (amt_concentration_med_p BETWEEN 0 AND 100),
+  amt_concentration_min_p REAL CHECK (amt_concentration_min_p BETWEEN 0 AND 100),
+  amt_concentration_max_p REAL CHECK (amt_concentration_max_p BETWEEN 0 AND 100),
+  
+  PRIMARY KEY (id_site, id_horizon, id_concentration),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_concentration_form) REFERENCES cod_concentration_forms(cato_conc_form)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_concentration_type) REFERENCES cod_concentration_types(cato_conc)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS dat_horizon_coatings (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_coating INTEGER,
+  catu_coating TEXT,
+  amt_coating_p REAL CHECK (amt_coating_p BETWEEN 0 AND 100),
+  
+  PRIMARY KEY (id_site, id_horizon, id_coating),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_coating) REFERENCES cod_coating_types(catu_coating)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS dat_horizon_bio_features (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_bio_feature INTEGER,
+  catu_bio_feature TEXT REFERENCES cod_bio_feature_types(catu_bio_feature),
+  amt_bio_feature_p REAL CHECK (amt_bio_feature_p BETWEEN 0 AND 100),
+  
+  PRIMARY KEY (id_site, id_horizon, id_bio_feature),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_bio_feature) REFERENCES cod_bio_feature_types(catu_bio_feature)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+  
+```
+
+## Horizon consistence tests
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_strengths (
+  id_strength INTEGER PRIMARY KEY,
+  cato_strength TEXT UNIQUE,
+  txt_strength_name TEXT,
+  txt_strength_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 17.1 */
+INSERT INTO cod_strengths VALUES
+  (1, '1', 'Very Weak', 'Very gentle force in hand'),
+  (2, '2', 'Weak', 'Gentle force in hand'),
+  (3, '3', 'Slightly firm', 'Moderate force in hand'),
+  (4, '4', 'Firm', 'Strong/maximum force in hand'),
+  (5, '5', 'Very firm', 'Gentle force underfoot'),
+  (6, '6', 'Hard', 'Full body weight (~80 kg) applied slowly'),
+  (7, '7', 'Very hard', 'Withstands full body weight');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_sensitivities (
+  id_sensitivity INTEGER PRIMARY KEY,
+  cato_sensitivity TEXT UNIQUE,
+  txt_sensitivity_name TEXT,
+  txt_sensitivity_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 17.2 */
+INSERT INTO cod_sensitivities VALUES
+  (1, '1', 'Non-sensitive', 'the sample does not smear under shear force, and may soften only slightly'),
+  (2, '2', 'Weakly sensitive', 'the sample smears and skids under moderate shear force (20-40 kPa)'),
+  (3, '3', 'Moderately sensitive', 'the sample suddenly turns fluid under moderate shear force (20-40 kPa) and the fingers skid. Some free water is evident on fingers after shearing'),
+  (4, '4', 'Very sensitive', 'the soil suddenly turns fluid and slippery under only gentle shear force (<20 kPa). Free water is easily seen on the fingers after shearing');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_plasticities (
+  id_plasticity INTEGER PRIMARY KEY,
+  cato_plasticity TEXT UNIQUE,
+  txt_plasticity_name TEXT,
+  txt_plasticity_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 17.3 */
+INSERT INTO cod_plasticities VALUES
+  (1, '1', 'Non-plastic', 'A roll 40 mm long and 6 mm thick that supports its own weight cannot be formed.'),
+  (2, '2', 'Slightly plastic', 'A roll 40 mm long and 6 mm thick can be formed and will support its own weight, but a roll 4 mm thick will not support its own weight.'),
+  (3, '3', 'Moderately plastic', 'A roll 40 mm long and 4 mm diameter can be formed, and will support its own weight, but a roll 2 mm thick will not support its own weight.'),
+  (4, '4', 'Very plastic', 'A roll 40 mm long and 2 mm thick can be formed and will support its own weight.');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_stickinesses (
+  id_stickiness INTEGER PRIMARY KEY,
+  cato_stickiness TEXT UNIQUE,
+  txt_stickiness_name TEXT,
+  txt_stickiness_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 17.4 */
+INSERT INTO cod_stickinesses VALUES
+  (1, '1', 'Non-sticky', 'After release of pressure, practically no soil material adheres to the thumb or forefinger'),
+  (2, '2', 'Slightly sticky', 'After release of pressure, soil material adheres perceptibly to both thumb and forefinger but, as the digits are separated, it tends to come off one or the other cleanly. The material is not stretched appreciably when the thumb and finger are separated'),
+  (3, '3', 'Moderately sticky', 'After release of pressure, soil material adheres to both thumb and forefinger and tends to stretch somewhat and pull apart rather than pulling free from either digit'),
+  (4, '4', 'Very sticky', 'After release of pressure, soil material adheres so strongly to both thumb and forefinger that it is decidedly stretched when they are separated, and finally pulls apart leaving part of the soil on thumb and part on the forefinger.');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_penrests (
+  id_penrest INTEGER PRIMARY KEY,
+  cato_penrest TEXT UNIQUE,
+  txt_penrest_name TEXT,
+  txt_penrest_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 17.5 */
+INSERT INTO cod_penrests VALUES
+ (1, '1', 'Extremely low', 'Easily penetrated by fist'),
+ (2, '2', 'Very low', 'Easily penetrated by thumb'),
+ (3, '3', 'Low', 'Readily indented by thumb but penetrated with considerable effort. Imprinted by finger with some effort.'),
+ (4, '4', 'Moderate', 'Readily indented by thumbail'),
+ (5, '5', 'High', 'Barely imprinted by thumb or forefinger'),
+ (6, '6', 'Very high', 'Indented by thumbnail. No imprint by thumb or finger'),
+ (7, '7', 'Extremely high', 'Barely indented by thumbnail');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_packings (
+  id_packing INTEGER PRIMARY KEY,
+  cato_packing TEXT UNIQUE,
+  txt_packing_name TEXT,
+  txt_packing_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 17.6 */
+INSERT INTO cod_packings VALUES
+  (1, '1', 'Loose', 'Easily dislodged by spade or pick; does not maintain a vertical face'),
+  (2, '2', 'Compact', 'Intermediate between loose and dense'),
+  (3, '3', 'Dense', 'Difficult to dislodge except with spade and by removing individual fragments; maintains a stable vertical face'),
+  (4, '4', 'Very dense', 'Very difficult to dislodge except by pick and removing individual fragments; maintains a stable vertical face');
+```
+
+```{sql}
+#| connection: con          
+CREATE TABLE IF NOT EXISTS cod_failures (
+  id_failure INTEGER PRIMARY KEY,
+  catu_failure TEXT UNIQUE,
+  txt_failure_name TEXT,
+  txt_failure_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 17.7 */
+INSERT INTO cod_failures VALUES     
+  (1, 'N', 'Not determinable', 'Soil is either too dry or too wet to reliably test'),
+  (2, 'V', 'Very friable', 'Test specimen cannot be formed, or crumbles under very slight stress on crushing within the hand, into aggregates predominantly <2 mm in size. In most instances the test specimen is difficult to obtain.'),
+  (3, 'F', 'Friable', 'Test sample cannot be formed, or crumbles under very slight stress on crushing within the hand, into aggregates predominantly >2 mm in size, or crumbles under slight stress on crushing within the hand into aggregates predominantly <2 mm in size.'),
+  (4, 'B', 'Brittle', 'Under slowly increasing pressure between the extended thumb and forefinger, a test specimen retains its size and shape with few or no cracks until it fractures abruptly into aggregates predominantly > 2 mm in size.'),
+  (5, 'S', 'Semi-deformable', 'Under increasing pressure between the extended thumb and forefinger the test specimen as a whole is perceptibly compressed in the direction along which pressure is exerted, but cracks develop and the specimen ruptures before it has been compressed to half its original thickness. Before rupture, parts crumble and fall away if the specimen is shaken while held between the thumb and forefinger.'),
+  (6, 'D', 'Deformable', 'Under slowly increasing pressure between the extended thumb and forefinger, the test specimen can be compressed to at least half its original thickness without the appearance of cracks and without rupture.');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_fluidities (
+  id_fluidity INTEGER PRIMARY KEY,
+  catu_fluidity TEXT UNIQUE,
+  txt_fluidity_name TEXT,
+  txt_fluidity_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 17.8 */
+INSERT INTO cod_fluidities VALUES   
+  (1, '1', 'Slightly fluid', 'Some material tends to flow into the spaces between the fingers, but after full pressure is exerted most of the residue is left in the hand'),
+  (2, '2', 'Moderately fluid', 'Soil material flows easily between the fingers, but a small residue is left in the hand after full pressure is exerted'),
+  (3, '3', 'Very fluid', 'Soil material flows like a slightly viscous liquid between the fingers, and very little or no residue is left in the hand after full pressure is exerted');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_indurations (
+  id_induration INTEGER PRIMARY KEY,
+  cato_induration TEXT UNIQUE,
+  txt_induration_name TEXT,
+  txt_induration_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 17.9 */
+INSERT INTO cod_indurations VALUES   
+  (1, '1', 'Non-indurated', 'A wet test specimen slakes within one hour when placed in water'),
+  (2, '2', 'Very weakly indurated', 'A wet test specimen that has been immersed for one hour and has not slaked has strength class of 2-4'),
+  (3, '3', 'Weakly indurated', 'A wet test specimen that has been immersed for one hour has a strength class of 6'),
+  (4, '4', 'Strongly indurated', 'A wet test specimen that has been immersed for an hour has a strength class of 7'),
+  (5, '5', 'Very strongly indurated', 'A wet test specimen after immersion for an hour has a strength class of >7 and does not break when struck by a sharp blow with a hammer.');
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_consistence_tests (
+  id_site TEXT,
+  id_horizon INTEGER,
+  ind_cohesive INTEGER CHECK (ind_cohesive IN (0, 1)),
+  cato_strength_unconfined TEXT,
+  cato_strength_ped TEXT,
+  cato_strength_remoulded TEXT,
+  cato_strength_plastic TEXT,
+  cato_sensitivity TEXT,
+  cato_plasticity TEXT,
+  cato_stickiness TEXT,
+  ind_dilatent INTEGER CHECK (ind_dilatent IN (0, 1)),
+  cato_penetration_rest TEXT,
+  cato_packing TEXT,
+  catu_failure TEXT,
+  cato_fluidity TEXT,
+  cato_induration TEXT,
+  
+  PRIMARY KEY (id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_strength_unconfined) REFERENCES cod_strengths(cato_strength)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_strength_ped) REFERENCES cod_strengths(cato_strength)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_strength_remoulded) REFERENCES cod_strengths(cato_strength)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_strength_plastic) REFERENCES cod_strengths(cato_strength)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_sensitivity) REFERENCES cod_sensitivities(cato_sensitivity)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_plasticity) REFERENCES cod_plasticities(cato_plasticity)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_stickiness) REFERENCES cod_stickinesses(cato_stickiness)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_penetration_rest) REFERENCES cod_penrests(cato_penrest)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_packing) REFERENCES cod_packings(cato_packing)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_failure) REFERENCES cod_failures(catu_failure)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_fluidity) REFERENCES cod_fluidities(catu_fluidity)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_induration) REFERENCES cod_indurations(cato_induration)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+## Field tests
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_pH_raupachs (
+  id_raupach INTEGER PRIMARY KEY,
+  cato_raupach TEXT UNIQUE
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+INSERT INTO cod_pH_raupachs VALUES
+  (1, '2.0'),
+  (2, '2.5'),
+  (3, '3.0'),
+  (4, '3.5'),
+  (5, '4.0'),
+  (6, '4.5'),
+  (7, '5.0'),
+  (8, '5.5'),
+  (9, '6.0'),
+  (10, '6.5'),
+  (11, '7.0'),
+  (12, '7.5'),
+  (13, '8.0'),
+  (14, '8.5'),
+  (15, '9.0'),
+  (16, '9.5'),
+  (17, '10.0'),
+  (18, '10.5');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_h2o2_rxns (
+  id_h2o2_rxn INTEGER PRIMARY KEY,
+  cato_h2o2_rxn TEXT UNIQUE,
+  txt_h2o2_rxn_name TEXT,
+  txt_h2o2_rxn_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 18.1 */
+INSERT INTO cod_h2o2_rxns VALUES
+  (1, 'N', 'No reaction',  'No fizzing or bubbling after 15 minutes'),
+  (2, 'L', 'Slight reaction', 'Sample fizzes or bubbles slightly but does not steam'),
+  (3, 'M', 'Moderate reaction', 'Sample bubbles and steams slightly but does not completely boil. Unlikely to continue reacting if more peroxide is added'),
+  (4, 'H', 'High reaction', 'Sample boils and steams but does not boil over. May continue to react when more peroxide is added'),
+  (5, 'X', 'Explosive reaction', 'Sample rapidly boils over and puts off considerable steam; likely to continue to react when more peroxide is added');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_hcl_rxns (
+  id_hcl_rxn INTEGER PRIMARY KEY,
+  cato_hcl_rxn TEXT UNIQUE,
+  txt_hcl_rxn_name TEXT,
+  txt_hcl_rxn_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 18.2 */
+INSERT INTO cod_hcl_rxns VALUES
+ (1, 'N', 'No reaction',  'No audible or visible fizzing'),
+ (2, 'L', 'Slight reaction', 'Fizzing faintly audible and barely visible'),
+ (3, 'M', 'Moderate reaction', 'Fizzing audible and clearly visible, small bubbles ≤ 3 mm diameter'),
+ (4, 'H', 'High reaction', 'Fizzing easily audible and visible, bubbles up to 7 mm diameter');
+```
+
+```{sql}
+#| connection: con  
+CREATE TABLE IF NOT EXISTS cod_naf_rxns (
+  id_naf_rxn INTEGER PRIMARY KEY,
+  cato_naf_rxn TEXT UNIQUE,
+  txt_naf_rxn_name TEXT,
+  txt_naf_rxn_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 18.3 */
+INSERT INTO cod_naf_rxns VALUES
+  (1, 'N', 'No reaction',  'No colour change'),
+  (2, 'L', 'Slight reaction', 'Paper turns faint pink within two minutes'),
+  (3, 'M', 'Moderate reaction', 'Paper turns moderate pink, usually within 30 seconds'),
+  (4, 'H', 'Strong reaction', 'Paper turns dark pink, usually instantly');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_slaking_rxns (
+  id_slaking_rxn INTEGER PRIMARY KEY,
+  cato_slaking_rxn TEXT UNIQUE,
+  txt_slaking_rxn_name TEXT,
+  txt_slaking_rxn_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 18.4 */
+INSERT INTO cod_slaking_rxns VALUES
+  (1, 'N', 'No slaking',  'Peds remain intact. Some bubbles may develop on their surfaces'),
+  (2, 'P', 'Partial slaking', 'Peds have broken open or partially collapsed, mostly into smaller peds'),
+  (3, 'C', 'Complete slaking', 'Peds have collapsed into a pile of separated grains, little to no ped structure remains visible');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_dispersion_rxns (
+  id_dispersion_rxn INTEGER PRIMARY KEY,
+  cato_dispersion_rxn TEXT UNIQUE,
+  txt_dispersion_rxn_name TEXT,
+  txt_dispersion_rxn_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 18.5 */
+INSERT INTO cod_dispersion_rxns VALUES  
+   (1, 'N', 'No dispersal',  'Peds remain intact and water remains clear'),
+   (2, 'S', 'Slight dispersion', 'Peds remain largely intact but a faint milky halo of suspended clay particles can be seen around them'),
+   (3, 'M', 'Moderate dispersion', 'Peds partly collapse and a milky halo is visible around the sample'),
+   (4, 'C', 'Complete dispersion', 'Peds have collapsed into a pile of separate grains, and are surrounded by an extensive and dense halo.');
+   
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_field_tests (
+  id_site TEXT,
+  id_horizon INTEGER,
+  amt_test_depth_cm REAL CHECK (amt_test_depth_cm >= 0),
+  cato_pH_raupach TEXT,
+  val_pH_water REAL CHECK (val_pH_water BETWEEN 0 AND 14),
+  val_pH_h2o2 REAL CHECK (val_pH_h2o2 BETWEEN 0 AND 14),
+  cato_h2o2_rxn TEXT,
+  amt_ec_dSm REAL CHECK (amt_ec_dSm <= 0),
+  cato_hcl_rxn TEXT,
+  ind_mn_rxn INTEGER CHECK (ind_mn_rxn IN (0, 1)),
+  cato_naf_rxn TEXT,
+  ind_22bip_rxn INTEGER CHECK (ind_22bip_rxn IN (0, 1)),
+  ind_water_repellent INTEGER CHECK (ind_water_repellent IN (0, 1)),
+  cato_slaking TEXT,
+  cato_dispersion TEXT,
+  
+  PRIMARY KEY (id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_pH_raupach) REFERENCES cod_pH_raupachs(cato_raupach)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_h2o2_rxn) REFERENCES cod_h2o2_rxns(cato_h2o2_rxn)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_hcl_rxn) REFERENCES cod_hcl_rxns(cato_hcl_rxn)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_naf_rxn) REFERENCES cod_naf_rxns(cato_naf_rxn)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_slaking) REFERENCES cod_slaking_rxns(cato_slaking_rxn)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_dispersion) REFERENCES cod_dispersion_rxns(cato_dispersion_rxn)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+## Interpretations
+
+### Horizon names
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+Including horizon drainage here
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_horizon_names_primary (
+  id_horizon_primary INTEGER PRIMARY KEY,
+  catu_horizon_primary TEXT UNIQUE,
+  txt_horizon_primary_name TEXT,
+  txt_horizon_primary_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 20.1 */
+INSERT INTO cod_horizon_names_primary VALUES
+  (1, 'F', 'Fibric', 'Partly decomposed litter deposited or accumulated at the surface and not saturated with water for more than ~1 month at a time.'),
+  (2, 'H', 'Humic', 'Well-decomposed litter deposited or accumulated at the surface and not saturated with water for more than ~1 month at a time. Original plant structures cannot be seen.'),
+  (3, 'O', 'Peat', 'Organic horizon accumulated under wet conditions. It is saturated with water for at least 30 consecutive days in most years, or has been artificially drained.'),
+  (4, 'A', 'Surface', 'Mineral horizon formed at the surface, or below an organic horizon. It is characterised by incorporation of humified organic matter, or properties resulting from disturbance by cultivation.'),
+  (5, 'E', 'Eluviated', 'Subsurface mineral horizon that contains less organic matter and/or iron and/or clay than the horizon immediately below, as a result of downward or lateral movement.'),
+  (6, 'B', 'Subsoil', 'Subsurface mineral horizon without rock structure, characterised by any of: illuvial concentration of secondary soil materials, development of colour or structure, loss of carbonate to lower horizons'),
+  (7, 'C', 'Regolith', 'Unconsolidated or weakly consolidated mineral horizon that is little affected by pedogenic processes and lacks properties of A, E or B horizons.'),
+  (8, 'R', 'Rock', 'Hard or very hard bedrock that is impracticable to dig with a spade.');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_horizon_names_secondary (
+  id_horizon_secondary INTEGER PRIMARY KEY,
+  catu_horizon_secondary TEXT UNIQUE,
+  txt_horizon_secondary_name TEXT,
+  txt_horizon_secondary_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con  
+/* Tables 20.2 - 20.7 */
+INSERT INTO cod_horizon_names_secondary VALUES
+  (1, 'Of', 'Fibric peat' , 'Peat dominated by well-preserved plant remains, with at least 75% fibre content after rubbing (e.g. preserved timber)'),
+  (2, 'Om', 'Mesic peat', 'Peat intermediate in composition between Of and Oh.'),
+  (3, 'Oh', 'Humic peat', 'Peat dominated by strongly decomposed plant remains, with less than 15% fibre content after rubbing. Plant species cannot be directly identified.'),
+  (4, 'Ah', 'Natural' , 'An A horizon in which there is no evident disturbance due to cultivation or pastoral land use.'),
+  (5, 'Ap', 'Agricultural', 'An A horizon in which incorporation of organic matter has involved mixing due to cultivation or to increased biological activity associated with topdressing or manuring. It may contain material from pre-existing E, B or C horizons.'),
+  (6, 'App', 'Recently tilled', 'An Ap horizon consisting mainly of clods and fragments with little pedal material, caused by cultivation during the past year.'),
+  (7, 'Ea', 'Leached' , 'No redox segregations; grains largely uncoated. Can be very pale if quartz-dominated. Rarely saturated, usually overlies Bh or Bs.'),
+  (8, 'Ew', 'Weathered', 'Both a moist chroma of 4 or more but less than 6, and < 2% redox segregations.'),
+  (9, 'Bfm', 'Placic' , 'Sharply defined, cemented, pan-like B horizon, dark and usually less then 10 mm thick. It forms a barrier to most roots and restricts water movement.'),
+  (10, 'Bh', 'Humose', 'Dark-coloured B horizon of podzolised soils enriched in organic matter, associated with aluminium, or iron and aluminium, as a result of illuviation.'),
+  (11, 'Bo', 'Ochreous', 'A strongly weathered, clayey B horizon formed in mixed crystalline iron and aluminium oxides and kaolin minerals, with low activity clay properties. '),
+  (12, 'Bs', 'Sesquioxides', 'Ochreous B horizon of podzolised soils containing illuvial aluminium, iron, or both, that is closely associated, or complexed, with illuvial organic matter. The aluminium and iron is apparently mainly present as minerals with short-range group (especially allophane and ferrihydrite), though some aluminium is often present as aluminium-humus.'),
+  (13, 'Bt', 'Translocated', 'B horizon containing translocated clay. Must have clay coatings, or if beneath an A or AE horizon, a signifcant increase in clay content'),
+  (14, 'Bw', 'Weathered', 'B horizon that shows evidence of alteration under well aerated conditions and does not qualify as Bh, Bs or Bt.'),
+  (15, 'BC', 'B-ish', 'A horizon transitional in character between a B and a C horizon, usually below a B horizon. It is distinguished from a B horizon in similar material by lacking some required characteristic of colour, pedality or degree of weathering. It differs from a C horizon by having some B horizon feature, albeit weakly expressed.'),
+  (16, 'CR', 'Consolidated' , 'A weakly consolidated C horizon that is sufficiently dense and coherent to form a significant barrier to roots. Soft rocks (with a hardness on Mohs scale of < 3) such as shale and siltstone, and some exceptionally dense glacial tills are included. The material can be dug with difficulty with a spade when moist.'),
+  (17, 'Cu', 'Unconsolidated', 'Unconsolidated C horizon without evidence of strong gleying, accumulation of carbonates or more soluble salts. It is normally apedal, may show stratification and has less than 2% redox segregations.'),
+  (18, 'R', 'Rock' , 'Hard or very hard bedrock that is impracticable to dig with a spade. The rock may contain cracks, but these are generally too few and too small for significant root development.');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_horizon_suffix_redox (
+  id_horizon_suffix_redox INTEGER PRIMARY KEY,
+  catu_horizon_suffix_redox TEXT UNIQUE,
+  txt_horizon_suffix_redox_name TEXT,
+  txt_horizon_suffix_redox_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 20.8 */
+INSERT INTO cod_horizon_suffix_redox VALUES
+  (1, '(f)', 'Slightly reduced', '≥ 2% redox segregations, no low-chroma colours'),
+  (2, '(g)', 'Reduced', '≥ 2% redox segregations, matrix and/or ped faces have < 50% low-chroma colours'),
+  (3, 'g' , 'Very reduced', '≥ 2% redox segregations, matrix has 50-85% low chroma colours, and/or ped faces have > 50% low-chroma colours'),
+  (4, 'r', 'Completely reduced', 'Matrix has > 85% low-chroma colours.');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_horizon_suffix_other (
+  id_horizon_suffix_other INTEGER PRIMARY KEY,
+  catu_horizon_suffix_other TEXT UNIQUE,
+  txt_horizon_suffix_other_name TEXT,
+  txt_horizon_suffix_other_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+/* Table 20.9 */
+INSERT INTO cod_horizon_suffix_other VALUES
+  (1, 'c', 'Concretionary', '> 5% by volume of concretions'),
+  (2, 'd', 'Densipan', 'To denote an E horizon with densipan properties'),
+  (3, 'e', 'Unripe', 'To denote an unripe horizon'),
+  (4, '(h)', 'Cutanic', 'To denote a horizon with cutanic horizon properties'),
+  (5, 'i', 'Nodular', 'To denote that the horizon contains more than 15% by volume of nodules, subrounded or irregular segregations of iron or aluminium oxyhydroxides with some kaolin.'),
+  (6, 'j', 'Jarositic', 'To denote the presence of straw-coloured jarosite'),
+  (7, 'k', 'Calcareous', ' To denote an accumulation of secondary carbonate, CaCO3.'),
+  (8, 'l', 'Gibbsitic', 'To denote an accumulation of gibbsite, Al(OH)3.'),
+  (9, 'm', 'Cemented', 'To denote a continuously cemented horizon that is strong enough to resist root penetration.'),
+  (10, 'n', 'Sodic', 'To denote an accumulation of sodium (identified in the field).'),
+  (11, 'q', 'Silicic', 'To denote an accumulation of secondary silica.'),
+  (12, 'v', 'Variegated', 'To denote a horizon with mottles or variegated colour pattern due to differential weathering of mineral components and not attributable to reduction and segregation of iron caused by saturation with water.'),
+  (13, 'x', 'Fragic', 'To denote a horizon with fragipan properties'),
+  (14, '(x)', 'Almost fragic', ' To denote a brittle horizon that does not meet all the requirements of a fragipan'),
+  (15, 'y', 'Gypsic', 'To denote an accumulation of gypsum, CaSO4.'),
+  (16, 'z', 'Salty', 'To denote an accumulation of salts more soluble than gypsum.');
+```
+
+```{sql}
+#| connection: con   
+ CREATE TABLE IF NOT EXISTS cod_horizon_names_functional (
+  id_horizon_functional INTEGER PRIMARY KEY,
+  catu_horizon_functional TEXT UNIQUE,
+  txt_horizon_functional_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 20.18 - just a few for demo */  
+INSERT INTO cod_horizon_names_functional VALUES 
+  (1, 'Al', 'Sandy loose'),
+  (2, 'LCf', 'Loamy, coarse firm'),
+  (3, 'LCs', 'Loamy, coarse slightly firm'),
+  (4, 'LFf', 'Loamy, fine firm'),
+  (5, 'LFs', 'Loamy, fine slightly firm'),
+  (6, 'Lw',  'Loamy weak'),
+  (7, 'Or',  'Organic fibric'),
+  (8, 'SAw', 'Stony sandy, weak'),
+  (9, 'SLw', 'Stony loamy, weak'),
+  (10, 'VAc', 'Very stony sandy compact'),
+  (11, 'VLc', 'Very stony loamy compact'),
+  (12, 'XL', 'Extremely stony loamy');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_horizon_permeabilities (
+  id_functional_perm INTEGER PRIMARY KEY,
+  cato_functional_perm TEXT UNIQUE,
+  txt_functional_perm_name TEXT,
+  txt_functional_perm_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 20.17 */  
+INSERT INTO cod_horizon_permeabilities VALUES 
+  (1, 'xs', 'Extremely slow', '< 0.1 mm/h'),
+  (2, 's', 'Slow', '0.1 - 4 mm/h'),
+  (3, 'ms', 'Moderately slow', '4 - 18 mm/h'),
+  (4, 'm', 'Moderate', '18 - 72 mm/h'),
+  (5, 'r', 'Rapid', '> 72 mm/h');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_horizon_drainage_classes (
+  id_horizon_drainage INTEGER PRIMARY KEY,
+  cato_horizon_drainage TEXT UNIQUE,
+  txt_horizon_drainage_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 21.5 */
+INSERT INTO cod_horizon_drainage_classes VALUES
+  (1, 'VP', 'Very Poor'),
+  (2, 'PO', 'Poor'),
+  (3, 'IP', 'Imperfect'),
+  (4, 'MW', 'Moderately well'),
+  (5, 'WE', 'Well');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_horizon_names (
+  id_site TEXT,
+  id_horizon INTEGER,
+  /* conventional */
+  catu_horizon_primary TEXT,
+  catu_horizon_secondary TEXT,
+  catu_horizon_suffix_redox TEXT,
+  /* 'other' 1:n so in subtable see below */
+  val_lith_discont INTEGER CHECK (val_lith_discont > 0) DEFAULT 1,
+  val_duplicate INTEGER CHECK (val_duplicate > 0) DEFAULT 1,
+  ind_buried INTEGER CHECK (ind_buried IN (0, 1)) DEFAULT 0,
+  txt_horizon_name_full TEXT, /* this is for the weird ones - most cases can be handled with the controlled fields */
+  /* FH */
+  catu_functional_name TEXT,
+  cato_functional_perm TEXT,
+  ind_topsoil INTEGER CHECK (ind_topsoil IN (0, 1)) DEFAULT 0,
+  ind_tephra_acid INTEGER CHECK (ind_tephra_acid IN (0, 1)) DEFAULT 0,
+  ind_tephra_basic INTEGER CHECK (ind_tephra_basic IN (0, 1)) DEFAULT 0,
+  cato_horizon_drainage TEXT,
+  
+  PRIMARY KEY (id_site, id_horizon),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_horizon_primary) REFERENCES cod_horizon_names_primary(catu_horizon_primary)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_horizon_secondary) REFERENCES cod_horizon_names_secondary(catu_horizon_secondary)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_horizon_suffix_redox) REFERENCES cod_horizon_suffix_redox(catu_horizon_suffix_redox)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_functional_name) REFERENCES cod_horizon_names_functional(catu_horizon_functional)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_functional_perm) REFERENCES cod_horizon_permeabilities(cato_functional_perm)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_horizon_drainage) REFERENCES cod_horizon_drainage_classes(cato_horizon_drainage)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS dat_horizon_names_suffix_other (
+  id_site TEXT,
+  id_horizon INTEGER,
+  id_suffix INTEGER,
+  catu_horizon_suffix TEXT,
+  cato_horizon_drainage TEXT,
+  
+  PRIMARY KEY (id_site, id_horizon, id_suffix),
+  FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon_names(id_site, id_horizon)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_horizon_suffix) REFERENCES cod_horizon_suffix_other(catu_horizon_suffix_other)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_horizon_drainage) REFERENCES cod_horizon_drainage_classes(cato_horizon_drainage)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+
+```
+
+### Horizon data classification
+
+These should only be used in database views e.g. to underpin report generation 
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_size_classes_solids (
+  id_size_solid INTEGER PRIMARY KEY,
+  catu_size_solid TEXT UNIQUE,
+  txt_size_solid_name TEXT,
+  txt_size_solid_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 21.1 */
+INSERT INTO cod_size_classes_solids VALUES
+   (1, '1', 'Microfine', '< 1 mm'),
+   (2, '2', 'Extremely fine', '1 - 2 mm'),
+   (3, '3', 'Very fine', '2 - 6 mm'),
+   (4, '4', 'Fine', '6 - 10 mm'),
+   (5, '5', 'Medium', '10 - 20 mm'),
+   (6, '6', 'Coarse', '20 - 60 mm'),
+   (7, '7', 'Very Coarse', '60 - 100 mm'),
+   (8, '8', 'Extremely coarse', '100 - 200 mm'),
+   (9, '9', 'Gross', '> 200 mm');
+```
+
+```{sql}
+#| connection: con   
+  
+CREATE TABLE IF NOT EXISTS cod_size_classes_rocks (
+  id_size_rock INTEGER PRIMARY KEY,
+  catu_size_rock TEXT UNIQUE,
+  txt_size_rock_name TEXT,
+  txt_size_rock_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 21.2 */
+INSERT INTO cod_size_classes_rocks VALUES
+         (1, '1', 'Fine gravel',    '2 - 6 mm'),
+         (2, '2', 'Medium gravel',  '6 - 20 mm'),
+         (3, '3', 'Coarse gravel',  '20 - 60 mm'),
+         (4, '4', 'Cobbles',        '60 - 200 mm'),
+         (5, '5', 'Stones',         '200 - 600 mm'),
+         (6, '6', 'Boulders',       '600 - 2000 mm'), 
+         (7, '7', 'Large boulders', '>2000 mm');
+```
+
+```{sql}
+#| connection: con  
+CREATE TABLE IF NOT EXISTS cod_abundance_classes_roots (
+  id_abund_root INTEGER PRIMARY KEY,
+  catu_abund_root TEXT UNIQUE,
+  txt_abund_root_name TEXT,
+  txt_abund_root_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 21.3 */
+INSERT INTO cod_abundance_classes_roots VALUES
+  (1, '0',     'None',          '0%'),
+  (2, '1',      'Few',   '> 0 - 5%'),
+  (3, '2',   'Common',  '> 5 - 25%'),
+  (4, '3',     'Many',  '> 25 - 50%'),
+  (5, '4', 'Abundant',       '> 50%');
+```
+
+```{sql}
+#| connection: con   
+CREATE TABLE IF NOT EXISTS cod_abundance_classes_solids (
+  id_abund_solid INTEGER PRIMARY KEY,
+  catu_abund_solid TEXT UNIQUE,
+  txt_abund_solid_name TEXT,
+  txt_abund_solid_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 21.4 */
+INSERT INTO cod_abundance_classes_solids VALUES
+ (1, '0',     'None',          '0%'),
+ (2, '1', 'Very Few',    '> 0 - 2%'),
+ (3, '2',      'Few',    '> 2 - 10'),
+ (4, '3',   'Common',  '> 10 - 35%'),
+ (5, '4',     'Many',  '> 35 - 50%'),
+ (6, '5', 'Abundant',  '> 50 - 75%'),
+ (7, '6',  'Dominant',      '> 75%' );
+ 
+```
+
+:::
+
+## NZSC
+
+### Order, Group and Subgroup
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_nzsc_orders (
+  catu_nzsc_order TEXT PRIMARY KEY,
+  txt_nzsc_order_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con   
+INSERT INTO cod_nzsc_orders VALUES
+  ('O', 'Organic'),
+  ('G', 'Gley'),
+  ('U', 'Ultic'),
+  ('Z', 'Podzol'),
+  ('L', 'Allophanic'),
+  ('M', 'Pumice'),
+  ('E', 'Melanic'),
+  ('S', 'Semiarid'),
+  ('X', 'Oxidic'),
+  ('N', 'Granular'),
+  ('P', 'Pallic'),
+  ('B', 'Brown'),
+  ('A', 'Anthropic'),
+  ('R', 'Recent'),
+  ('W', 'Raw');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_nzsc_groups (
+  catu_nzsc_order TEXT,
+  catu_nzsc_group TEXT,
+  txt_nzsc_group_name TEXT,
+  
+  PRIMARY KEY (catu_nzsc_order, catu_nzsc_group),
+  FOREIGN KEY (catu_nzsc_order) REFERENCES cod_nzsc_orders(catu_nzsc_order)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+INSERT INTO cod_nzsc_groups VALUES
+  ('O', 'L', 'Litter'),
+  ('O', 'M', 'Mesic'),
+  ('O', 'F', 'Fibric'),
+  ('O', 'H', 'Humic'),
+  ('G', 'U', 'Sulphuric'),
+  ('G', 'T', 'Tephric'),
+  ('G', 'S', 'Sandy'),
+  ('G', 'X', 'Oxidic'),
+  ('G', 'R', 'Recent'),
+  ('G', 'A', 'Acid'),
+  ('G', 'O', 'Orthic'),
+  ('U', 'D', 'Densipan'),
+  ('U', 'E', 'Albic'),
+  ('U', 'P', 'Perch-gley'),
+  ('U', 'S', 'Sandy'),
+  ('U', 'Y', 'Yellow'),
+  ('Z', 'D', 'Densipan'),
+  ('Z', 'P', 'Perch-gley'),
+  ('Z', 'G', 'Groundwater-gley'),
+  ('Z', 'X', 'Pan'),
+  ('Z', 'O', 'Orthic'),
+  ('L', 'P', 'Perch-gley'),
+  ('L', 'G', 'Gley'),
+  ('L', 'I', 'Impeded'),
+  ('L', 'O', 'Orthic'),
+  ('M', 'P', 'Perch-gley'),
+  ('M', 'I', 'Impeded'),
+  ('M', 'O', 'Orthic'),
+  ('E', 'V', 'Vertic'),
+  ('E', 'P', 'Perch-gley'),
+  ('E', 'R', 'Rendzic'),
+  ('E', 'M', 'Mafic'),
+  ('E', 'O', 'Orthic'),
+  ('S', 'A', 'Aged-argillic'),
+  ('S', 'Z', 'Solonetzic'),
+  ('S', 'J', 'Argillic'),
+  ('S', 'I', 'Immature'),
+  ('X', 'P', 'Perch-gley'),
+  ('X', 'N', 'Nodular'),
+  ('X', 'O', 'Orthic'),
+  ('N', 'P', 'Perch-gley'),
+  ('N', 'E', 'Melanic'),
+  ('N', 'X', 'Oxidic'),
+  ('N', 'O', 'Orthic'),
+  ('P', 'P', 'Perch-gley'),
+  ('P', 'U', 'Duric'),
+  ('P', 'X', 'Fragic'),
+  ('P', 'L', 'Laminar'),
+  ('P', 'J', 'Argillic'),
+  ('P', 'I', 'Immature'),
+  ('B', 'L', 'Allophanic'),
+  ('B', 'S', 'Sandy'),
+  ('B', 'X', 'Oxidic'),
+  ('B', 'M', 'Mafic'),
+  ('B', 'A', 'Acid'),
+  ('B', 'F', 'Firm'),
+  ('B', 'O', 'Orthic'),
+  ('A', 'T', 'Truncated'),
+  ('A', 'R', 'Refuse'),
+  ('A', 'M', 'Mixed'),
+  ('A', 'F', 'Fill'),
+  ('R', 'H', 'Hydrothermal'),
+  ('R', 'X', 'Rocky'),
+  ('R', 'S', 'Sandy'),
+  ('R', 'F', 'Fluvial'),
+  ('R', 'T', 'Tephric'),
+  ('R', 'O', 'Orthic'),
+  ('W', 'G', 'Gley'),
+  ('W', 'H', 'Hydrothermal'),
+  ('W', 'X', 'Rocky'),
+  ('W', 'S', 'Sandy'),
+  ('W', 'F', 'Fluvial'),
+  ('W', 'T', 'Tephric'),
+  ('W', 'O', 'Orthic');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_nzsc_subgroups (
+  catu_nzsc_order TEXT,
+  catu_nzsc_group TEXT, 
+  catu_nzsc_subgroup TEXT,
+  txt_nzsc_subgroup_name TEXT,
+  
+  PRIMARY KEY (catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup),
+  FOREIGN KEY (catu_nzsc_order, catu_nzsc_group) 
+    REFERENCES cod_nzsc_groups(catu_nzsc_order, catu_nzsc_group)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+INSERT INTO cod_nzsc_subgroups VALUES
+  ('O', 'L', 'BZ', 'Buried-podzol'),
+  ('O', 'L', 'BG', 'Buried-gley'),
+  ('O', 'L', 'O', 'Orthic-litter'),
+  ('O', 'F', 'S', 'Sphagnic'),
+  ('O', 'F', 'A', 'Acid'),
+  ('O', 'F', 'M', 'Mellow'),
+  ('O', 'M', 'A', 'Acid'),
+  ('O', 'M', 'M', 'Mellow'),
+  ('O', 'H', 'A', 'Acid'),
+  ('O', 'H', 'M', 'Mellow'),
+  ('G', 'U', 'FQ', 'Fluid-saline'),
+  ('G', 'U', 'F', 'Fluid'),
+  ('G', 'U', 'O', 'Peaty'),
+  ('G', 'U', 'SQ', 'Sandy-saline'),
+  ('G', 'U', 'T', 'Typic'),
+  ('G', 'T', 'O', 'Peaty'),
+  ('G', 'T', 'A', 'Acidic'),
+  ('G', 'T', 'T', 'Tephric'),
+  ('G', 'S', 'O', 'Peaty'),
+  ('G', 'S', 'Q', 'Saline'),
+  ('G', 'S', 'C', 'Concretionary'),
+  ('G', 'S', 'A', 'Acidic'),
+  ('G', 'S', 'T', 'Typic'),
+  ('G', 'X', 'N', 'Nodular'),
+  ('G', 'X', 'T', 'Typic'),
+  ('G', 'R', 'O', 'Peaty'),
+  ('G', 'R', 'F', 'Fluid'),
+  ('G', 'R', 'Q', 'Saline'),
+  ('G', 'R', 'C', 'Calcareous'),
+  ('G', 'R', 'A', 'Acidic'),
+  ('G', 'R', 'T', 'Typic'),
+  ('G', 'A', 'O', 'Peaty'),
+  ('G', 'A', 'G', 'Granular'),
+  ('G', 'A', 'Y', 'Ultic'),
+  ('G', 'A', 'PH', 'Placic-humose'),
+  ('G', 'A', 'H', 'Humose'),
+  ('G', 'A', 'T', 'Typic'),
+  ('G', 'O', 'O', 'Peaty'),
+  ('G', 'O', 'Q', 'Saline'),
+  ('G', 'O', 'C', 'Calcareous'),
+  ('G', 'O', 'I', 'Ironstone'),
+  ('G', 'O', 'E', 'Melanic'),
+  ('G', 'O', 'J', 'Argillic'),
+  ('G', 'O', 'A', 'Acidic'),
+  ('G', 'O', 'T', 'Typic'),
+  ('U', 'D', 'P', 'Perch-gleyed'),
+  ('U', 'D', 'M', 'Mottled'),
+  ('U', 'E', 'P', 'Perch-gleyed'),
+  ('U', 'E', 'M', 'Mottled'),
+  ('U', 'E', 'Y', 'Yellow'),
+  ('U', 'P', 'S', 'Sandy'),
+  ('U', 'P', 'T', 'Typic'),
+  ('U', 'S', 'E', 'Albic'),
+  ('U', 'S', 'M', 'Mottled'),
+  ('U', 'S', 'T', 'Typic'),
+  ('U', 'Y', 'G',  'Magnesic'),
+  ('U', 'Y', 'MZ', 'Mottled-podzolic'),
+  ('U', 'Y', 'M',  'Mottled'),
+  ('U', 'Y', 'Z',  'Podzolic'),
+  ('U', 'Y', 'BG', 'Buried-granular'),
+  ('U', 'Y', 'T',  'Typic'),
+  ('Z', 'D', 'U',  'Humus-pan'),
+  ('Z', 'D', 'YH', 'Ultic-humose'),
+  ('Z', 'D', 'H',  'Humose'),
+  ('Z', 'D', 'Q',  'Ortstein'),
+  ('Z', 'D', 'T',  'Typic'),
+  ('Z', 'P', 'F',  'Fluid'),
+  ('Z', 'P', 'OZ', 'Peaty-silt-mantled'),
+  ('Z', 'P', 'Z',  'Silt-mantled'),
+  ('Z', 'P', 'U',  'Humus-pan'),
+  ('Z', 'P', 'HQ', 'Humose-ortstein'),
+  ('Z', 'P', 'HP', 'Humose-placic'),
+  ('Z', 'P', 'H',  'Humose'),
+  ('Z', 'P', 'Q',  'Ortstein'),
+  ('Z', 'P', 'P',  'Placic'),
+  ('Z', 'P', 'T',  'Typic'),
+  ('Z', 'G', 'H',  'Humose'),
+  ('Z', 'G', 'T',  'Typic'),
+  ('Z', 'X', 'U',  'Humus-pan'),
+  ('Z', 'X', 'H',  'Humose'),
+  ('Z', 'X', 'X',  'Fragic'),
+  ('Z', 'X', 'Q',  'Ortstein'),
+  ('Z', 'X', 'P',  'Placic'),
+  ('Z', 'X', 'F',  'Firm'),
+  ('Z', 'O', 'H',  'Humose'),
+  ('Z', 'O', 'T',  'Typic'),
+  ('L', 'P', 'I',  'Ironstone'),
+  ('L', 'P', 'T',  'Typic'),
+  ('L', 'G', 'O',  'Peaty'),
+  ('L', 'G', 'T',  'Typic'),
+  ('L', 'I', 'MI', 'Mottled-ironstone'),
+  ('L', 'I', 'M', 'Mottled'),
+  ('L', 'I', 'T', 'Typic'),
+  ('L', 'O', 'M', 'Mottled'),
+  ('L', 'O', 'VA', 'Vitric-acidic'),
+  ('L', 'O', 'V', 'Vitric'),
+  ('L', 'O', 'A', 'Acidic'),
+  ('L', 'O', 'T', 'Typic'),
+  ('M', 'P', 'U', 'Duric'),
+  ('M', 'P', 'T', 'Typic'),
+  ('M', 'I', 'MW', 'Mottled-welded'),
+  ('M', 'I', 'W', 'Welded'),
+  ('M', 'I', 'M', 'Mottled'),
+  ('M', 'I', 'T', 'Typic'),
+  ('M', 'O', 'M', 'Mottled'),
+  ('M', 'O', 'Z', 'Podzolic'),
+  ('M', 'O', 'L', 'Allophanic'),
+  ('M', 'O', 'BL', 'Buried-allophanic'),
+  ('M', 'O', 'I', 'Immature'),
+  ('M', 'O', 'T', 'Typic'),
+  ('E', 'V', 'MC', 'Mottled-calcareous'),
+  ('E', 'V', 'M', 'Mottled'),
+  ('E', 'V', 'C', 'Calcareous'),
+  ('E', 'V', 'T', 'Typic'),
+  ('E', 'P', 'V', 'Vertic'),
+  ('E', 'P', 'J', 'Argillic'),
+  ('E', 'P', 'T', 'Typic'),
+  ('E', 'R', 'O', 'Peaty'),
+  ('E', 'R', 'M', 'Mottled'),
+  ('E', 'R', 'W', 'Weathered'),
+  ('E', 'R', 'T', 'Typic'),
+  ('E', 'M', 'G', 'Magnesic'),
+  ('E', 'M', 'M', 'Mottled'),
+  ('E', 'M', 'T', 'Typic'),
+  ('E', 'O', 'MC', 'Mottled-calcareous'),
+  ('E', 'O', 'JC', 'Argillic-calcareous'),
+  ('E', 'O', 'DC', 'Pedal-calcareous'),
+  ('E', 'O', 'C', 'Calcareous'),
+  ('E', 'O', 'MJ', 'Mottled-argillic'),
+  ('E', 'O', 'M', 'Mottled'),
+  ('E', 'O', 'J', 'Argillic'),
+  ('E', 'O', 'T', 'Typic'),
+  ('S', 'A', 'M', 'Mottled'),
+  ('S', 'A', 'W', 'Weathered'),
+  ('S', 'A', 'K', 'Alkaline'),
+  ('S', 'A', 'H', 'Thick'),
+  ('S', 'A', 'T', 'Typic'),
+  ('S', 'Z', 'Q', 'Saline'),
+  ('S', 'Z', 'T', 'Typic'),
+  ('S', 'J', 'M', 'Mottled'),
+  ('S', 'J', 'Q', 'Saline'),
+  ('S', 'J', 'K', 'Alkaline'),
+  ('S', 'J', 'L', 'Laminar'),
+  ('S', 'J', 'T', 'Typic'),
+  ('S', 'I', 'M', 'Mottled'),
+  ('S', 'I', 'Q', 'Saline'),
+  ('S', 'I', 'K', 'Alkaline'),
+  ('S', 'I', 'T', 'Typic'),
+  ('X', 'P', 'N', 'Nodular'),
+  ('X', 'P', 'T', 'Typic'),
+  ('X', 'N', 'T', 'Typic'),
+  ('X', 'O', 'M', 'Mottled'),
+  ('X', 'O', 'B', 'Brown'),
+  ('X', 'O', 'T', 'Typic'),
+  ('N', 'P', 'X', 'Oxidic'),
+  ('N', 'P', 'A', 'Acidic'),
+  ('N', 'P', 'T', 'Typic'),
+  ('N', 'E', 'M', 'Mottled'),
+  ('N', 'E', 'L', 'Allophanic'),
+  ('N', 'E', 'T', 'Typic'),
+  ('N', 'X', 'MA', 'Mottled-acidic'),
+  ('N', 'X', 'M', 'Mottled'),
+  ('N', 'X', 'L', 'Allophanic'),
+  ('N', 'X', 'A', 'Acidic'),
+  ('N', 'X', 'T', 'Typic'),
+  ('N', 'O', 'MA', 'Mottled-acidic'),
+  ('N', 'O', 'M', 'Mottled'),
+  ('N', 'O', 'L', 'Allophanic'),
+  ('N', 'O', 'A', 'Acidic'),
+  ('N', 'O', 'T', 'Typic'),
+  ('P', 'P', 'U', 'Duric'),
+  ('P', 'P', 'JX', 'Argillic-fragic'),
+  ('P', 'P', 'X', 'Fragic'),
+  ('P', 'P', 'WJ', 'Weathered-argillic'),
+  ('P', 'P', 'J', 'Argillic'),
+  ('P', 'P', 'C', 'Cemented'),
+  ('P', 'P', 'T', 'Typic'),
+  ('P', 'U', 'M', 'Mottled'),
+  ('P', 'U', 'JN', 'Argillic-sodic'),
+  ('P', 'U', 'J', 'Argillic'),
+  ('P', 'U', 'T', 'Typic'),
+  ('P', 'X', 'JN', 'Argillic-sodic'),
+  ('P', 'X', 'JM', 'Argillic-mottled'),
+  ('P', 'X', 'JC', 'Argillic-calcareous'),
+  ('P', 'X', 'J', 'Argillic'),
+  ('P', 'X', 'MC', 'Mottled-calcareous'),
+  ('P', 'X', 'M', 'Mottled'),
+  ('P', 'X', 'CN', 'Calcareous-sodic'),
+  ('P', 'X', 'C', 'Calcareous'),
+  ('P', 'X', 'T', 'Typic'),
+  ('P', 'L', 'M', 'Mottled'),
+  ('P', 'L', 'C', 'Calcareous'),
+  ('P', 'L', 'T', 'Typic'),
+  ('P', 'J', 'MW', 'Mottled-weathered'),
+  ('P', 'J', 'M', 'Mottled'),
+  ('P', 'J', 'A', 'Aged'),
+  ('P', 'J', 'MU', 'Mottled-ultic'),
+  ('P', 'J', 'U', 'Utlic'),
+  ('P', 'J', 'N', 'Sodic'),
+  ('P', 'J', 'W', 'Weathered'),
+  ('P', 'J', 'C', 'Calcareous'),
+  ('P', 'J', 'T', 'Typic'),
+  ('P', 'I', 'MD', 'Mottled-pedal'),
+  ('P', 'I', 'M', 'Mottled'),
+  ('P', 'I', 'C', 'Calcareous'),
+  ('P', 'I', 'D', 'Pedal'),
+  ('P', 'I', 'T', 'Typic'),
+  ('B', 'L', 'M', 'Mottled'),
+  ('B', 'L', 'A', 'Acidic'),
+  ('B', 'L', 'F', 'Firm'),
+  ('B', 'L', 'AM', 'Acidic-mafic'),
+  ('B', 'L', 'T', 'Typic'),
+  ('B', 'L', 'AD', 'Acidic-pedal'),
+  ('B', 'L', 'D', 'Pedal'),
+  ('B', 'S', 'MP', 'Mottled-placic'),
+  ('B', 'S', 'M', 'Mottled'),
+  ('B', 'S', 'A', 'Acidic'),
+  ('B', 'S', 'P', 'Pallic'),
+  ('B', 'S', 'X', 'Pan'),
+  ('B', 'S', 'T', 'Typic'),
+  ('B', 'X', 'T', 'Typic'),
+  ('B', 'M', 'MG', 'Mottled-magnesic'),
+  ('B', 'M', 'G', 'Magnesic'),
+  ('B', 'M', 'M', 'Mottled'),
+  ('B', 'M', 'A', 'Acidic'),
+  ('B', 'M', 'T', 'Typic'),
+  ('B', 'A', 'O', 'Peaty'),
+  ('B', 'A', 'MP', 'Mottled-placic'),
+  ('B', 'A', 'M', 'Mottled'),
+  ('B', 'A', 'P', 'Placic'),
+  ('B', 'A', 'X', 'Pan'),
+  ('B', 'A', 'T', 'Typic'),
+  ('B', 'F', 'MA', 'Mottled-acidic'),
+  ('B', 'F', 'MC', 'Mottled-cemented'),
+  ('B', 'F', 'MW', 'Mottled-weathered'),
+  ('B', 'F', 'MP', 'Mottled-pallic'),
+  ('B', 'F', 'M', 'Mottled'),
+  ('B', 'F', 'AC', 'Acidic-cemented'),
+  ('B', 'F', 'C', 'Cemented'),
+  ('B', 'F', 'AL', 'Acidic-allophanic'),
+  ('B', 'F', 'L', 'Allophanic'),
+  ('B', 'F', 'W', 'Weathered'),
+  ('B', 'F', 'P', 'Pallic'),
+  ('B', 'F', 'A', 'Acidic'),
+  ('B', 'F', 'T', 'Typic'),
+  ('B', 'O', 'MW', 'Mottled-weathered'),
+  ('B', 'O', 'MA', 'Mottled-acidic'),
+  ('B', 'O', 'M', 'Mottled'),
+  ('B', 'O', 'H', 'Humose'),
+  ('B', 'O', 'I', 'Immature'),
+  ('B', 'O', 'P', 'Pallic'),
+  ('B', 'O', 'A', 'Acidic'),
+  ('B', 'O', 'W', 'Weathered'),
+  ('B', 'O', 'C', 'Calcareous'),
+  ('B', 'O', 'T', 'Typic'),
+  ('A', 'T', 'X', 'Rocky'),
+  ('A', 'T', 'T', 'Typic'),
+  ('A', 'R', 'B', 'Buried'),
+  ('A', 'R', 'T', 'Typic'),
+  ('A', 'F', 'C', 'Compacted'),
+  ('A', 'F', 'W', 'Wet'),
+  ('A', 'F', 'ST', 'Stony-tailings'),
+  ('A', 'F', 'A', 'Artifact'),
+  ('A', 'F', 'E', 'Earthy'),
+  ('R', 'H', 'I', 'Inactive'),
+  ('R', 'X', 'OA', 'Peaty-acidic'),
+  ('R', 'X', 'A', 'Acidic'),
+  ('R', 'X', 'T', 'Typic'),
+  ('R', 'S', 'M', 'Mottled'),
+  ('R', 'S', 'A', 'Acidic'),
+  ('R', 'S', 'K', 'Tephric'),
+  ('R', 'S', 'T', 'Typic'),
+  ('R', 'F', 'MA', 'Mottled-acidic'),
+  ('R', 'F', 'MQ', 'Mottled-saline'),
+  ('R', 'F', 'Q', 'Saline'),
+  ('R', 'F', 'MW', 'Mottled-weathered'),
+  ('R', 'F', 'M', 'Mottled'),
+  ('R', 'F', 'AW', 'Acidic-weathered'),
+  ('R', 'F', 'W', 'Weathered'),
+  ('R', 'F', 'A', 'Acidic'),
+  ('R', 'F', 'T', 'Typic'),
+  ('R', 'T', 'M', 'Mottled'),
+  ('R', 'T', 'BP', 'Buried-pumice'),
+  ('R', 'T', 'BL', 'Buried-allophanic'),
+  ('R', 'T', 'T', 'Typic'),
+  ('R', 'O', 'MP', 'Mottled-pallic'),
+  ('R', 'O', 'M', 'Mottled'),
+  ('R', 'O', 'AW', 'Acidic-weathered'),
+  ('R', 'O', 'W', 'Weathered'),
+  ('R', 'O', 'A', 'Acidic'),
+  ('R', 'O', 'T', 'Typic'),
+  ('W', 'G', 'FU', 'Fluid-sulphidic'),
+  ('W', 'G', 'U', 'Sulphidic'),
+  ('W', 'G', 'FQ', 'Fluid-saline'),
+  ('W', 'G', 'Q', 'Saline'),
+  ('W', 'G', 'F', 'Fluid'),
+  ('W', 'G', 'S', 'Sandy'),
+  ('W', 'G', 'T', 'Typic'),
+  ('W', 'H', 'A', 'Active');
+
+```
+
+:::
+
+### Family and sibling
+
+::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS cod_nzsc_fam_profile_materials (
+  id_nzsc_fam_pm INTEGER PRIMARY KEY,
+  catu_nzsc_fam_pm TEXT UNIQUE,
+  txt_nzsc_fam_pm_name TEXT,
+  txt_nzsc_fam_pm_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 24.1 */
+INSERT INTO cod_nzsc_fam_profile_materials VALUES
+  (1,  'Mf', 'Fragmental', 'Rock fragments with minimal fine earth from within 20 cm to > 60 cm depth'),
+  (2,  'Ml' ,'Lithic', 'Other soils with a coherent- or shattered lithic contact within 45 cm'),
+  (3,  'Mp', 'Paralithic', 'Other soils with a paralithic contact within 45 cm'),
+  (4,  'Mt', 'Tephric', 'Other soils with at least 30 cm of tephric soil material within 100 cm'),
+  (5,  'Mr', 'Rounded-stony', 'Other soils with ≥ 35% by volume rounded or sub-rounded rock fragments from within 45 cm to > 100 cm.'),
+  (6,  'Ma', 'Angular-stony', 'Other soils with ≥ 35% by volume angular or sub-angular rock fragments from within 45 cm to > 100 cm.'),
+  (7,  'Mm', 'Moderately deep on rock', 'Other soils with a lithic or paralithic contact at < 100 cm.'),
+  (8,  'Mg', 'Moderately deep on rock fragments', 'Other soils with ≥ 35% by volume rounded or sub-rounded rock fragments from within 45-90 cm, extending continuously to 100 cm with a cumulative thickness of ≥ 50 cm (unless over rock).'),
+  (9,  'Md', 'Stoneless', 'Other soils with weighted average < 3% rock fragments by volume in the top 100 cm.'),
+  (10, 'Ms', 'Stony', 'Other mineral soils.'),
+  (11, 'Sl', 'Organic-lithic', 'Organic soils with a coherent- or shattered lithic contact within 45 cm.'),
+  (12, 'Sp', 'Organic-paralithic', 'Other organic soils with a paralithic contact within 45 cm.'),
+  (13, 'Sd', 'Organic-deep', 'Other organic soils with continuous peat throughout the top 100 cm.'),
+  (14, 'So', 'Organic-other', 'Other organic soils.');
+
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_nzsc_fam_permeabilities (
+  id_nzsc_fam_perm INTEGER PRIMARY KEY,
+  cato_nzsc_fam_perm TEXT UNIQUE,
+  txt_nzsc_fam_perm_name TEXT,
+  txt_nzsc_fam_perm_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 24.4 */  
+INSERT INTO cod_nzsc_fam_permeabilities VALUES 
+  (1, 's', 'Slow', '< 4 mm/h'),
+  (2, 'm', 'Moderate', '4 - 72 mm/h'),
+  (3, 'r', 'Rapid', '> 72 mm/h');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_nzsc_sib_depths (
+  id_nzsc_sib_depth INTEGER PRIMARY KEY,
+  cato_nzsc_sib_depth TEXT UNIQUE,
+  txt_nzsc_sib_depth_name TEXT,
+  txt_nzsc_sib_depth_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 24.6 */  
+INSERT INTO cod_nzsc_sib_depths VALUES 
+  (1, 'd', 'Deep', '> 100 cm'), 
+  (2, 'md', 'Moderately deep', '≥ 45 - < 100 cm'),
+  (3, 's', 'Shallow', '≥ 20 - < 45 cm'),
+  (4, 'vs', 'Very Shallow' , '< 20 cm');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_nzsc_sib_tsstone (
+  id_nzsc_sib_tsstone INTEGER PRIMARY KEY,
+  cato_nzsc_sib_tsstone TEXT UNIQUE,
+  txt_nzsc_sib_tsstone_name TEXT,
+  txt_nzsc_sib_tsstone_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 24.7 */  
+INSERT INTO cod_nzsc_sib_tsstone VALUES 
+ (1, '1', 'Stoneless', '< 1 %'),
+ (2, '2', 'Slightly stony', '≥ 1 - < 5 %'),
+ (3, '3', 'Moderately stony', '≥ 5 - < 35 %'),
+ (4, '4', 'Very stony' , '≥ 35 % ');
+```
+
+```{sql}
+#| connection: con 
+ 
+CREATE TABLE IF NOT EXISTS cod_nzsc_sib_texture (
+  id_nzsc_sib_texture INTEGER PRIMARY KEY,
+  cato_nzsc_sib_texture TEXT UNIQUE,
+  txt_nzsc_sib_texture_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 24.8 */  
+INSERT INTO cod_nzsc_sib_texture VALUES 
+  (1, 'k', 'Skeletal'),
+  (2, 'Tp', 'Peat or litter'),
+  (3, 'Tc', 'Clayey peat'),
+  (4, 'Tl', 'Loamy peat'),
+  (5, 'Ts', 'Sandy peat'),
+  (6,  'c',  'Clayey'),
+  (7,  's',  'Sandy'),
+  (8,  'l',  'Loamy'),
+  (9,  'z',  'Silty'); 
+```
+
+```{sql}
+#| connection: con   
+  
+CREATE TABLE IF NOT EXISTS cod_nzsc_sib_drainage (
+  id_nzsc_sib_drainage INTEGER PRIMARY KEY,
+  cato_nzsc_sib_drainage TEXT UNIQUE,
+  txt_nzsc_sib_drainage_name TEXT,
+  txt_nzsc_sib_drainage_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 24.9 */  
+INSERT INTO cod_nzsc_sib_drainage VALUES  
+  (1, 'VP', 'Very Poor', 'Profiles with very poorly drained horizons starting <10 cm from the land surface'),
+  (2, 'PO', 'Poor', 'Profiles with poorly drained horizons starting <30 cm from the land surface'),
+  (3, 'IP', 'Imperfect', 'Profiles with poorly drained horizons starting 30-60 cm from the land surface, or profiles with imperfectly drained horizons starting <30 cm from the land surface'),
+  (4, 'MW', 'Moderately Well', 'Profiles with moderately well-drained horizons starting <90 cm from the surface, or profiles with poorly-drained horizons starting 60-90 cm from the surface, or profiles with imperfectly drained horizons starting 30-90 cm from the surface'), 
+  (5, 'WE', 'Well', 'All horizons starting within 90 cm of the surface are well-drained.');
+```
+
+```{sql}
+#| connection: con  
+CREATE TABLE IF NOT EXISTS cod_nzsc_sib_drainage_mods (
+  id_nzsc_sib_drainage_mod INTEGER PRIMARY KEY,
+  cato_nzsc_sib_drainage_mod TEXT UNIQUE,
+  txt_nzsc_sib_drainage_mod_name TEXT,
+  txt_nzsc_sib_drainage_mod_desc TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 24.10 */  
+INSERT INTO cod_nzsc_sib_drainage_mods VALUES   
+ (1, 'N', 'Natural', 'No evidence of human impacts on the local drainage regime'),
+ (2, 'M', 'Minor', 'Drainage regime passively altered by e.g. conversion to or from forest; or ambiguous evidence of any human impacts beyond clearing'),
+ (3, 'A', 'Major', 'Clear evidence of directed human alteration to the drainage regime e.g. drain or dam construction adjacent to site, flow diversions, infill, levelling or contouring works');
+```
+
+```{sql}
+#| connection: con 
+CREATE TABLE IF NOT EXISTS cod_nzsc_bp_rootbarriers (
+  id_nzsc_bp_rootbarrier INTEGER PRIMARY KEY,
+  catu_nzsc_bp_rootbarrier TEXT UNIQUE,
+  txt_nzsc_bp_rootbarrier_name TEXT
+  ) STRICT;
+```
+
+```{sql}
+#| connection: con 
+/* Table 24.11-12 */  
+INSERT INTO cod_nzsc_bp_rootbarriers VALUES 
+  (1,  'C',  'Chemical'),
+  (2,  'D',  'Densely packed gravels'),
+  (3,  'G',  'Extremely gravelly'),
+  (4,  'L',  'Extremely dense'),
+  (5,  'P',  'Pan - continuous'),
+  (6,  'Pd', 'Pan - discontinuous'),
+  (7,  'S',  'Clean sand'),
+  (8,  'A',  'Anoxic'),
+  (9,  'F',  'Fractured rock'),
+  (10, 'M',  'Massive rock'),
+  (11, 'N',  'No barriers');
+
+```
+
+:::
+
+```{sql}
+#| connection: con
+
+CREATE TABLE IF NOT EXISTS dat_nzsc (
+  id_site TEXT PRIMARY KEY,
+  /* top levels */
+  catu_nzsc_order TEXT,
+  catu_nzsc_group TEXT,
+  catu_nzsc_subgroup TEXT,
+  /* family */
+  catu_nzsc_fam_profile_material TEXT,
+  catu_nzsc_fam_rock_1 TEXT,
+  catu_nzsc_fam_rock_2 TEXT,
+  ind_nzsc_fam_rock_mixed INTEGER CHECK (ind_nzsc_fam_rock_mixed IN (0, 1)),
+  catu_nzsc_fam_rofines_1 TEXT,
+  catu_nzsc_fam_rofines_2 TEXT,
+  ind_nzsc_fam_rofines_mixed INTEGER CHECK (ind_nzsc_fam_rofines_mixed IN (0, 1)),
+  catu_nzsc_fam_texture TEXT,
+  catu_nzsc_fam_perm_1 TEXT,
+  catu_nzsc_fam_perm_2 TEXT,
+  catu_nzsc_fam_pmo_1 TEXT,
+  catu_nzsc_fam_pmo_2 TEXT,
+  /* sibling */
+  cato_nzsc_sib_depth TEXT,
+  cato_nzsc_sib_tsstone TEXT,
+  cato_nzsc_sib_texture_1 TEXT,
+  cato_nzsc_sib_texture_2 TEXT,
+  cato_nzsc_sib_drainage TEXT,
+  /* not officially part of the sib definition 
+     but doesn't make sense to store it elsewhere: */
+  cato_nzsc_sib_drainage_mod TEXT,
+  /* bps */
+  catu_nzsc_bp_rootbarrier TEXT,
+  val_nzsc_bp_rootbarrier_hzn INTEGER CHECK (val_nzsc_bp_rootbarrier_hzn > 0),
+ 
+  FOREIGN KEY (id_site) REFERENCES dat_sites(id_site)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_order) REFERENCES cod_nzsc_orders(catu_nzsc_order) 
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_order, catu_nzsc_group) REFERENCES cod_nzsc_groups (catu_nzsc_order, catu_nzsc_group) 
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup)
+    REFERENCES cod_nzsc_subgroups 
+      (catu_nzsc_order, catu_nzsc_group, catu_nzsc_subgroup) 
+      MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT, 
+  FOREIGN KEY (catu_nzsc_fam_profile_material) 
+    REFERENCES cod_nzsc_fam_profile_materials(catu_nzsc_fam_pm)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_fam_rock_1) REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_fam_rock_2) REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_fam_rofines_1) REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_fam_rofines_2) REFERENCES cod_nzsc_lithologies(catu_nzsc_lithology)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_fam_texture) REFERENCES cod_simple_textures(cato_simple_texture)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_fam_perm_1) REFERENCES cod_nzsc_fam_permeabilities(cato_nzsc_fam_perm)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_fam_perm_2) REFERENCES cod_nzsc_fam_permeabilities(cato_nzsc_fam_perm)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_fam_pmo_1) REFERENCES cod_nzsc_pmo(catu_pmo)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_fam_pmo_2) REFERENCES cod_nzsc_pmo(catu_pmo)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_nzsc_sib_depth) REFERENCES cod_nzsc_sib_depths(cato_nzsc_sib_depth)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_nzsc_sib_tsstone) REFERENCES cod_nzsc_sib_tsstone(cato_nzsc_sib_tsstone)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_nzsc_sib_texture_1) REFERENCES cod_nzsc_sib_texture(cato_nzsc_sib_texture)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_nzsc_sib_texture_2) REFERENCES cod_nzsc_sib_texture(cato_nzsc_sib_texture)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_nzsc_sib_drainage) REFERENCES cod_nzsc_sib_drainage(cato_nzsc_sib_drainage)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (cato_nzsc_sib_drainage_mod) 
+    REFERENCES cod_nzsc_sib_drainage_mods(cato_nzsc_sib_drainage_mod)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (catu_nzsc_bp_rootbarrier) 
+    REFERENCES cod_nzsc_bp_rootbarriers(catu_nzsc_bp_rootbarrier)
+    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
+  ) STRICT;
+  
+```
+
+## Output database definition
+
+Save this database definition as an on-disk empty \*.db file that can be used as a template.
+
+```{r}
+
+# create new file on disk
+con_out <- dbConnect(drv, dbname = 
+                       file.path('template_NZSD_sqlite.db'))
+dbExecute(con_out, "PRAGMA foreign_keys = 1")
+
+# copy the in-memory file into the on-disk one
+sqliteCopyDatabase(con, con_out)
+
+# close all connections
+dbDisconnect(con)
+dbDisconnect(con_out)
+
+```
