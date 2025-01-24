@@ -1,0 +1,167 @@
+---
+title: "New Zealand Soil Description Manual 2024 - Demonstration data"
+author: "Lauren O'Brien"
+date: "2025-01-13"
+date-modified: "today"
+format: 
+  html:
+    embed-resources: true
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+This file creates a blank database from the SQLite template and inserts a few sites' worth of data from the [NSD](https://viewer-nsdr.landcareresearch.co.nz/search).
+
+```{r}
+#| results: hold
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(readxl)
+library(sf)
+library(rnaturalearth)
+library(RSQLite)
+```
+
+## Setup
+
+Copy the template and connect to the copy:
+
+```{r}
+#| eval: false
+file.copy(from = file.path('template_NZSD_sqlite.db'),
+          to   = file.path('nsd_demo_sqlite.db'),
+          overwrite = TRUE)
+```
+
+```{r}
+drv <- SQLite()
+con <- dbConnect(drv,
+                     dbname = file.path('nsd_demo_sqlite.db'))
+dbExecute(con, "PRAGMA foreign_keys = 1")
+```
+
+## Importing data
+
+The sites being imported are:
+
+  - [SB09994](https://viewer-nsdr.landcareresearch.co.nz/soil/id/nsdr/sa_site/2747?view=sitereport)
+  - [SB08300](https://viewer-nsdr.landcareresearch.co.nz/soil/id/nsdr/sa_site/2101?view=sitereport)
+  - [SB09093](https://viewer-nsdr.landcareresearch.co.nz/soil/id/nsdr/sa_site/2603?view=sitereport)
+  - [SB09446](https://viewer-nsdr.landcareresearch.co.nz/soil/id/nsdr/sa_site/2554?view=sitereport)
+  
+The data was coded with reference to the original scanned hardcopy descriptions, so some minor differences may exist between the website reports above and the improted data. Excel was used as an ersatz GUI rather than writing INSERT statements for time reasons.
+
+```{r}
+#| eval: false
+
+srcdata <- file.path('test_db_layout_withdata.xlsx')
+
+# get sheet names; they should match data table names
+src_tables <- excel_sheets(srcdata)
+
+# read in each sequentially, except for the last two (they hold code lists)
+input_tables <- src_tables[1:(length(src_tables) - 2)]
+src_nsd <- purrr::map(input_tables, \(x) {
+  read_xlsx(path = srcdata, sheet = x)
+})
+names(src_nsd) <- input_tables
+
+# cast boolean data to integer for SQLite, and set correct data types for empty
+# columns 
+
+src_nsd <- purrr::map(src_nsd, \(x) {
+  x |>
+    mutate(across(matches('ind_'), as.logical)) |>
+    mutate(across(matches('val_|amt_'), as.numeric)) |>
+    mutate(across(matches('catu_|cato_|txt_'), as.character))
+})
+
+```
+
+With the site data as a list of R data frames, it can now be imported into the DB:
+
+```{r}
+#| eval: false
+purrr::map(input_tables, \(x) {
+  dbAppendTable(con, 
+                name = x, 
+                value = src_nsd[[x]])
+})
+```
+
+Great success!
+
+The populated database can now be queried. 
+
+The following pulls out the locations table and plots the site coordinates.
+
+```{r}
+locs <- dbGetQuery(con, 'select * from dat_locations') |>
+  st_as_sf(coords = c('val_site_coordinate_x', 'val_site_coordinate_y'),
+           crs = 2193)
+  
+# get a publicly available NZ-outlne polygon and trim to mainland area
+ml <- 
+  st_as_sfc(st_bbox(c(xmin = 166, xmax = 179, ymin = -34, ymax = -48), crs = 4326))
+nzch <- rnaturalearth::ne_countries(country = 'New Zealand', scale = 50 ) |>
+  st_crop(ml) |>
+  st_transform(2193)
+```
+
+```{r}
+#| echo: false
+#| results: true
+
+# plot
+ggplot() +
+  geom_sf(data = nzch) +
+  geom_sf(data = locs, col = 'red', size = 3) +
+  geom_sf_label(data = locs, aes(label = id_site), nudge_y = 50000) +
+  theme_minimal() +
+  theme(axis.title = element_blank()) +
+  coord_sf()
+
+```
+
+A more complicated query, pulling data from several tables:
+
+```{r}
+basics <- 
+  dbGetQuery(con,
+             "SELECT
+                id_site,
+                dt_site,
+                val_site_coordinate_x as coord_x,
+                val_site_coordinate_y as coord_y,
+                catu_nzsc_order || catu_nzsc_group || catu_nzsc_subgroup AS nzsc,
+                catu_nzsc_fam_profile_material as profmat,
+                catu_nzsc_fam_pmo_1,
+                amt_slope_d,
+                amt_aspect_d,
+                catu_vegetation_luc
+              FROM
+                dat_sites
+              LEFT JOIN dat_locations USING (id_site)
+              LEFT JOIN dat_site_surface USING (id_site) 
+              LEFT JOIN dat_nzsc USING (id_site);") |>
+  st_as_sf(coords = c('coord_x', 'coord_y'), crs = 2193)
+```
+
+```{r}
+#| echo: false
+#| results: true
+
+ggplot() +
+  geom_sf(data = nzch) +
+  geom_sf(data = basics, aes(col = profmat), size = 3) +
+  geom_sf_label(data = basics, aes(label = nzsc), nudge_y = 50000) +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        legend.position = 'bottom') +
+  labs(col = 'Profile material') +
+  coord_sf()
+
+```
