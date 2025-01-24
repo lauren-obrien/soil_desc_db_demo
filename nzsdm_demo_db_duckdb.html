@@ -3113,7 +3113,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">January 22, 2025</p>
+      <p class="date-modified">January 23, 2025</p>
     </div>
   </div>
     
@@ -4467,15 +4467,16 @@ support tables
 <span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FOREIGN</span> <span class="kw">KEY</span> (id_site, id_horizon) <span class="kw">REFERENCES</span> dat_horizon(id_site, id_horizon),</span>
 <span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">PRIMARY</span> <span class="kw">KEY</span> (id_site, id_horizon),</span>
 <span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  amt_total_frags_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_total_frags_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>  amt_otherfrags_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_otherfrags_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>  amt_artefacts_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_artefacts_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>  amt_total_roots_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_total_roots_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>  catu_total_roots_pos <span class="dt">VARCHAR</span> <span class="kw">REFERENCES</span> cod_root_positions(catu_root_pos),</span>
-<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>  amt_total_voids_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_total_voids_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>  amt_total_pores_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_total_pores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>  amt_macropores_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_macropores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>  amt_micropores_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_micropores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>)</span>
-<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>  );</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>  amt_rock_frags_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_rock_frags_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>  amt_other_frags_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_other_frags_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>  amt_artefacts_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_artefacts_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>  amt_total_roots_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_total_roots_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>  catu_total_roots_pos <span class="dt">VARCHAR</span> <span class="kw">REFERENCES</span> cod_root_positions(catu_root_pos),</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>  amt_total_voids_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_total_voids_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>  amt_total_pores_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_total_pores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>  amt_macropores_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_macropores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>  amt_micropores_p <span class="dt">DECIMAL</span>(<span class="dv">6</span>, <span class="dv">2</span>) <span class="kw">CHECK</span> (amt_micropores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>)</span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a>  );</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="structure" class="level3">
 <h3 class="anchored" data-anchor-id="structure">Structure</h3>
@@ -4914,104 +4915,108 @@ support tables
 <span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_munsell_colours <span class="kw">VALUES</span></span>
 <span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;10YR 2/1&#39;</span>,    <span class="st">&#39;#372F29&#39;</span>),</span>
 <span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;10YR 3/3&#39;</span>,    <span class="st">&#39;#58432B&#39;</span>),</span>
-<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;10YR 5/4&#39;</span>,    <span class="st">&#39;#947650&#39;</span>),</span>
-<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">4</span>, <span class="st">&#39;10YR 5/6&#39;</span>,    <span class="st">&#39;#947136&#39;</span>),</span>
-<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">5</span>, <span class="st">&#39;10YR 6/2&#39;</span>,    <span class="st">&#39;#A1907C&#39;</span>),</span>
-<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">6</span>, <span class="st">&#39;2.5Y 5/4&#39;</span>,    <span class="st">&#39;#8D764A&#39;</span>),</span>
-<span id="cb43-21"><a href="#cb43-21" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">7</span>, <span class="st">&#39;2.5Y 7/4&#39;</span>,    <span class="st">&#39;#C2AA7B&#39;</span>),</span>
-<span id="cb43-22"><a href="#cb43-22" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">8</span>, <span class="st">&#39;2.5YR 2.5/2&#39;</span>, <span class="st">&#39;#4C3630&#39;</span>),</span>
-<span id="cb43-23"><a href="#cb43-23" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">9</span>, <span class="st">&#39;5R 3/8&#39;</span>,      <span class="st">&#39;#80282F&#39;</span>),</span>
-<span id="cb43-24"><a href="#cb43-24" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">10</span>, <span class="st">&#39;5YR 2.5/2&#39;</span>,  <span class="st">&#39;#4B372E&#39;</span>),</span>
-<span id="cb43-25"><a href="#cb43-25" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">11</span>, <span class="st">&#39;7.5YR 3/2&#39;</span>,  <span class="st">&#39;#564336&#39;</span>),</span>
-<span id="cb43-26"><a href="#cb43-26" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">12</span>, <span class="st">&#39;7.5YR 3/4&#39;</span>,  <span class="st">&#39;#604025&#39;</span>),</span>
-<span id="cb43-27"><a href="#cb43-27" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">13</span>, <span class="st">&#39;7.5YR 4/2&#39;</span>,  <span class="st">&#39;#705C4D&#39;</span>),</span>
-<span id="cb43-28"><a href="#cb43-28" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">14</span>, <span class="st">&#39;7.5YR 4/4&#39;</span>,  <span class="st">&#39;#7C583A&#39;</span>),</span>
-<span id="cb43-29"><a href="#cb43-29" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">15</span>, <span class="st">&#39;7.5YR 5/4&#39;</span>,  <span class="st">&#39;#957253&#39;</span>),</span>
-<span id="cb43-30"><a href="#cb43-30" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">16</span>, <span class="st">&#39;7.5YR 5/6&#39;</span>,  <span class="st">&#39;#A06F3E&#39;</span>),</span>
-<span id="cb43-31"><a href="#cb43-31" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">17</span>, <span class="st">&#39;7.5YR 5/8&#39;</span>,  <span class="st">&#39;#A86C27&#39;</span>),</span>
-<span id="cb43-32"><a href="#cb43-32" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">18</span>, <span class="st">&#39;7.5YR 7/1&#39;</span>,  <span class="st">&#39;#B6ABA3&#39;</span>),</span>
-<span id="cb43-33"><a href="#cb43-33" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">19</span>, <span class="st">&#39;N 4/0&#39;</span>,      <span class="st">&#39;#606060&#39;</span>);</span>
-<span id="cb43-34"><a href="#cb43-34" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb43-35"><a href="#cb43-35" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_short_colours (</span>
-<span id="cb43-36"><a href="#cb43-36" aria-hidden="true" tabindex="-1"></a>  id_colour <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
-<span id="cb43-37"><a href="#cb43-37" aria-hidden="true" tabindex="-1"></a>  catu_colour <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
-<span id="cb43-38"><a href="#cb43-38" aria-hidden="true" tabindex="-1"></a>  txt_colour_name <span class="dt">VARCHAR</span>,</span>
-<span id="cb43-39"><a href="#cb43-39" aria-hidden="true" tabindex="-1"></a>  txt_colour_desc <span class="dt">VARCHAR</span></span>
-<span id="cb43-40"><a href="#cb43-40" aria-hidden="true" tabindex="-1"></a>  );</span>
-<span id="cb43-41"><a href="#cb43-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb43-42"><a href="#cb43-42" aria-hidden="true" tabindex="-1"></a><span class="co">/* Table 14.2 */</span></span>
-<span id="cb43-43"><a href="#cb43-43" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_short_colours <span class="kw">VALUES</span></span>
-<span id="cb43-44"><a href="#cb43-44" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;R&#39;</span>, <span class="st">&#39;Red&#39;</span>, <span class="st">&#39;2.5YR or redder, with value &lt; 7 and chroma &gt; 2&#39;</span>),</span>
-<span id="cb43-45"><a href="#cb43-45" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;O&#39;</span>, <span class="st">&#39;Orange&#39;</span>, <span class="st">&#39;5YR or 7.5YR, with value &lt; 7 and chroma &gt; 2&#39;</span>),</span>
-<span id="cb43-46"><a href="#cb43-46" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;B&#39;</span>, <span class="st">&#39;Brown&#39;</span>, <span class="st">&#39;7.5YR or 10YR, with value &gt; 4 and chroma &gt; 2&#39;</span>),</span>
-<span id="cb43-47"><a href="#cb43-47" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">4</span>, <span class="st">&#39;Y&#39;</span>, <span class="st">&#39;Yellow&#39;</span>, <span class="st">&#39;2.5Y or 5Y, with value &gt; 4 and chroma &gt; 2&#39;</span>),</span>
-<span id="cb43-48"><a href="#cb43-48" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">5</span>, <span class="st">&#39;G&#39;</span>, <span class="st">&#39;Grey&#39;</span>, <span class="st">&#39;Any non-gley hue, value 4--7, chroma 1&#39;</span>),</span>
-<span id="cb43-49"><a href="#cb43-49" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">6</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;Dark&#39;</span>, <span class="st">&#39;Any non-gley hue, values ≤ 3 and chromas ≤ 2&#39;</span>),</span>
-<span id="cb43-50"><a href="#cb43-50" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">7</span>, <span class="st">&#39;P&#39;</span>, <span class="st">&#39;Pale&#39;</span>, <span class="st">&#39;Any non-gley hue, values ≥ 7 and chromas ≤ 2&#39;</span>),</span>
-<span id="cb43-51"><a href="#cb43-51" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">8</span>, <span class="st">&#39;L&#39;</span>, <span class="st">&#39;Gley&#39;</span>, <span class="st">&#39;Gley charts&#39;</span>);</span>
-<span id="cb43-52"><a href="#cb43-52" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb43-53"><a href="#cb43-53" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_colour_moistures (</span>
-<span id="cb43-54"><a href="#cb43-54" aria-hidden="true" tabindex="-1"></a>  id_colour_moisture <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
-<span id="cb43-55"><a href="#cb43-55" aria-hidden="true" tabindex="-1"></a>  cato_colour_moisture <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
-<span id="cb43-56"><a href="#cb43-56" aria-hidden="true" tabindex="-1"></a>  txt_colour_moisture_name <span class="dt">VARCHAR</span></span>
-<span id="cb43-57"><a href="#cb43-57" aria-hidden="true" tabindex="-1"></a>  );</span>
-<span id="cb43-58"><a href="#cb43-58" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb43-59"><a href="#cb43-59" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_colour_moistures <span class="kw">VALUES</span></span>
-<span id="cb43-60"><a href="#cb43-60" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;M&#39;</span>, <span class="st">&#39;Moist&#39;</span>),</span>
-<span id="cb43-61"><a href="#cb43-61" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;Dry&#39;</span>);</span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;10YR 4/3&#39;</span>,    <span class="st">&#39;#735C40&#39;</span>),</span>
+<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">4</span>, <span class="st">&#39;10YR 5/4&#39;</span>,    <span class="st">&#39;#947650&#39;</span>),</span>
+<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">5</span>, <span class="st">&#39;10YR 5/6&#39;</span>,    <span class="st">&#39;#947136&#39;</span>),</span>
+<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">6</span>, <span class="st">&#39;10YR 6/2&#39;</span>,    <span class="st">&#39;#A1907C&#39;</span>),</span>
+<span id="cb43-21"><a href="#cb43-21" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">7</span>, <span class="st">&#39;10YR 6/8&#39;</span>,    <span class="st">&#39;#BD8936&#39;</span>),</span>
+<span id="cb43-22"><a href="#cb43-22" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">8</span>, <span class="st">&#39;2.5Y 5/4&#39;</span>,    <span class="st">&#39;#8D764A&#39;</span>),</span>
+<span id="cb43-23"><a href="#cb43-23" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">9</span>, <span class="st">&#39;2.5Y 5/6&#39;</span>,    <span class="st">&#39;#947430&#39;</span>),</span>
+<span id="cb43-24"><a href="#cb43-24" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">10</span>, <span class="st">&#39;2.5Y 7/4&#39;</span>,    <span class="st">&#39;#C2AA7B&#39;</span>),</span>
+<span id="cb43-25"><a href="#cb43-25" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">11</span>, <span class="st">&#39;2.5YR 2.5/2&#39;</span>, <span class="st">&#39;#4C3630&#39;</span>),</span>
+<span id="cb43-26"><a href="#cb43-26" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">12</span>, <span class="st">&#39;5R 3/8&#39;</span>,      <span class="st">&#39;#80282F&#39;</span>),</span>
+<span id="cb43-27"><a href="#cb43-27" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">13</span>, <span class="st">&#39;5YR 2.5/2&#39;</span>,  <span class="st">&#39;#4B372E&#39;</span>),</span>
+<span id="cb43-28"><a href="#cb43-28" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">14</span>, <span class="st">&#39;5YR 5/6&#39;</span>,    <span class="st">&#39;#A46C45&#39;</span>),</span>
+<span id="cb43-29"><a href="#cb43-29" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">15</span>, <span class="st">&#39;7.5YR 3/2&#39;</span>,  <span class="st">&#39;#564336&#39;</span>),</span>
+<span id="cb43-30"><a href="#cb43-30" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">16</span>, <span class="st">&#39;7.5YR 3/4&#39;</span>,  <span class="st">&#39;#604025&#39;</span>),</span>
+<span id="cb43-31"><a href="#cb43-31" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">17</span>, <span class="st">&#39;7.5YR 4/2&#39;</span>,  <span class="st">&#39;#705C4D&#39;</span>),</span>
+<span id="cb43-32"><a href="#cb43-32" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">18</span>, <span class="st">&#39;7.5YR 4/4&#39;</span>,  <span class="st">&#39;#7C583A&#39;</span>),</span>
+<span id="cb43-33"><a href="#cb43-33" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">19</span>, <span class="st">&#39;7.5YR 5/4&#39;</span>,  <span class="st">&#39;#957253&#39;</span>),</span>
+<span id="cb43-34"><a href="#cb43-34" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">20</span>, <span class="st">&#39;7.5YR 5/6&#39;</span>,  <span class="st">&#39;#A06F3E&#39;</span>),</span>
+<span id="cb43-35"><a href="#cb43-35" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">21</span>, <span class="st">&#39;7.5YR 5/8&#39;</span>,  <span class="st">&#39;#A86C27&#39;</span>),</span>
+<span id="cb43-36"><a href="#cb43-36" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">22</span>, <span class="st">&#39;7.5YR 7/1&#39;</span>,  <span class="st">&#39;#B6ABA3&#39;</span>),</span>
+<span id="cb43-37"><a href="#cb43-37" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">23</span>, <span class="st">&#39;N 4/0&#39;</span>,      <span class="st">&#39;#606060&#39;</span>);</span>
+<span id="cb43-38"><a href="#cb43-38" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb43-39"><a href="#cb43-39" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_short_colours (</span>
+<span id="cb43-40"><a href="#cb43-40" aria-hidden="true" tabindex="-1"></a>  id_colour <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb43-41"><a href="#cb43-41" aria-hidden="true" tabindex="-1"></a>  catu_colour <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
+<span id="cb43-42"><a href="#cb43-42" aria-hidden="true" tabindex="-1"></a>  txt_colour_name <span class="dt">VARCHAR</span>,</span>
+<span id="cb43-43"><a href="#cb43-43" aria-hidden="true" tabindex="-1"></a>  txt_colour_desc <span class="dt">VARCHAR</span></span>
+<span id="cb43-44"><a href="#cb43-44" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb43-45"><a href="#cb43-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-46"><a href="#cb43-46" aria-hidden="true" tabindex="-1"></a><span class="co">/* Table 14.2 */</span></span>
+<span id="cb43-47"><a href="#cb43-47" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_short_colours <span class="kw">VALUES</span></span>
+<span id="cb43-48"><a href="#cb43-48" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;R&#39;</span>, <span class="st">&#39;Red&#39;</span>, <span class="st">&#39;2.5YR or redder, with value &lt; 7 and chroma &gt; 2&#39;</span>),</span>
+<span id="cb43-49"><a href="#cb43-49" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;O&#39;</span>, <span class="st">&#39;Orange&#39;</span>, <span class="st">&#39;5YR or 7.5YR, with value &lt; 7 and chroma &gt; 2&#39;</span>),</span>
+<span id="cb43-50"><a href="#cb43-50" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;B&#39;</span>, <span class="st">&#39;Brown&#39;</span>, <span class="st">&#39;7.5YR or 10YR, with value &gt; 4 and chroma &gt; 2&#39;</span>),</span>
+<span id="cb43-51"><a href="#cb43-51" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">4</span>, <span class="st">&#39;Y&#39;</span>, <span class="st">&#39;Yellow&#39;</span>, <span class="st">&#39;2.5Y or 5Y, with value &gt; 4 and chroma &gt; 2&#39;</span>),</span>
+<span id="cb43-52"><a href="#cb43-52" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">5</span>, <span class="st">&#39;G&#39;</span>, <span class="st">&#39;Grey&#39;</span>, <span class="st">&#39;Any non-gley hue, value 4--7, chroma 1&#39;</span>),</span>
+<span id="cb43-53"><a href="#cb43-53" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">6</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;Dark&#39;</span>, <span class="st">&#39;Any non-gley hue, values ≤ 3 and chromas ≤ 2&#39;</span>),</span>
+<span id="cb43-54"><a href="#cb43-54" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">7</span>, <span class="st">&#39;P&#39;</span>, <span class="st">&#39;Pale&#39;</span>, <span class="st">&#39;Any non-gley hue, values ≥ 7 and chromas ≤ 2&#39;</span>),</span>
+<span id="cb43-55"><a href="#cb43-55" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">8</span>, <span class="st">&#39;L&#39;</span>, <span class="st">&#39;Gley&#39;</span>, <span class="st">&#39;Gley charts&#39;</span>);</span>
+<span id="cb43-56"><a href="#cb43-56" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb43-57"><a href="#cb43-57" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_colour_moistures (</span>
+<span id="cb43-58"><a href="#cb43-58" aria-hidden="true" tabindex="-1"></a>  id_colour_moisture <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb43-59"><a href="#cb43-59" aria-hidden="true" tabindex="-1"></a>  cato_colour_moisture <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
+<span id="cb43-60"><a href="#cb43-60" aria-hidden="true" tabindex="-1"></a>  txt_colour_moisture_name <span class="dt">VARCHAR</span></span>
+<span id="cb43-61"><a href="#cb43-61" aria-hidden="true" tabindex="-1"></a>  );</span>
 <span id="cb43-62"><a href="#cb43-62" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb43-63"><a href="#cb43-63" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_pattern_types (</span>
-<span id="cb43-64"><a href="#cb43-64" aria-hidden="true" tabindex="-1"></a>  id_pattern <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
-<span id="cb43-65"><a href="#cb43-65" aria-hidden="true" tabindex="-1"></a>  catu_pattern <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
-<span id="cb43-66"><a href="#cb43-66" aria-hidden="true" tabindex="-1"></a>  txt_pattern_name <span class="dt">VARCHAR</span>,</span>
-<span id="cb43-67"><a href="#cb43-67" aria-hidden="true" tabindex="-1"></a>  txt_pattern_desc <span class="dt">VARCHAR</span></span>
-<span id="cb43-68"><a href="#cb43-68" aria-hidden="true" tabindex="-1"></a>  );</span>
-<span id="cb43-69"><a href="#cb43-69" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb43-70"><a href="#cb43-70" aria-hidden="true" tabindex="-1"></a><span class="co">/* Table 14.3 */</span></span>
-<span id="cb43-71"><a href="#cb43-71" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_pattern_types <span class="kw">VALUES</span></span>
-<span id="cb43-72"><a href="#cb43-72" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;M&#39;</span>, <span class="st">&#39;Mottles&#39;</span>, <span class="st">&#39;Colour patterns induced by redox processes&#39;</span>),</span>
-<span id="cb43-73"><a href="#cb43-73" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;R&#39;</span>, <span class="st">&#39;Reticulate&#39;</span>, <span class="st">&#39;Colour patterns induced by preferential flow (e.g. gammate patterns in pallic soils)&#39;</span>),</span>
-<span id="cb43-74"><a href="#cb43-74" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;W&#39;</span>, <span class="st">&#39;Weathering&#39;</span>, <span class="st">&#39;Colour patterns induced by parent material weathering, most commonly seen in BC horizons and below (e.g. rock ghost patterns)&#39;</span>),</span>
-<span id="cb43-75"><a href="#cb43-75" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">4</span>, <span class="st">&#39;X&#39;</span>, <span class="st">&#39;Mixing&#39;</span>, <span class="st">&#39;Colour patterns created by biological (e.g. worm tunnels) or mechanical (e.g. landslide) means&#39;</span>);</span>
-<span id="cb43-76"><a href="#cb43-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb43-77"><a href="#cb43-77" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_pattern_shapes (</span>
-<span id="cb43-78"><a href="#cb43-78" aria-hidden="true" tabindex="-1"></a>  id_pattern_shape <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
-<span id="cb43-79"><a href="#cb43-79" aria-hidden="true" tabindex="-1"></a>  catu_pattern_shape <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
-<span id="cb43-80"><a href="#cb43-80" aria-hidden="true" tabindex="-1"></a>  txt_pattern_shape_name <span class="dt">VARCHAR</span>,</span>
-<span id="cb43-81"><a href="#cb43-81" aria-hidden="true" tabindex="-1"></a>  txt_pattern_shape_desc <span class="dt">VARCHAR</span></span>
-<span id="cb43-82"><a href="#cb43-82" aria-hidden="true" tabindex="-1"></a>  );</span>
-<span id="cb43-83"><a href="#cb43-83" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb43-84"><a href="#cb43-84" aria-hidden="true" tabindex="-1"></a><span class="co">/* Table 14.4 */</span></span>
-<span id="cb43-85"><a href="#cb43-85" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_pattern_shapes <span class="kw">VALUES</span></span>
-<span id="cb43-86"><a href="#cb43-86" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;B&#39;</span>, <span class="st">&#39;Blotches&#39;</span>, <span class="st">&#39;Rounded shapes, blobs, where colour patterns penetrate the soil mass&#39;</span>),</span>
-<span id="cb43-87"><a href="#cb43-87" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;S&#39;</span>, <span class="st">&#39;Stripes&#39;</span>, <span class="st">&#39;Linear colour patterns e.g. root linings&#39;</span>),</span>
-<span id="cb43-88"><a href="#cb43-88" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;C&#39;</span>, <span class="st">&#39;Coatings&#39;</span>, <span class="st">&#39;Patterns caused by ped surface features e.g. cutans&#39;</span>);</span>
-<span id="cb43-89"><a href="#cb43-89" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb43-90"><a href="#cb43-90" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_pattern_contrasts (</span>
-<span id="cb43-91"><a href="#cb43-91" aria-hidden="true" tabindex="-1"></a>  id_pattern_contrast <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
-<span id="cb43-92"><a href="#cb43-92" aria-hidden="true" tabindex="-1"></a>  catu_pattern_contrast <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
-<span id="cb43-93"><a href="#cb43-93" aria-hidden="true" tabindex="-1"></a>  txt_pattern_contrast_name <span class="dt">VARCHAR</span>,</span>
-<span id="cb43-94"><a href="#cb43-94" aria-hidden="true" tabindex="-1"></a>  txt_pattern_contrast_desc <span class="dt">VARCHAR</span></span>
-<span id="cb43-95"><a href="#cb43-95" aria-hidden="true" tabindex="-1"></a>  );</span>
-<span id="cb43-96"><a href="#cb43-96" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb43-97"><a href="#cb43-97" aria-hidden="true" tabindex="-1"></a><span class="co">/* Table 14.5 */</span></span>
-<span id="cb43-98"><a href="#cb43-98" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_pattern_contrasts <span class="kw">VALUES</span></span>
-<span id="cb43-99"><a href="#cb43-99" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;F&#39;</span>, <span class="st">&#39;Faint&#39;</span>, <span class="st">&#39;Indistinct colour variation evident only on close examination&#39;</span>),</span>
-<span id="cb43-100"><a href="#cb43-100" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;Distinct&#39;</span>, <span class="st">&#39;Although not striking, the colour variation is readily seen&#39;</span>),</span>
-<span id="cb43-101"><a href="#cb43-101" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;P&#39;</span>, <span class="st">&#39;Prominent&#39;</span>, <span class="st">&#39;The colour variation is conspicuous&#39;</span>);</span>
-<span id="cb43-102"><a href="#cb43-102" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb43-103"><a href="#cb43-103" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_pattern_edges (</span>
-<span id="cb43-104"><a href="#cb43-104" aria-hidden="true" tabindex="-1"></a>  id_pattern_edge <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
-<span id="cb43-105"><a href="#cb43-105" aria-hidden="true" tabindex="-1"></a>  catu_pattern_edge <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
-<span id="cb43-106"><a href="#cb43-106" aria-hidden="true" tabindex="-1"></a>  txt_pattern_edge_name <span class="dt">VARCHAR</span>,</span>
-<span id="cb43-107"><a href="#cb43-107" aria-hidden="true" tabindex="-1"></a>  txt_pattern_edge_desc <span class="dt">VARCHAR</span></span>
-<span id="cb43-108"><a href="#cb43-108" aria-hidden="true" tabindex="-1"></a>  );</span>
-<span id="cb43-109"><a href="#cb43-109" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb43-110"><a href="#cb43-110" aria-hidden="true" tabindex="-1"></a><span class="co">/* Table 14.6 */</span></span>
-<span id="cb43-111"><a href="#cb43-111" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_pattern_edges <span class="kw">VALUES</span> </span>
-<span id="cb43-112"><a href="#cb43-112" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;S&#39;</span>, <span class="st">&#39;Sharp&#39;</span>, <span class="st">&#39;Knife-edge boundaries between colours&#39;</span>),</span>
-<span id="cb43-113"><a href="#cb43-113" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;C&#39;</span>, <span class="st">&#39;Clear&#39;</span>, <span class="st">&#39;Colour transition &lt; 2 mm wide&#39;</span>),</span>
-<span id="cb43-114"><a href="#cb43-114" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;Diffuse&#39;</span>, <span class="st">&#39;Colour transition &gt; 2 mm wide&#39;</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb43-63"><a href="#cb43-63" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_colour_moistures <span class="kw">VALUES</span></span>
+<span id="cb43-64"><a href="#cb43-64" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;M&#39;</span>, <span class="st">&#39;Moist&#39;</span>),</span>
+<span id="cb43-65"><a href="#cb43-65" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;Dry&#39;</span>);</span>
+<span id="cb43-66"><a href="#cb43-66" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb43-67"><a href="#cb43-67" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_pattern_types (</span>
+<span id="cb43-68"><a href="#cb43-68" aria-hidden="true" tabindex="-1"></a>  id_pattern <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb43-69"><a href="#cb43-69" aria-hidden="true" tabindex="-1"></a>  catu_pattern <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
+<span id="cb43-70"><a href="#cb43-70" aria-hidden="true" tabindex="-1"></a>  txt_pattern_name <span class="dt">VARCHAR</span>,</span>
+<span id="cb43-71"><a href="#cb43-71" aria-hidden="true" tabindex="-1"></a>  txt_pattern_desc <span class="dt">VARCHAR</span></span>
+<span id="cb43-72"><a href="#cb43-72" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb43-73"><a href="#cb43-73" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb43-74"><a href="#cb43-74" aria-hidden="true" tabindex="-1"></a><span class="co">/* Table 14.3 */</span></span>
+<span id="cb43-75"><a href="#cb43-75" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_pattern_types <span class="kw">VALUES</span></span>
+<span id="cb43-76"><a href="#cb43-76" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;M&#39;</span>, <span class="st">&#39;Mottles&#39;</span>, <span class="st">&#39;Colour patterns induced by redox processes&#39;</span>),</span>
+<span id="cb43-77"><a href="#cb43-77" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;R&#39;</span>, <span class="st">&#39;Reticulate&#39;</span>, <span class="st">&#39;Colour patterns induced by preferential flow (e.g. gammate patterns in pallic soils)&#39;</span>),</span>
+<span id="cb43-78"><a href="#cb43-78" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;W&#39;</span>, <span class="st">&#39;Weathering&#39;</span>, <span class="st">&#39;Colour patterns induced by parent material weathering, most commonly seen in BC horizons and below (e.g. rock ghost patterns)&#39;</span>),</span>
+<span id="cb43-79"><a href="#cb43-79" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">4</span>, <span class="st">&#39;X&#39;</span>, <span class="st">&#39;Mixing&#39;</span>, <span class="st">&#39;Colour patterns created by biological (e.g. worm tunnels) or mechanical (e.g. landslide) means&#39;</span>);</span>
+<span id="cb43-80"><a href="#cb43-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-81"><a href="#cb43-81" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_pattern_shapes (</span>
+<span id="cb43-82"><a href="#cb43-82" aria-hidden="true" tabindex="-1"></a>  id_pattern_shape <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb43-83"><a href="#cb43-83" aria-hidden="true" tabindex="-1"></a>  catu_pattern_shape <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
+<span id="cb43-84"><a href="#cb43-84" aria-hidden="true" tabindex="-1"></a>  txt_pattern_shape_name <span class="dt">VARCHAR</span>,</span>
+<span id="cb43-85"><a href="#cb43-85" aria-hidden="true" tabindex="-1"></a>  txt_pattern_shape_desc <span class="dt">VARCHAR</span></span>
+<span id="cb43-86"><a href="#cb43-86" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb43-87"><a href="#cb43-87" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb43-88"><a href="#cb43-88" aria-hidden="true" tabindex="-1"></a><span class="co">/* Table 14.4 */</span></span>
+<span id="cb43-89"><a href="#cb43-89" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_pattern_shapes <span class="kw">VALUES</span></span>
+<span id="cb43-90"><a href="#cb43-90" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;B&#39;</span>, <span class="st">&#39;Blotches&#39;</span>, <span class="st">&#39;Rounded shapes, blobs, where colour patterns penetrate the soil mass&#39;</span>),</span>
+<span id="cb43-91"><a href="#cb43-91" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;S&#39;</span>, <span class="st">&#39;Stripes&#39;</span>, <span class="st">&#39;Linear colour patterns e.g. root linings&#39;</span>),</span>
+<span id="cb43-92"><a href="#cb43-92" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;C&#39;</span>, <span class="st">&#39;Coatings&#39;</span>, <span class="st">&#39;Patterns caused by ped surface features e.g. cutans&#39;</span>);</span>
+<span id="cb43-93"><a href="#cb43-93" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb43-94"><a href="#cb43-94" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_pattern_contrasts (</span>
+<span id="cb43-95"><a href="#cb43-95" aria-hidden="true" tabindex="-1"></a>  id_pattern_contrast <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb43-96"><a href="#cb43-96" aria-hidden="true" tabindex="-1"></a>  catu_pattern_contrast <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
+<span id="cb43-97"><a href="#cb43-97" aria-hidden="true" tabindex="-1"></a>  txt_pattern_contrast_name <span class="dt">VARCHAR</span>,</span>
+<span id="cb43-98"><a href="#cb43-98" aria-hidden="true" tabindex="-1"></a>  txt_pattern_contrast_desc <span class="dt">VARCHAR</span></span>
+<span id="cb43-99"><a href="#cb43-99" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb43-100"><a href="#cb43-100" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb43-101"><a href="#cb43-101" aria-hidden="true" tabindex="-1"></a><span class="co">/* Table 14.5 */</span></span>
+<span id="cb43-102"><a href="#cb43-102" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_pattern_contrasts <span class="kw">VALUES</span></span>
+<span id="cb43-103"><a href="#cb43-103" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;F&#39;</span>, <span class="st">&#39;Faint&#39;</span>, <span class="st">&#39;Indistinct colour variation evident only on close examination&#39;</span>),</span>
+<span id="cb43-104"><a href="#cb43-104" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;Distinct&#39;</span>, <span class="st">&#39;Although not striking, the colour variation is readily seen&#39;</span>),</span>
+<span id="cb43-105"><a href="#cb43-105" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;P&#39;</span>, <span class="st">&#39;Prominent&#39;</span>, <span class="st">&#39;The colour variation is conspicuous&#39;</span>);</span>
+<span id="cb43-106"><a href="#cb43-106" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb43-107"><a href="#cb43-107" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_pattern_edges (</span>
+<span id="cb43-108"><a href="#cb43-108" aria-hidden="true" tabindex="-1"></a>  id_pattern_edge <span class="dt">INTEGER</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb43-109"><a href="#cb43-109" aria-hidden="true" tabindex="-1"></a>  catu_pattern_edge <span class="dt">VARCHAR</span> <span class="kw">UNIQUE</span>,</span>
+<span id="cb43-110"><a href="#cb43-110" aria-hidden="true" tabindex="-1"></a>  txt_pattern_edge_name <span class="dt">VARCHAR</span>,</span>
+<span id="cb43-111"><a href="#cb43-111" aria-hidden="true" tabindex="-1"></a>  txt_pattern_edge_desc <span class="dt">VARCHAR</span></span>
+<span id="cb43-112"><a href="#cb43-112" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb43-113"><a href="#cb43-113" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb43-114"><a href="#cb43-114" aria-hidden="true" tabindex="-1"></a><span class="co">/* Table 14.6 */</span></span>
+<span id="cb43-115"><a href="#cb43-115" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_pattern_edges <span class="kw">VALUES</span> </span>
+<span id="cb43-116"><a href="#cb43-116" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;S&#39;</span>, <span class="st">&#39;Sharp&#39;</span>, <span class="st">&#39;Knife-edge boundaries between colours&#39;</span>),</span>
+<span id="cb43-117"><a href="#cb43-117" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;C&#39;</span>, <span class="st">&#39;Clear&#39;</span>, <span class="st">&#39;Colour transition &lt; 2 mm wide&#39;</span>),</span>
+<span id="cb43-118"><a href="#cb43-118" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;D&#39;</span>, <span class="st">&#39;Diffuse&#39;</span>, <span class="st">&#39;Colour transition &gt; 2 mm wide&#39;</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </div>

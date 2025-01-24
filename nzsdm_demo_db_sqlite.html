@@ -3113,7 +3113,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">January 22, 2025</p>
+      <p class="date-modified">January 24, 2025</p>
     </div>
   </div>
     
@@ -3278,7 +3278,7 @@ support tables
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> dat_sites (</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  id_site TEXT <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  usr_author TEXT,  <span class="co">/* should be FK in a full implementation */</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  dt_site TEXT <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> <span class="fu">CURRENT_DATE</span> <span class="kw">CHECK</span>(dt_site <span class="op">&lt;=</span> <span class="fu">CURRENT_DATE</span>),</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  dt_site TEXT,</span>
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  catu_site_purpose TEXT, </span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  catu_site_selection TEXT,</span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  catu_site_exposure TEXT,</span>
@@ -4676,21 +4676,22 @@ support tables
 <span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a>  id_site TEXT,</span>
 <span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a>  id_horizon <span class="dt">INTEGER</span>,</span>
 <span id="cb115-4"><a href="#cb115-4" aria-hidden="true" tabindex="-1"></a>  amt_total_frags_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_total_frags_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb115-5"><a href="#cb115-5" aria-hidden="true" tabindex="-1"></a>  amt_otherfrags_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_otherfrags_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb115-6"><a href="#cb115-6" aria-hidden="true" tabindex="-1"></a>  amt_artefacts_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_artefacts_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb115-7"><a href="#cb115-7" aria-hidden="true" tabindex="-1"></a>  amt_total_roots_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_total_roots_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb115-8"><a href="#cb115-8" aria-hidden="true" tabindex="-1"></a>  catu_total_roots_pos TEXT,</span>
-<span id="cb115-9"><a href="#cb115-9" aria-hidden="true" tabindex="-1"></a>  amt_total_voids_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_total_voids_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb115-10"><a href="#cb115-10" aria-hidden="true" tabindex="-1"></a>  amt_total_pores_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_total_pores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb115-11"><a href="#cb115-11" aria-hidden="true" tabindex="-1"></a>  amt_macropores_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_macropores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb115-12"><a href="#cb115-12" aria-hidden="true" tabindex="-1"></a>  amt_micropores_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_micropores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
-<span id="cb115-13"><a href="#cb115-13" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb115-14"><a href="#cb115-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">PRIMARY</span> <span class="kw">KEY</span> (id_site, id_horizon),</span>
-<span id="cb115-15"><a href="#cb115-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FOREIGN</span> <span class="kw">KEY</span> (id_site, id_horizon) <span class="kw">REFERENCES</span> dat_horizon(id_site, id_horizon)</span>
-<span id="cb115-16"><a href="#cb115-16" aria-hidden="true" tabindex="-1"></a>    MATCH SIMPLE <span class="kw">ON</span> <span class="kw">UPDATE</span> <span class="kw">CASCADE</span> <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">RESTRICT</span>,</span>
-<span id="cb115-17"><a href="#cb115-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FOREIGN</span> <span class="kw">KEY</span> (catu_total_roots_pos) <span class="kw">REFERENCES</span> cod_root_positions(catu_root_pos)</span>
-<span id="cb115-18"><a href="#cb115-18" aria-hidden="true" tabindex="-1"></a>    MATCH SIMPLE <span class="kw">ON</span> <span class="kw">UPDATE</span> <span class="kw">CASCADE</span> <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">RESTRICT</span></span>
-<span id="cb115-19"><a href="#cb115-19" aria-hidden="true" tabindex="-1"></a>  ) STRICT;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb115-5"><a href="#cb115-5" aria-hidden="true" tabindex="-1"></a>  amt_rock_frags_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_other_frags_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb115-6"><a href="#cb115-6" aria-hidden="true" tabindex="-1"></a>  amt_other_frags_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_rock_frags_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb115-7"><a href="#cb115-7" aria-hidden="true" tabindex="-1"></a>  amt_artefacts_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_artefacts_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb115-8"><a href="#cb115-8" aria-hidden="true" tabindex="-1"></a>  amt_total_roots_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_total_roots_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb115-9"><a href="#cb115-9" aria-hidden="true" tabindex="-1"></a>  catu_total_roots_pos TEXT,</span>
+<span id="cb115-10"><a href="#cb115-10" aria-hidden="true" tabindex="-1"></a>  amt_total_voids_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_total_voids_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb115-11"><a href="#cb115-11" aria-hidden="true" tabindex="-1"></a>  amt_total_pores_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_total_pores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb115-12"><a href="#cb115-12" aria-hidden="true" tabindex="-1"></a>  amt_macropores_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_macropores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb115-13"><a href="#cb115-13" aria-hidden="true" tabindex="-1"></a>  amt_micropores_p <span class="dt">REAL</span> <span class="kw">CHECK</span> (amt_micropores_p <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">and</span> <span class="dv">100</span>),</span>
+<span id="cb115-14"><a href="#cb115-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb115-15"><a href="#cb115-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">PRIMARY</span> <span class="kw">KEY</span> (id_site, id_horizon),</span>
+<span id="cb115-16"><a href="#cb115-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FOREIGN</span> <span class="kw">KEY</span> (id_site, id_horizon) <span class="kw">REFERENCES</span> dat_horizon(id_site, id_horizon)</span>
+<span id="cb115-17"><a href="#cb115-17" aria-hidden="true" tabindex="-1"></a>    MATCH SIMPLE <span class="kw">ON</span> <span class="kw">UPDATE</span> <span class="kw">CASCADE</span> <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">RESTRICT</span>,</span>
+<span id="cb115-18"><a href="#cb115-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FOREIGN</span> <span class="kw">KEY</span> (catu_total_roots_pos) <span class="kw">REFERENCES</span> cod_root_positions(catu_root_pos)</span>
+<span id="cb115-19"><a href="#cb115-19" aria-hidden="true" tabindex="-1"></a>    MATCH SIMPLE <span class="kw">ON</span> <span class="kw">UPDATE</span> <span class="kw">CASCADE</span> <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">RESTRICT</span></span>
+<span id="cb115-20"><a href="#cb115-20" aria-hidden="true" tabindex="-1"></a>  ) STRICT;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="structure" class="level3">
 <h3 class="anchored" data-anchor-id="structure">Structure</h3>
@@ -5201,23 +5202,27 @@ support tables
 <span id="cb148-8"><a href="#cb148-8" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> cod_munsell_colours <span class="kw">VALUES</span></span>
 <span id="cb148-9"><a href="#cb148-9" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span>, <span class="st">&#39;10YR 2/1&#39;</span>,    <span class="st">&#39;#372F29&#39;</span>),</span>
 <span id="cb148-10"><a href="#cb148-10" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">2</span>, <span class="st">&#39;10YR 3/3&#39;</span>,    <span class="st">&#39;#58432B&#39;</span>),</span>
-<span id="cb148-11"><a href="#cb148-11" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;10YR 5/4&#39;</span>,    <span class="st">&#39;#947650&#39;</span>),</span>
-<span id="cb148-12"><a href="#cb148-12" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">4</span>, <span class="st">&#39;10YR 5/6&#39;</span>,    <span class="st">&#39;#947136&#39;</span>),</span>
-<span id="cb148-13"><a href="#cb148-13" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">5</span>, <span class="st">&#39;10YR 6/2&#39;</span>,    <span class="st">&#39;#A1907C&#39;</span>),</span>
-<span id="cb148-14"><a href="#cb148-14" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">6</span>, <span class="st">&#39;2.5Y 5/4&#39;</span>,    <span class="st">&#39;#8D764A&#39;</span>),</span>
-<span id="cb148-15"><a href="#cb148-15" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">7</span>, <span class="st">&#39;2.5Y 7/4&#39;</span>,    <span class="st">&#39;#C2AA7B&#39;</span>),</span>
-<span id="cb148-16"><a href="#cb148-16" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">8</span>, <span class="st">&#39;2.5YR 2.5/2&#39;</span>, <span class="st">&#39;#4C3630&#39;</span>),</span>
-<span id="cb148-17"><a href="#cb148-17" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">9</span>, <span class="st">&#39;5R 3/8&#39;</span>,      <span class="st">&#39;#80282F&#39;</span>),</span>
-<span id="cb148-18"><a href="#cb148-18" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">10</span>, <span class="st">&#39;5YR 2.5/2&#39;</span>,  <span class="st">&#39;#4B372E&#39;</span>),</span>
-<span id="cb148-19"><a href="#cb148-19" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">11</span>, <span class="st">&#39;7.5YR 3/2&#39;</span>,  <span class="st">&#39;#564336&#39;</span>),</span>
-<span id="cb148-20"><a href="#cb148-20" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">12</span>, <span class="st">&#39;7.5YR 3/4&#39;</span>,  <span class="st">&#39;#604025&#39;</span>),</span>
-<span id="cb148-21"><a href="#cb148-21" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">13</span>, <span class="st">&#39;7.5YR 4/2&#39;</span>,  <span class="st">&#39;#705C4D&#39;</span>),</span>
-<span id="cb148-22"><a href="#cb148-22" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">14</span>, <span class="st">&#39;7.5YR 4/4&#39;</span>,  <span class="st">&#39;#7C583A&#39;</span>),</span>
-<span id="cb148-23"><a href="#cb148-23" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">15</span>, <span class="st">&#39;7.5YR 5/4&#39;</span>,  <span class="st">&#39;#957253&#39;</span>),</span>
-<span id="cb148-24"><a href="#cb148-24" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">16</span>, <span class="st">&#39;7.5YR 5/6&#39;</span>,  <span class="st">&#39;#A06F3E&#39;</span>),</span>
-<span id="cb148-25"><a href="#cb148-25" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">17</span>, <span class="st">&#39;7.5YR 5/8&#39;</span>,  <span class="st">&#39;#A86C27&#39;</span>),</span>
-<span id="cb148-26"><a href="#cb148-26" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">18</span>, <span class="st">&#39;7.5YR 7/1&#39;</span>,  <span class="st">&#39;#B6ABA3&#39;</span>),</span>
-<span id="cb148-27"><a href="#cb148-27" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">19</span>, <span class="st">&#39;N 4/0&#39;</span>,      <span class="st">&#39;#606060&#39;</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb148-11"><a href="#cb148-11" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">3</span>, <span class="st">&#39;10YR 4/3&#39;</span>,    <span class="st">&#39;#735C40&#39;</span>),</span>
+<span id="cb148-12"><a href="#cb148-12" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">4</span>, <span class="st">&#39;10YR 5/4&#39;</span>,    <span class="st">&#39;#947650&#39;</span>),</span>
+<span id="cb148-13"><a href="#cb148-13" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">5</span>, <span class="st">&#39;10YR 5/6&#39;</span>,    <span class="st">&#39;#947136&#39;</span>),</span>
+<span id="cb148-14"><a href="#cb148-14" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">6</span>, <span class="st">&#39;10YR 6/2&#39;</span>,    <span class="st">&#39;#A1907C&#39;</span>),</span>
+<span id="cb148-15"><a href="#cb148-15" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">7</span>, <span class="st">&#39;10YR 6/8&#39;</span>,    <span class="st">&#39;#BD8936&#39;</span>),</span>
+<span id="cb148-16"><a href="#cb148-16" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">8</span>, <span class="st">&#39;2.5Y 5/4&#39;</span>,    <span class="st">&#39;#8D764A&#39;</span>),</span>
+<span id="cb148-17"><a href="#cb148-17" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">9</span>, <span class="st">&#39;2.5Y 5/6&#39;</span>,    <span class="st">&#39;#947430&#39;</span>),</span>
+<span id="cb148-18"><a href="#cb148-18" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">10</span>, <span class="st">&#39;2.5Y 7/4&#39;</span>,    <span class="st">&#39;#C2AA7B&#39;</span>),</span>
+<span id="cb148-19"><a href="#cb148-19" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">11</span>, <span class="st">&#39;2.5YR 2.5/2&#39;</span>, <span class="st">&#39;#4C3630&#39;</span>),</span>
+<span id="cb148-20"><a href="#cb148-20" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">12</span>, <span class="st">&#39;5R 3/8&#39;</span>,      <span class="st">&#39;#80282F&#39;</span>),</span>
+<span id="cb148-21"><a href="#cb148-21" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">13</span>, <span class="st">&#39;5YR 2.5/2&#39;</span>,  <span class="st">&#39;#4B372E&#39;</span>),</span>
+<span id="cb148-22"><a href="#cb148-22" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">14</span>, <span class="st">&#39;5YR 5/6&#39;</span>,    <span class="st">&#39;#A46C45&#39;</span>),</span>
+<span id="cb148-23"><a href="#cb148-23" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">15</span>, <span class="st">&#39;7.5YR 3/2&#39;</span>,  <span class="st">&#39;#564336&#39;</span>),</span>
+<span id="cb148-24"><a href="#cb148-24" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">16</span>, <span class="st">&#39;7.5YR 3/4&#39;</span>,  <span class="st">&#39;#604025&#39;</span>),</span>
+<span id="cb148-25"><a href="#cb148-25" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">17</span>, <span class="st">&#39;7.5YR 4/2&#39;</span>,  <span class="st">&#39;#705C4D&#39;</span>),</span>
+<span id="cb148-26"><a href="#cb148-26" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">18</span>, <span class="st">&#39;7.5YR 4/4&#39;</span>,  <span class="st">&#39;#7C583A&#39;</span>),</span>
+<span id="cb148-27"><a href="#cb148-27" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">19</span>, <span class="st">&#39;7.5YR 5/4&#39;</span>,  <span class="st">&#39;#957253&#39;</span>),</span>
+<span id="cb148-28"><a href="#cb148-28" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">20</span>, <span class="st">&#39;7.5YR 5/6&#39;</span>,  <span class="st">&#39;#A06F3E&#39;</span>),</span>
+<span id="cb148-29"><a href="#cb148-29" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">21</span>, <span class="st">&#39;7.5YR 5/8&#39;</span>,  <span class="st">&#39;#A86C27&#39;</span>),</span>
+<span id="cb148-30"><a href="#cb148-30" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">22</span>, <span class="st">&#39;7.5YR 7/1&#39;</span>,  <span class="st">&#39;#B6ABA3&#39;</span>),</span>
+<span id="cb148-31"><a href="#cb148-31" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">23</span>, <span class="st">&#39;N 4/0&#39;</span>,      <span class="st">&#39;#606060&#39;</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb149"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb149-1"><a href="#cb149-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> cod_short_colours (</span>
