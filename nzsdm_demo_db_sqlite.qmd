@@ -1,12 +1,20 @@
 ---
-title: "New Zealand Soil Description Manual 2024 - Demonstration database"
+title: "New Zealand Soil Description Manual 2024 - Demonstration database - SQLite"
 author: "Lauren O'Brien"
 date: "2025-01-22"
 date-modified: "today"
 format: 
   html:
     embed-resources: true
-editor: visual
+    toc: true
+knitr:
+  opts_chunk:
+    message: false
+    warning: false
+    error: false
+    fig.align: 'center'
+    fig.show: 'hold'
+    results: 'hold'
 ---
 
 ## Background
@@ -35,13 +43,13 @@ dbExecute(con, "PRAGMA foreign_keys = 1")
 
 We are not using the Spatialite extension for spatial data types as its overkill for this application.
 
-A naming convention is applied to the tables to clearly distingish data-storing tables ('dat\_\*') from controlled code lists ('cod\_\*') as SQLite doesn't offer full schemas.
+A naming convention is applied to the tables to clearly distingish data-storing tables ('dat\_\*') from support tables containing code lists ('cod\_\*') as SQLite doesn't offer full schema support.
 
 ## Sites
 
-After [Appendix D.3](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-siteover)
+From [Appendix D.3](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-siteover)
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -212,7 +220,7 @@ CREATE TABLE IF NOT EXISTS dat_sites (
 
 ### Site disturbances
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -291,7 +299,7 @@ From [Appendix D.2](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_datab
 
 ### Locations
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -373,7 +381,7 @@ CREATE TABLE IF NOT EXISTS dat_locations (
 
 ### Landscape
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -467,7 +475,7 @@ CREATE TABLE IF NOT EXISTS dat_landscape (
 
 ### Landscape landuse
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -550,7 +558,7 @@ CREATE TABLE IF NOT EXISTS dat_lscape_landuse (
 
 ### Landform
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -758,7 +766,7 @@ CREATE TABLE IF NOT EXISTS dat_landform (
 
 ### Landform landuse
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -853,7 +861,9 @@ CREATE TABLE IF NOT EXISTS dat_lform_landuse (
 
 ## Surface
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+From [Appendix D.4](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-surface)
+
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -1116,7 +1126,7 @@ CREATE TABLE IF NOT EXISTS dat_site_surface (
 
 ### Surface cover
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -1165,7 +1175,7 @@ CREATE TABLE IF NOT EXISTS dat_surface_cover (
 
 ### Erosion
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -1264,7 +1274,7 @@ CREATE TABLE IF NOT EXISTS dat_site_erosion (
 
 ### Deposition
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -1363,7 +1373,9 @@ CREATE TABLE IF NOT EXISTS dat_site_deposition (
 
 ## Horizon overview
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+From [Appendix D.5](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-horizono)
+
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -1543,7 +1555,9 @@ CREATE TABLE IF NOT EXISTS dat_horizon (
 
 ## Horizon architecture
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+From [Appendix D.6](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-horizona)
+
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -1714,7 +1728,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_structures (
 
 ### Rock fragments
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -1818,7 +1832,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_rock_fragments (
 
 ### Other fragments
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -1867,7 +1881,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_other_fragments (
 
 ### Artefacts
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -1922,7 +1936,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_artefacts (
 
 ### Plastics
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -2040,7 +2054,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_plastics (
 
 ### Roots
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -2087,7 +2101,7 @@ CREATE TABLE IF NOT EXISTS dat_horizon_roots (
 
 ### Voids
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -2156,7 +2170,9 @@ CREATE TABLE IF NOT EXISTS dat_horizon_voids (
 
 ## Horizon colour
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+From [Appendix D.7](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-colour)
+
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -2381,7 +2397,9 @@ CREATE TABLE IF NOT EXISTS dat_horizon_pattern_colours (
 
 ## Horizon texture
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+From [Appendix D.8](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-texture)
+
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -2592,7 +2610,9 @@ CREATE TABLE IF NOT EXISTS dat_horizon_texture (
 
 ## Horizon secondary features
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+From [Appendix D.9](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-secf)
+
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -2862,7 +2882,9 @@ CREATE TABLE IF NOT EXISTS dat_horizon_bio_features (
 
 ## Horizon consistence tests
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+From [Appendix D.10](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-cons)
+
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -3107,7 +3129,9 @@ CREATE TABLE IF NOT EXISTS dat_consistence_tests (
 
 ## Field tests
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+From [Appendix D.11](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-fts)
+
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -3281,11 +3305,11 @@ CREATE TABLE IF NOT EXISTS dat_field_tests (
 
 ```
 
-## Interpretations
+## Horizon names
 
-### Horizon names
+From [Appendix D.12.2](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-names)
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 Including horizon drainage here
 
 ```{sql}
@@ -3530,11 +3554,11 @@ CREATE TABLE IF NOT EXISTS dat_horizon_names_suffix_other (
 
 ```
 
-### Horizon data classification
+## Horizon data classification
 
 These should only be used in database views e.g. to underpin report generation
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -3633,9 +3657,11 @@ INSERT INTO cod_abundance_classes_solids VALUES
 
 ## NZSC
 
+From [Appendix D.12.1](https://manaakiwhenua.github.io/NZ_soildesc_2024/ap_03_database_design.html#sec-erd-nzsc)
+
 ### Order, Group and Subgroup
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -4080,7 +4106,7 @@ INSERT INTO cod_nzsc_subgroups VALUES
 
 ### Family and sibling
 
-::: {.callout-note collapse="true" appearance="minimal" title="support tables"}
+::: {.callout-note collapse="true" appearance="minimal" title="Support Tables"}
 ```{sql}
 #| connection: con
 
@@ -4357,6 +4383,7 @@ CREATE TABLE IF NOT EXISTS dat_nzsc (
 Save this database definition as an on-disk empty \*.db file that can be used as a template.
 
 ```{r}
+#| eval: false 
 
 # create new file on disk
 con_out <- dbConnect(drv, dbname = 

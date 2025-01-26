@@ -6,18 +6,20 @@ date-modified: "today"
 format: 
   html:
     embed-resources: true
-editor: visual
-editor_options: 
-  chunk_output_type: console
+    toc: true
+knitr:
+  opts_chunk:
+    message: false
+    warning: false
+    error: false
+    fig.align: 'center'
+    fig.show: 'hold'
+    results: 'hold'
 ---
 
 This file creates a blank database from the SQLite template and inserts a few sites' worth of data from the [NSD](https://viewer-nsdr.landcareresearch.co.nz/search).
 
 ```{r}
-#| results: hold
-#| message: false
-#| warning: false
-
 library(tidyverse)
 library(readxl)
 library(sf)
@@ -52,7 +54,7 @@ The sites being imported are:
   - [SB09093](https://viewer-nsdr.landcareresearch.co.nz/soil/id/nsdr/sa_site/2603?view=sitereport)
   - [SB09446](https://viewer-nsdr.landcareresearch.co.nz/soil/id/nsdr/sa_site/2554?view=sitereport)
   
-The data was coded with reference to the original scanned hardcopy descriptions, so some minor differences may exist between the website reports above and the improted data. Excel was used as an ersatz GUI rather than writing INSERT statements for time reasons.
+The data was coded with reference to the original scanned hardcopy descriptions, so some minor differences may exist between the website reports above and the improted data. Excel was used as an ersatz GUI rather than writing INSERT statements.
 
 ```{r}
 #| eval: false
@@ -103,7 +105,7 @@ locs <- dbGetQuery(con, 'select * from dat_locations') |>
   st_as_sf(coords = c('val_site_coordinate_x', 'val_site_coordinate_y'),
            crs = 2193)
   
-# get a publicly available NZ-outlne polygon and trim to mainland area
+# get a publicly available NZ-outline polygon and trim to mainland area
 ml <- 
   st_as_sfc(st_bbox(c(xmin = 166, xmax = 179, ymin = -34, ymax = -48), crs = 4326))
 nzch <- rnaturalearth::ne_countries(country = 'New Zealand', scale = 50 ) |>
@@ -113,9 +115,7 @@ nzch <- rnaturalearth::ne_countries(country = 'New Zealand', scale = 50 ) |>
 
 ```{r}
 #| echo: false
-#| results: true
 
-# plot
 ggplot() +
   geom_sf(data = nzch) +
   geom_sf(data = locs, col = 'red', size = 3) +
@@ -152,7 +152,6 @@ basics <-
 
 ```{r}
 #| echo: false
-#| results: true
 
 ggplot() +
   geom_sf(data = nzch) +
