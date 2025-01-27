@@ -898,7 +898,7 @@ CREATE TABLE IF NOT EXISTS dat_surface_cover (
   id_surface_cover INTEGER,
   PRIMARY KEY (id_site, id_surface_cover),
   catu_surface_cover VARCHAR REFERENCES cod_surface_cover_types(catu_surface_cover),
-  amt_surface_cover DECIMAL(6, 2) CHECK (amt_surface_cover BETWEEN 0 AND 100)
+  amt_surface_cover_p DECIMAL(6, 2) CHECK (amt_surface_cover_p BETWEEN 0 AND 100)
   );
 
 ```

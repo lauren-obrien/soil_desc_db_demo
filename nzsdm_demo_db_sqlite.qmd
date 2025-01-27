@@ -1162,7 +1162,7 @@ CREATE TABLE IF NOT EXISTS dat_surface_cover (
   id_site TEXT,
   id_surface_cover INTEGER,
   catu_surface_cover TEXT,
-  amt_surface_cover REAL CHECK (amt_surface_cover BETWEEN 0 AND 100),
+  amt_surface_cover_p REAL CHECK (amt_surface_cover_p BETWEEN 0 AND 100),
   
   PRIMARY KEY (id_site, id_surface_cover),
   FOREIGN KEY (id_site) REFERENCES dat_sites(id_site)
@@ -3541,14 +3541,11 @@ CREATE TABLE IF NOT EXISTS dat_horizon_names_suffix_other (
   id_horizon INTEGER,
   id_suffix INTEGER,
   catu_horizon_suffix TEXT,
-  cato_horizon_drainage TEXT,
   
   PRIMARY KEY (id_site, id_horizon, id_suffix),
   FOREIGN KEY (id_site, id_horizon) REFERENCES dat_horizon_names(id_site, id_horizon)
     MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
   FOREIGN KEY (catu_horizon_suffix) REFERENCES cod_horizon_suffix_other(catu_horizon_suffix_other)
-    MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT,
-  FOREIGN KEY (cato_horizon_drainage) REFERENCES cod_horizon_drainage_classes(cato_horizon_drainage)
     MATCH SIMPLE ON UPDATE CASCADE ON DELETE RESTRICT
   ) STRICT;
 
